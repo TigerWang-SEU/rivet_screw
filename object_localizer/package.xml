@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>object_localizer</name>
+  <version>0.1.0</version>
+  <description>The object_localizer package</description>
+  <license>BSD</license>
+
+  <maintainer email="wangyongseu9@gmail.com">yongwang</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>pcl_conversions</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>object_localizer_msg</build_depend>
+  <build_depend>std_srvs</build_depend>
+
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <build_export_depend>cv_bridge</build_export_depend>
+  <build_export_depend>pcl_ros</build_export_depend>
+  <build_export_depend>pcl_conversions</build_export_depend>
+  <build_export_depend>tf2</build_export_depend>
+  <build_export_depend>tf2_ros</build_export_depend>
+  <build_export_depend>image_transport</build_export_depend>
+  <build_export_depend>object_localizer_msg</build_export_depend>
+  <build_export_depend>std_srvs</build_export_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>pcl_conversions</exec_depend>
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>object_localizer_msg</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+
+  <export>
+  </export>
+</package>

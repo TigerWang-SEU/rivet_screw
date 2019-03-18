@@ -1,0 +1,13 @@
+For testing this module using recorded bag
+  1, roslaunch model_loader bagplay.launch
+  2, rosrun model_loader scan_reader
+  3, rosbag play /home/syn/ros_ws/src/pepperl_fuchs/pepperl_fuchs_r2000/record/2018-07-18-15-15-09.bag
+
+For testing this module using real data
+  1, roslaunch syn_ur10_bringup demo.launch
+  2, rosrun model_loader add_and_remove_aircraft_frame
+  3, rosrun model_loader scan_reader
+  4, rosbag play /home/syn/ros_ws/src/pepperl_fuchs/pepperl_fuchs_r2000/record/2018-07-18-15-15-09.bag
+
+For add aircraft_frame to the plane scene
+  1, rosrun model_loader add_and_remove_aircraft_frame

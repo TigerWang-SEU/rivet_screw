@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="syn_table" >
+
+  <xacro:arg name="floating_table" default="false" />
+
+  <xacro:property name="roomheight" value="3.0" />
+  <xacro:property name="tableheight" value="0.83" />
+  <xacro:property name="tablewidth" value="0.83" />
+  <xacro:property name="tabledepth" value="0.9" />
+  <xacro:property name="ur10_mount_offset_y" value="-0.212" />
+  <xacro:property name="scan_offset_x" value="0.00" />
+  <xacro:property name="scan_offset_y" value="-0.40" />
+  <xacro:property name="scan_offset_z" value="0.06" />
+
+  <material name="white">
+    <color rgba="1 1 1 1"/>
+  </material>
+  <material name="brown">
+    <color rgba="0.87 0.72 0.53 1"/>
+  </material>
+  <material name="lightgray">
+    <color rgba="0.6 0.6 0.6 1"/>
+  </material>
+
+  <link name="floor">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="2000" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="black" />
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="8.0 8.0 0.001" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="8.0 8.0 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="floor">
+    <material>Gazebo/Blue</material>
+    <turnGravityOff>false</turnGravityOff>
+    <selfCollide>true</selfCollide>
+    <!-- kp: stiffness kd: damping mu1, mu2: friction -->
+    <mu1>100.0</mu1>
+    <mu2>100.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>1.0</kd>
+  </gazebo>
+
+  <link name="table">
+    <inertial>
+      <origin xyz="0 0 ${tableheight/2}" />
+      <mass value="10" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="brown" />
+      <origin xyz="0.0 0.0 ${tableheight/2}" />
+      <geometry>
+        <box size="${tablewidth} ${tabledepth} ${tableheight}" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 ${tableheight/2}" />
+      <geometry>
+        <box size="${tablewidth} ${tabledepth} ${tableheight}" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="table">
+    <material>Gazebo/Blue</material>
+    <turnGravityOff>false</turnGravityOff>
+    <selfCollide>true</selfCollide>
+    <mu1>100.0</mu1>
+    <mu2>100.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>1.0</kd>
+  </gazebo>
+
+  <link name="table_top"/>
+
+  <link name="ur10_mount"/>
+
+  <link name="scan">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="200" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="lightgray" />
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="0.10 0.10 0.12" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="0.10 0.10 0.12" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="table_floor_joint" type="floating">
+    <parent link="floor"/>
+    <child link="table"/>
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
+  <joint name="table_top_joint" type="fixed">
+    <parent link="table"/>
+    <child link="table_top"/>
+	  <origin xyz="0 0 ${tableheight}" rpy="0 0 0" />
+  </joint>
+
+  <joint name="ur10_mount_table_top_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="ur10_mount"/>
+	  <origin xyz="0 ${ur10_mount_offset_y} 0" rpy="0 0 0" />
+  </joint>
+
+  <joint name="scan_table_top_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="scan"/>
+	  <origin xyz="${scan_offset_x} ${scan_offset_y} ${scan_offset_z}" rpy="0 0 0" />
+  </joint>
+
+</robot>

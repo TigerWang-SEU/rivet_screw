@@ -1,0 +1,5 @@
+1. To launch the camera node and make it publish the RGBD point cloud
+  roslaunch realsense2_camera rs_rgbd.launch
+
+2. To show the Image and RGBD point cloud in rviz
+  rosrun rviz rviz -d /home/syn/ros_ws/src/realsense-2.0.3/realsense2_camera/rviz/rs_rgbd.rviz

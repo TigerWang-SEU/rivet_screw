@@ -1,0 +1,4 @@
+roslaunch pepperl_fuchs_r2000 r2000.launch
+
+Note: remember to change the IP address (scanner_ip) of the laser scanner
+  <arg name="scanner_ip" default="192.168.2.101"/>

@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="syn_ur10_setup" >
+
+  <!-- syn table -->
+  <xacro:include filename="$(find syn_ur10_bringup)/urdf/syn_table.urdf.xacro" />
+
+  <!-- arm -->
+  <xacro:include filename="$(find syn_ur10_bringup)/urdf/arm.urdf.xacro" />
+
+  <!-- tool -->
+  <xacro:include filename="$(find syn_ur10_bringup)/urdf/tool.urdf.xacro" />
+
+  <xacro:property name="ur10_mount_height" value="0.01" />
+
+  <link name="world" />
+
+  <joint name="floor_world_joint" type="fixed">
+    <parent link="world" />
+    <child link = "floor" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+  </joint>
+
+  <link name="map" /> 
+
+  <joint name="map_world_joint" type="fixed">
+    <parent link="world" />
+    <child link = "map" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+  </joint>
+
+  <joint name="table_ur10_joint" type="fixed">
+    <parent link="ur10_mount" />
+    <child link = "ur10_base_link" />
+    <origin xyz="0.0 0.0 ${ur10_mount_height}" rpy="0.0 0.0 ${radians(90)}" />
+  </joint>
+
+  <joint name="ur10_tool_joint" type="fixed">
+    <parent link="ur10_tool0" />
+    <child link = "tool_base" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+  </joint>
+
+</robot>

@@ -1,0 +1,5 @@
+change the IP address in the launch file r2000.launch
+  <arg name="scanner_ip" default="192.168.2.101"/>
+
+run following command
+  roslaunch pepperl_fuchs_r2000 r2000.launch

@@ -1,0 +1,6 @@
+roslaunch syn_ur10_bringup demo.launch
+roslaunch syn_ur10_bringup syn_ur10_bringup.launch
+rosrun model_loader add_and_remove_aircraft_frame
+
+# mannual publish a message to update the position of table
+rostopic pub /joint_states sensor_msgs/JointState '{header: {stamp: now}, name: [table_floor_x_joint, table_floor_y_joint], position: [-0.25, 0.22]}'
