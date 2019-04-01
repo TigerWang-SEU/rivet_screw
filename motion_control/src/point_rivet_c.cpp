@@ -242,7 +242,7 @@ void do_point_rivet ()
           geometry_msgs::Pose target_pose2;
           set_target_pose ( target, target_pose2 );
           move_trajectory ( target_pose1, target_pose2, move_group );
-          ros::Duration ( 2 ) .sleep ();
+          ros::Duration ( 3 ) .sleep ();
           target_pose1 = target_pose2;
 
           // move back the rivet_tool
