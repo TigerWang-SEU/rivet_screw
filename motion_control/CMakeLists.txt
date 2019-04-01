@@ -81,5 +81,8 @@ target_link_libraries(point_rivet ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(point_rivet_b src/point_rivet_b.cpp)
 target_link_libraries(point_rivet_b ${catkin_LIBRARIES} ${Boost_LIBRARIES} modbus)
 
+add_executable(point_rivet_c src/point_rivet_c.cpp)
+target_link_libraries(point_rivet_c ${catkin_LIBRARIES} ${Boost_LIBRARIES} modbus)
+
 add_executable(pose_test src/pose_test.cpp)
 target_link_libraries(pose_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
