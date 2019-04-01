@@ -69,6 +69,9 @@ target_link_libraries(profile_merger ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(profile_merger_b src/profile_merger_b.cpp)
 target_link_libraries(profile_merger_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+add_executable(profile_merger_c src/profile_merger_c.cpp)
+target_link_libraries(profile_merger_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(pc_writer src/pc_writer.cpp)
 target_link_libraries(pc_writer ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
