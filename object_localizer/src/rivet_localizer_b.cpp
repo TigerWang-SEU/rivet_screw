@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <ctime>
+#include <cmath>
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <ros/ros.h>
@@ -37,7 +38,7 @@ std::string SceneFileName;
 int filter_mean_k = 40;
 float filter_stddev = 1.0;
 float scale_factor = 1.0;
-float rivet_height = 0.007; // unit meter
+float rivet_height = 0.008; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
 
@@ -406,7 +407,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 			float y = temp_point.y;
 			float z = temp_point.z;
 			if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z
-					 && x_compare <= 0.0008 && x > 0 )
+					 && x_compare <= 0.0015 && x > 0 )
 			{
 		    PointT new_point;
 				// sum_x += x;
@@ -429,6 +430,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	pcl::KdTreeFLANN < PointT > kdtree;
   kdtree.setInputCloud ( cloud_rivet );
 	std::vector< Eigen::Vector4f > rivet_vector;
+	
 	UF cloud_rivet_uf ( cloud_rivet_counter );
 	int rivet_counter = 0;
 	for ( size_t i = 0; i < cloud_rivet->points.size (); ++i )
@@ -497,6 +499,23 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	// step 9, get the total inverse transformation matrix
 	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
 	getInverseMatrix ( transform_total, transform_total_inverse );
+
+  //############################################################################################################################################################
+	Eigen::Matrix4f r_x_2, r_z_2;
+	float theta_x = -0*3.14159/180;
+	float theta = -2*3.14159/180;
+	r_x_2 << 1,   0,  0, 0,
+					 0, cos(theta_x), -sin(theta_x), 0,
+					 0, sin(theta_x), cos(theta_x), 0,
+						0,  0,  0, 1;
+	r_z_2 << cos(theta), -sin(theta),  0, 0,
+					 sin(theta),  cos(theta),  0, 0,
+						0,  0,  1, 0,
+						0,  0,  0, 1;
+	std::cout << "r_z_2 = \n" << r_z_2 << std::endl;
+	transform_total_inverse =  transform_total_inverse * r_z_2 * r_x_2;
+	//############################################################################################################################################################
+
 	double roll, pitch, yaw;
 	get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
 	while ( roll < 0.0 )
@@ -524,12 +543,12 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	{
 		Eigen::Vector4f rivet_point_final;
 		Eigen::Vector4f rivet_point_in, rivet_point_in_final;
-		rivet_point_in << -0.0030, rivet_point ( 1 ), rivet_point ( 2 ), 1.0;
+		rivet_point_in << -0.006, rivet_point ( 1 ), rivet_point ( 2 ), 1.0;
 		rivet_point_final = transform_total_inverse * rivet_point;
 		rivet_point_in_final = transform_total_inverse * rivet_point_in;
 		rivet_vector_final.push_back ( rivet_point_final );
 		std::cout << "*** [" << rivet_counter << "] : " << rivet_point_final.head< 3 >().transpose() << " " << roll << " " << pitch << " " << yaw << std::endl;
-		show_frame ( "rivet_" + std::to_string ( rivet_counter ), rivet_point_final ( 0 ), rivet_point_final ( 1 ), rivet_point_final ( 2 ), roll, pitch, yaw );
+		show_frame ( "rivet_" + std::to_string ( rivet_counter ), rivet_point_in_final ( 0 ), rivet_point_in_final ( 1 ), rivet_point_in_final ( 2 ), roll, pitch, yaw );
 		point_rivet_fs << rivet_counter << " " << rivet_point_final ( 0 ) << " " << rivet_point_final ( 1 ) << " " << rivet_point_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
 		point_rivet_fs << rivet_counter << " " << rivet_point_in_final ( 0 ) << " " << rivet_point_in_final ( 1 ) << " " << rivet_point_in_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
 		point_rivet_fs << rivet_counter << " " << rivet_point_final ( 0 ) << " " << rivet_point_final ( 1 ) << " " << rivet_point_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
