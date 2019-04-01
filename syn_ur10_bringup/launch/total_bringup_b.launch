@@ -3,12 +3,12 @@
 
   <include file="$(find syn_ur10_bringup)/launch/syn_ur10_bringup.launch"/>
 
-  <node name="scan_reader" pkg="model_loader" type="scan_reader" respawn="true" output="screen">
-  </node>
+  <!-- <node name="scan_reader" pkg="model_loader" type="scan_reader" respawn="true" output="screen">
+  </node> -->
 
   <!-- add new tf dummy node to fix the table on the floor -->
-  <!-- <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
-  </node> -->
+  <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
+  </node>
 
   <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
   </node>
