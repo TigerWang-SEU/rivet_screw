@@ -31,9 +31,11 @@ int main ( int argc, char** argv )
   ROS_INFO_STREAM ( "start for planning" );
   geometry_msgs::Pose target_pose1;
   float pose_array[] = {0.231569, -1.53348, 1.85431, 3.12539, 0.783333, 1.56717};
-  target_pose1.position.x = pose_array[0];
+  float x_adjustment = 0.0055;
+  float z_adjustment = 0.003;
+  target_pose1.position.x = pose_array[0] + x_adjustment;
   target_pose1.position.y = pose_array[1];
-  target_pose1.position.z = pose_array[2];
+  target_pose1.position.z = pose_array[2] + z_adjustment;
   float rollt  = pose_array[3];
   float pitcht = pose_array[4];
   float yawt   = pose_array[5];
