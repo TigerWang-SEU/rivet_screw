@@ -175,9 +175,9 @@ void set_target_pose_1 ( Target& target, geometry_msgs::Pose& target_pose )
 // change the x or z position if necessary
 void set_target_pose ( Target& target, geometry_msgs::Pose& target_pose )
 {
-  target_pose.position.x = target.x + 0.003; //***
+  target_pose.position.x = target.x + 0.0055; //***
   target_pose.position.y = target.y;
-  target_pose.position.z = target.z + 0.0005; //***
+  target_pose.position.z = target.z + 0.003; //***
   float rollt  = target.roll;
   float pitcht = target.pitch;
   float yawt   = target.yaw;
@@ -233,6 +233,11 @@ void do_point_rivet ()
         {
           // get the new rivet
           new_nut_.call ( msg );
+          ros::Duration ( 0.5 ) .sleep ();
+          stop_.call ( msg );
+          ros::Duration ( 0.5 ) .sleep ();
+          new_nut_.call ( msg );
+
           // rivet_tool_ctrl_ptr -> new_rivet ();
           Target target = target_queue.front ();
           target_queue.pop();
