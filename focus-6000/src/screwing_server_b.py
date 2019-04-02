@@ -83,7 +83,7 @@ def new_nut ( req ):
 
 # the service recall function for screwing
 def start_screwing ( req ):
-    start_tightening = sock.sendMID(op.message('Digital Input Function', '001', '1', ' ', '  '))
+    start_tightening = sock.sendMID(op.message('Digital Input Function', '001', '3', ' ', '  '))
     return {}
 
 # the service recall function for loosening
