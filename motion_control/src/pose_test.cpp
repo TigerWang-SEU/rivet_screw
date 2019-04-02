@@ -30,12 +30,16 @@ int main ( int argc, char** argv )
 
   ROS_INFO_STREAM ( "start for planning" );
   geometry_msgs::Pose target_pose1;
-  float pose_array[] = {0.231569, -1.53348, 1.85431, 3.12539, 0.783333, 1.56717};
-  float x_adjustment = 0.0055;
-  float z_adjustment = 0.003;
-  target_pose1.position.x = pose_array[0] + x_adjustment;
+
+  // -0.298573, -1.29441, 1.72955, 2.87979, 0.677103, 1.55201
+  // -0.299257, -1.31319, 1.74489, 2.87979, 0.677103, 1.55201
+
+  float pose_array[] = {-0.298573, -1.29441, 1.72955, 2.87979, 0.677103, 1.55201}; // out
+  // float pose_array[] = {-0.299257, -1.31319, 1.74489, 2.87979, 0.677103, 1.55201}; // in
+
+  target_pose1.position.x = pose_array[0];
   target_pose1.position.y = pose_array[1];
-  target_pose1.position.z = pose_array[2] + z_adjustment;
+  target_pose1.position.z = pose_array[2];
   float rollt  = pose_array[3];
   float pitcht = pose_array[4];
   float yawt   = pose_array[5];
@@ -48,7 +52,7 @@ int main ( int argc, char** argv )
   ROS_INFO_NAMED( "motion_ctrl", "planning for goal pose is %s", success ? "success" : "FAILED" );
   if ( success )
   {
-    move_group.setMaxVelocityScalingFactor ( 0.05 );
+    move_group.setMaxVelocityScalingFactor ( 0.15 );
     move_group.move ();
   }
 
