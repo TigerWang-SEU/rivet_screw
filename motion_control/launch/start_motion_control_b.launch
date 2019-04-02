@@ -27,12 +27,12 @@
   <node name="profile_merger_b" pkg="object_localizer" type="profile_merger_b" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "rivet_localizer_b" which provides the service "start_rivet_localizer" -->
-  <node name="rivet_localizer_b" pkg="object_localizer" type="rivet_localizer_b" respawn="true" output="screen">
+  <!-- start the node "rivet_localizer_c" which provides the service "start_rivet_localizer" -->
+  <node name="rivet_localizer_c" pkg="object_localizer" type="rivet_localizer_c" respawn="true" output="screen">
   </node>
 
   <!-- start the node "point_rivet_b" which provides the service "start_point_rivet" -->
-  <node name="point_rivet_b" pkg="motion_control" type="point_rivet_b" respawn="true" output="screen">
+  <node name="point_rivet_c" pkg="motion_control" type="point_rivet_c" respawn="true" output="screen">
     <param name="XDK" type="int" value="-1"/>
     <param name="ip_address" type="str" value="192.168.2.183"/>
   </node>
