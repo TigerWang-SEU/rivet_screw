@@ -60,6 +60,9 @@ target_link_libraries(control_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(control_node_b src/control_node_b.cpp)
 target_link_libraries(control_node_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+add_executable(control_node_test src/control_node_test.cpp)
+target_link_libraries(control_node_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(move_camera src/move_camera.cpp)
 target_link_libraries(move_camera ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
