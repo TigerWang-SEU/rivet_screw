@@ -67,26 +67,33 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     target_pose2.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
     // just do one way of scanning
     waypoints.push_back ( target_pose2 );
+    waypoints.push_back ( target_pose1 );
 
-    // geometry_msgs::Pose target_pose3 = target_pose2;
-    // target_pose3.position.x = end_point [ 0 ];
-    // target_pose3.position.y = end_point [ 1 ];
-    // target_pose3.position.z = end_point [ 2 ];
-    // rollt = rotation_deg * M_PI / 180.0;
-    // pitcht = 0;
-    // yawt = 0;
-    // target_pose3.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-    // waypoints.push_back ( target_pose3 );
-    //
-    // geometry_msgs::Pose target_pose4 = target_pose1;
-    // target_pose4.position.x = start_point [ 0 ];
-    // target_pose4.position.y = start_point [ 1 ];
-    // target_pose4.position.z = start_point [ 2 ];
-    // rollt = rotation_deg * M_PI / 180.0;
-    // pitcht = 0;
-    // yawt = 0;
-    // target_pose4.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-    // waypoints.push_back ( target_pose4 );
+    target_pose1.position.x = target_pose1.position.x + 0.025;
+    waypoints.push_back ( target_pose1 );
+
+    target_pose2.position.x = target_pose2.position.x + 0.025;
+    waypoints.push_back ( target_pose2 );
+
+    target_pose2.position.x = target_pose2.position.x + 0.025;
+    waypoints.push_back ( target_pose2 );
+
+    target_pose1.position.x = target_pose1.position.x + 0.025;
+    waypoints.push_back ( target_pose1 );
+
+    target_pose1.position.x = target_pose1.position.x + 0.025;
+    waypoints.push_back ( target_pose1 );
+
+    target_pose2.position.x = target_pose2.position.x + 0.025;
+    waypoints.push_back ( target_pose2 );
+
+    target_pose2.position.x = target_pose2.position.x + 0.025;
+    waypoints.push_back ( target_pose2 );
+
+    target_pose1.position.x = target_pose1.position.x + 0.025;
+    waypoints.push_back ( target_pose1 );
+
+    waypoints.push_back ( target_pose2 );
 
     moveit_msgs::RobotTrajectory trajectory;
     const double jump_threshold = 0.0;
@@ -139,10 +146,10 @@ public:
     this->rotation_deg = rotation_deg;
     this->x_s = x_s;
     this->y_s = y_s;
-    this->z_s = z_s;
+    this->z_s = 1.455;
     this->x_e = x_e;
     this->y_e = y_e;
-    this->z_e = z_e;
+    this->z_e = 1.53;
   }
 
 };
