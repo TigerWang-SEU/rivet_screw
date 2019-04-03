@@ -24,7 +24,7 @@
   </node>
 
   <!-- start the node "profile_merger" which provides the service "start_profile_merger" and "stop_profile_merger" -->
-  <node name="profile_merger_b" pkg="object_localizer" type="profile_merger_b" respawn="true" output="screen">
+  <node name="profile_merger_c" pkg="object_localizer" type="profile_merger_c" respawn="true" output="screen">
   </node>
 
   <!-- start the node "rivet_localizer_c" which provides the service "start_rivet_localizer" -->
