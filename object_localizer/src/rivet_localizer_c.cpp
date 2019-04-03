@@ -326,7 +326,7 @@ void find_new_rivet_center ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	cloud_rivet->width = cloud_rivet_counter;
   cloud_rivet->height = 1;
   cloud_rivet->header.frame_id = reference_frame;
-	filterOutliner ( cloud_rivet );
+	// filterOutliner ( cloud_rivet );
 
 	// step 3, calculate the new central point
 	double x_sum = 0;
@@ -528,7 +528,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	// step 1, filter, downsampling, and scaling the input point cloud and change the color of each point
 	PointCloudT::Ptr cloud_filtered	( new PointCloudT );
 	PointCloudT::Ptr segment_cloud ( new PointCloudT );
-  filterOutliner ( cloud_in );
+  // filterOutliner ( cloud_in );
 	downSampling ( cloud_in, cloud_filtered );
 	scale_and_color_point_cloud ( cloud_filtered, segment_cloud );
 
@@ -579,7 +579,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	// step 4, do refined transformation to show the point cloud
 	Eigen::Matrix4f transform_2 ( Eigen::Matrix4f::Identity() );
 	calculate_transform ( planar_cloud, transform_2 );
-	filterOutliner ( planar_cloud );
+	// filterOutliner ( planar_cloud );
 	pcl::transformPointCloud ( *planar_cloud, *planar_cloud, transform_2 );
 
 	// step 5, get the total transformation and transform the whole profile scan
