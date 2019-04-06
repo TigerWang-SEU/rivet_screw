@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ros_ws
 The ros workspace repository, my work space for ros Kinetic.
 
@@ -15,6 +14,3 @@ The ros workspace repository, my work space for ros Kinetic.
     - Phasespace
   - Robot
     - Ur_modern_driver
-=======
-# platform-ros
->>>>>>> da7e3f029b552f559460de5375dcdb48cda0d0e1
