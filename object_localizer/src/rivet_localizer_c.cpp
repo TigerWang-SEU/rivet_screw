@@ -426,7 +426,7 @@ void calculate_Orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	// step 4, transform the central point and in point back the world frame
 	rivet_point_new_final = transform_total_inverse * rivet_point_new;
 	Eigen::Vector4f rivet_point_in;
-	rivet_point_in << -0.006, rivet_point_new ( 1 ), rivet_point_new ( 2 ), 1.0;
+	rivet_point_in << -0.0095, rivet_point_new ( 1 ), rivet_point_new ( 2 ), 1.0;
 	rivet_point_in_final = transform_total_inverse * rivet_point_in;
 }
 
