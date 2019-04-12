@@ -41,6 +41,7 @@ float scale_factor = 1.0;
 float rivet_height = 0.008; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
+float in_distance = 0.010;
 
 // define the union-find data structure
 class UF
@@ -114,37 +115,49 @@ public:
   }
 };
 
+PointCloudT::Ptr scene_cloud_total	( new PointCloudT );
+Eigen::Matrix4f transform_inverse ( Eigen::Matrix4f::Identity() );
+
 // show the point cloud
 void Visualize ( PointCloudT::Ptr cloud_in_transformed, PointCloudT::Ptr planar_cloud, PointCloudT::Ptr cloud_rivet )
 {
-	pcl::visualization::PCLVisualizer viewer ( "Point Cloud Viewer" );
-	int v1 ( 0 );
-	viewer.createViewPort ( 0.0, 0.0, 1.0, 1.0, v1 );
+	// pcl::visualization::PCLVisualizer viewer ( "Point Cloud Viewer" );
+	// int v1 ( 0 );
+	// viewer.createViewPort ( 0.0, 0.0, 1.0, 1.0, v1 );
+	//
+	// // add the point cloud to the viewer, can be updated by [ updatePointCloud () ]
+	// pcl::visualization::PointCloudColorHandlerRGBField< PointT > cloud_color_i ( cloud_in_transformed );
+	// viewer.addPointCloud ( cloud_in_transformed, cloud_color_i, "scene_cloud", v1 );
+	// viewer.setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "scene_cloud" );
+	// pcl::visualization::PointCloudColorHandlerRGBField< PointT > cloud_color_i_1 ( planar_cloud );
+	// viewer.addPointCloud ( planar_cloud, cloud_color_i_1, "planar_cloud", v1 );
+	// viewer.setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "planar_cloud" );
+	// pcl::visualization::PointCloudColorHandlerRGBField< PointT > cloud_color_i_2 ( cloud_rivet );
+	// viewer.addPointCloud ( cloud_rivet, cloud_color_i_2, "cloud_rivet", v1 );
+	// viewer.setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cloud_rivet" );
+	//
+	// // Set background color
+	// viewer.setBackgroundColor ( 0.0, 0.0, 0.0, v1 );
+	// viewer.addCoordinateSystem ( 0.1 );
+	//
+  // // Visualiser window size
+  // viewer.setSize ( 1280, 1024 );
+	//
+	// // Display the viewer and wait for interactive events until the user closes the window.
+	// while ( !viewer.wasStopped () )
+  // {
+  //   viewer.spinOnce ();
+	// 	boost::this_thread::sleep ( boost::posix_time::microseconds ( 1000 ) );
+	// }
 
-	// add the point cloud to the viewer, can be updated by [ updatePointCloud () ]
-	pcl::visualization::PointCloudColorHandlerRGBField< PointT > cloud_color_i ( cloud_in_transformed );
-	viewer.addPointCloud ( cloud_in_transformed, cloud_color_i, "scene_cloud", v1 );
-	viewer.setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "scene_cloud" );
-	pcl::visualization::PointCloudColorHandlerRGBField< PointT > cloud_color_i_1 ( planar_cloud );
-	viewer.addPointCloud ( planar_cloud, cloud_color_i_1, "planar_cloud", v1 );
-	viewer.setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "planar_cloud" );
-	pcl::visualization::PointCloudColorHandlerRGBField< PointT > cloud_color_i_2 ( cloud_rivet );
-	viewer.addPointCloud ( cloud_rivet, cloud_color_i_2, "cloud_rivet", v1 );
-	viewer.setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cloud_rivet" );
-
-	// Set background color
-	viewer.setBackgroundColor ( 0.0, 0.0, 0.0, v1 );
-	viewer.addCoordinateSystem ( 0.1 );
-
-  // Visualiser window size
-  viewer.setSize ( 1280, 1024 );
-
-	// Display the viewer and wait for interactive events until the user closes the window.
-	while ( !viewer.wasStopped () )
-  {
-    viewer.spinOnce ();
-		boost::this_thread::sleep ( boost::posix_time::microseconds ( 1000 ) );
-	}
+	*scene_cloud_total += *cloud_in_transformed;
+	*scene_cloud_total += *planar_cloud;
+	*scene_cloud_total += *cloud_rivet;
+	pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, transform_inverse );
+	scene_cloud_total->header.frame_id = reference_frame;
+	scene_cloud_total->width = cloud_in_transformed->size() + planar_cloud->size() + cloud_rivet->size();
+	scene_cloud_total->height = 1;
+	std::cout << "scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
 }
 
 // downsampling an input point cloud
@@ -404,7 +417,7 @@ void calculate_Orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 					     0, cos(theta_x), -sin(theta_x), 0,
 					     0, sin(theta_x), cos(theta_x), 0,
 						   0,  0,  0, 1;
-	theta_x = -15.0/180.0*3.14159265359;
+	theta_x = 0.0/180.0*3.14159265359;
   r_x_15     << 1,   0,  0, 0,
 					     0, cos(theta_x), -sin(theta_x), 0,
 					     0, sin(theta_x), cos(theta_x), 0,
@@ -419,6 +432,7 @@ void calculate_Orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	Eigen::Vector4f rivet_point_new;
 	Eigen::Matrix4f transform_1_inverse ( Eigen::Matrix4f::Identity() );
 	getInverseMatrix ( transform_1, transform_1_inverse );
+	transform_inverse = transform_1_inverse;
 	pcl::transformPointCloud ( *cloud_rivet_cycle, *cloud_rivet_cycle, transform_1_inverse );
 	pcl::transformPointCloud ( *cloud_rivet_cycle, *cloud_rivet_cycle, transform_total );
 	find_new_rivet_center ( cloud_in, cloud_rivet_cycle, transform_total, transform_1, rivet_point_new );
@@ -426,7 +440,9 @@ void calculate_Orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	// step 4, transform the central point and in point back the world frame
 	rivet_point_new_final = transform_total_inverse * rivet_point_new;
 	Eigen::Vector4f rivet_point_in;
-	rivet_point_in << -0.0095, rivet_point_new ( 1 ), rivet_point_new ( 2 ), 1.0;
+	//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+	rivet_point_in << -in_distance, rivet_point_new ( 1 ), rivet_point_new ( 2 ), 1.0;
+	//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	rivet_point_in_final = transform_total_inverse * rivet_point_in;
 }
 
@@ -717,7 +733,9 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 				double y_avg = y_sum / rivet_point_counter;
 				double z_avg = z_sum / rivet_point_counter;
 				double real_radius = std::sqrt ( std::pow ( ( y_max - y_avg ) , 2 ) + std::pow ( ( z_max - z_avg ) , 2 ) ) * 2.0;
-				if ( real_radius > 0.003 )
+				double real_radius_2 = std::sqrt ( std::pow ( ( y_max - y_avg ) , 2 ) ) * 2.0;
+				double real_radius_3 = std::sqrt ( std::pow ( ( z_max - z_avg ) , 2 ) ) * 2.0;
+				if ( real_radius > 0.003 && real_radius_2 > 0.003 && real_radius_3 > 0.003 )
 				{
 					Eigen::Vector4f rivet_point;
 					rivet_point << (x_avg + 0.01), y_avg, z_avg, 1.0;
@@ -822,6 +840,22 @@ public:
     }
     std::cout << "Loaded " << scene_cloud_->width * scene_cloud_->height << " data points from " << SceneFilePath << std::endl;
     find_rivet ( scene_cloud_ );
+
+
+		if ( scene_cloud_total->width * scene_cloud_total->height > 0  )
+		{
+			int counter = 0;
+			while ( counter < 30 )
+			{
+	      scene_cloud_total->header.frame_id = reference_frame;
+				pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
+		    cloud_pub_.publish ( scene_cloud_total );
+				std::cout << "publishing " << scene_cloud_total->width * scene_cloud_total->height << " data points." << std::endl;
+				ros::Duration ( 0.01 ) .sleep ();
+				counter ++;
+			}
+		}
+
   }
 
 	bool start_rivet_localizer ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
@@ -833,6 +867,10 @@ public:
   RivetLocalizer () : scene_cloud_ ( new pcl::PointCloud< PointT > )
 	{
 		start_rivet_localizer_ = nh_.advertiseService ( "start_rivet_localizer", &RivetLocalizer::start_rivet_localizer, this );
+
+		std::string cloud_out_name = "/profile_merger/points";
+    cloud_pub_ = nh_.advertise < PointCloudT > ( cloud_out_name, 30 );
+    ROS_INFO_STREAM ( "Publishing point cloud message on topic " << cloud_out_name );
 	}
 
   ~RivetLocalizer () { }
@@ -841,6 +879,7 @@ private:
   ros::NodeHandle nh_;
   pcl::PointCloud<PointT>::Ptr scene_cloud_;
 	ros::ServiceServer start_rivet_localizer_;
+	ros::Publisher cloud_pub_;
 };
 
 void CfgFileReader ()
