@@ -41,7 +41,8 @@ float scale_factor = 1.0;
 float rivet_height = 0.008; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
-float in_distance = 0.010;
+float out_distance = 0.012;
+float in_distance = 0.0085;
 
 // define the union-find data structure
 class UF
@@ -356,7 +357,7 @@ void find_new_rivet_center ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	double x_avg = x_sum / point_counter;
 	double y_avg = y_sum / point_counter;
 	double z_avg = z_sum / point_counter;
-	rivet_point_new << x_avg + 0.006, y_avg, z_avg, 1.0;
+	rivet_point_new << x_avg + out_distance, y_avg, z_avg, 1.0;
 
 	// step 4, save the point cloud of the rivet for visualization
 	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
@@ -485,13 +486,13 @@ void getRivetOrientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_in_
 	PointCloudT::Ptr cloud_rivet_cycle ( new PointCloudT );
 	PointT searchPoint_new_1;
 	searchPoint_new_1.x = 0.0;
-	searchPoint_new_1.y = searchPoint.y - 0.003;
-	searchPoint_new_1.z = searchPoint.z;
+	searchPoint_new_1.y = searchPoint.y;
+	searchPoint_new_1.z = searchPoint.z - 0.003;
 	find_near_point ( cloud_in_transformed, cloud_rivet_cycle, searchPoint_new_1 );
 	PointT searchPoint_new_2;
 	searchPoint_new_2.x = 0.0;
-	searchPoint_new_2.y = searchPoint.y + 0.003;
-	searchPoint_new_2.z = searchPoint.z;
+	searchPoint_new_2.y = searchPoint.y;
+	searchPoint_new_2.z = searchPoint.z + 0.003;
 	find_near_point ( cloud_in_transformed, cloud_rivet_cycle, searchPoint_new_2 );
 
 	//step 2, fit a plane with cloud_rivet_cycle
@@ -868,7 +869,7 @@ public:
 	{
 		start_rivet_localizer_ = nh_.advertiseService ( "start_rivet_localizer", &RivetLocalizer::start_rivet_localizer, this );
 
-		std::string cloud_out_name = "/profile_merger/points";
+		std::string cloud_out_name = "/rivet_localizer/points";
     cloud_pub_ = nh_.advertise < PointCloudT > ( cloud_out_name, 30 );
     ROS_INFO_STREAM ( "Publishing point cloud message on topic " << cloud_out_name );
 	}
