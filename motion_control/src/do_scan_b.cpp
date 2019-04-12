@@ -146,10 +146,12 @@ public:
     this->rotation_deg = rotation_deg;
     this->x_s = x_s;
     this->y_s = y_s;
-    this->z_s = 1.455;
+    // this->z_s = 1.455;
+    this->z_s = 1.555;
     this->x_e = x_e;
     this->y_e = y_e;
-    this->z_e = 1.53;
+    this->z_e = 1.63; 
+    // this->z_e = 1.53;
   }
 
 };
