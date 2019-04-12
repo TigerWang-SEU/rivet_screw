@@ -232,10 +232,11 @@ void do_point_rivet ()
         {
           // get the new rivet
           new_nut_.call ( msg );
-          ros::Duration ( 0.5 ) .sleep ();
+          ros::Duration ( 2.0 ) .sleep ();
           stop_.call ( msg );
           ros::Duration ( 0.5 ) .sleep ();
           new_nut_.call ( msg );
+          ros::Duration ( 2.0 ) .sleep ();
 
           // rivet_tool_ctrl_ptr -> new_rivet ();
           Target target = target_queue.front ();
@@ -246,7 +247,7 @@ void do_point_rivet ()
           geometry_msgs::Pose target_pose2;
           set_target_pose ( target, target_pose2 );
           move_trajectory ( target_pose1, target_pose2, move_group );
-          ros::Duration ( 3 ) .sleep ();
+          ros::Duration ( 5 ) .sleep ();
           target_pose1 = target_pose2;
 
           // move back the rivet_tool
