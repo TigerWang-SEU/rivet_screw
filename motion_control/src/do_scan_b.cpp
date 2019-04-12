@@ -93,6 +93,12 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     target_pose1.position.x = target_pose1.position.x + 0.025;
     waypoints.push_back ( target_pose1 );
 
+    // target_pose1.position.x = target_pose1.position.x + 0.025;
+    // waypoints.push_back ( target_pose1 );
+    //
+    // target_pose2.position.x = target_pose2.position.x + 0.025;
+    // waypoints.push_back ( target_pose2 );
+
     waypoints.push_back ( target_pose2 );
 
     moveit_msgs::RobotTrajectory trajectory;
@@ -150,7 +156,7 @@ public:
     this->z_s = 1.555;
     this->x_e = x_e;
     this->y_e = y_e;
-    this->z_e = 1.63; 
+    this->z_e = 1.63;
     // this->z_e = 1.53;
   }
 
