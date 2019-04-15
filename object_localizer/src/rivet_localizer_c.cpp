@@ -39,11 +39,11 @@ int filter_mean_k = 40;
 float filter_stddev = 1.0;
 float scale_factor = 1.0;
 float rivet_height = 0.008; // unit meter
-float rivet_height_2 = 0.00844; // unit meter
+float rivet_height_2 = 0.0084; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
 float out_distance = 0.012;
-float in_distance = 0.0085;
+float in_distance = 0.0065;
 
 // define the union-find data structure
 class UF
@@ -329,7 +329,7 @@ void find_new_rivet_center ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 		float x_compare = std::abs ( std::abs ( x ) - rivet_height_2 );
 		float y = temp_point.y;
 		float z = temp_point.z;
-		if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0003 )
+		if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0005 )
 		{
 	    PointT new_point;
 	    new_point.x = x;
