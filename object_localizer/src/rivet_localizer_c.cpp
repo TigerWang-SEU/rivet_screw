@@ -39,6 +39,7 @@ int filter_mean_k = 40;
 float filter_stddev = 1.0;
 float scale_factor = 1.0;
 float rivet_height = 0.008; // unit meter
+float rivet_height_2 = 0.00843; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
 float out_distance = 0.012;
@@ -323,7 +324,7 @@ void find_new_rivet_center ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	for ( PointT temp_point: cloud_in_transformed->points )
 	{
 		float x = temp_point.x;
-		float x_compare = std::abs ( std::abs ( x ) - rivet_height );
+		float x_compare = std::abs ( std::abs ( x ) - rivet_height_2 );
 		float y = temp_point.y;
 		float z = temp_point.z;
 		if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0005 && x > 0 )
@@ -803,6 +804,11 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 
 		Eigen::Vector4f rivet_point_new_final, rivet_point_in_final;
 		getRivetOrientation ( cloud_in, cloud_in_transformed, searchPoint_new, transform_total, roll, pitch, yaw, rivet_point, rivet_point_new_final,  rivet_point_in_final);
+
+		if ( std::isnan( rivet_point_new_final ( 0 ) ) )
+		{
+			continue;
+		}
 
 		std::cout << "*** [" << rivet_counter << "] : " << rivet_point_new_final.head< 3 >().transpose() << std::endl;
 
