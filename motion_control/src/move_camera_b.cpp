@@ -35,7 +35,7 @@ void move_camera ()
       if ( motion_stage_idx  == 0 )
       {
         // set pose scan_end in radians
-        joint_group_positions [ 3 ] = 0;
+        joint_group_positions [ 3 ] = -1.8034;
       } else if ( motion_stage_idx  == 1 )
       {
         // set pose scan_start in radians
