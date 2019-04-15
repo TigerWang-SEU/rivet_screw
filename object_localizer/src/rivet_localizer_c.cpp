@@ -39,7 +39,7 @@ int filter_mean_k = 40;
 float filter_stddev = 1.0;
 float scale_factor = 1.0;
 float rivet_height = 0.008; // unit meter
-float rivet_height_2 = 0.00843; // unit meter
+float rivet_height_2 = 0.00844; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
 float out_distance = 0.012;
@@ -319,29 +319,51 @@ void find_new_rivet_center ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
 	uint8_t r = 255, g = 0, b = 0;
 	uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
-	PointCloudT::Ptr cloud_rivet ( new PointCloudT );
-	int cloud_rivet_counter = 0;
+	PointCloudT::Ptr cloud_rivet_p ( new PointCloudT );
+	int cloud_rivet_p_counter = 0;
+	PointCloudT::Ptr cloud_rivet_m ( new PointCloudT );
+	int cloud_rivet_m_counter = 0;
 	for ( PointT temp_point: cloud_in_transformed->points )
 	{
 		float x = temp_point.x;
 		float x_compare = std::abs ( std::abs ( x ) - rivet_height_2 );
 		float y = temp_point.y;
 		float z = temp_point.z;
-		if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0005 && x > 0 )
+		if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0003 )
 		{
 	    PointT new_point;
 	    new_point.x = x;
 	    new_point.y = y;
 	    new_point.z = z;
 	    new_point.rgb = *reinterpret_cast<float*> ( &rgb );
-	    cloud_rivet->points.push_back ( new_point );
-	    cloud_rivet_counter ++;
+			if ( x > 0 )
+			{
+				cloud_rivet_p->points.push_back ( new_point );
+		    cloud_rivet_p_counter ++;
+			}
+			else
+			{
+				cloud_rivet_m->points.push_back ( new_point );
+		    cloud_rivet_m_counter ++;
+			}
 		}
 	}
-	cloud_rivet->width = cloud_rivet_counter;
-  cloud_rivet->height = 1;
-  cloud_rivet->header.frame_id = reference_frame;
-	// filterOutliner ( cloud_rivet );
+	cloud_rivet_p->width = cloud_rivet_p_counter;
+  cloud_rivet_p->height = 1;
+  cloud_rivet_p->header.frame_id = reference_frame;
+	cloud_rivet_m->width = cloud_rivet_m_counter;
+  cloud_rivet_m->height = 1;
+  cloud_rivet_m->header.frame_id = reference_frame;
+
+	PointCloudT::Ptr cloud_rivet;
+	if ( cloud_rivet_p_counter > cloud_rivet_m_counter )
+	{
+		cloud_rivet = cloud_rivet_p;
+	}
+	else
+	{
+		cloud_rivet = cloud_rivet_m;
+	}
 
 	// step 3, calculate the new central point
 	double x_sum = 0;
@@ -848,19 +870,18 @@ public:
     std::cout << "Loaded " << scene_cloud_->width * scene_cloud_->height << " data points from " << SceneFilePath << std::endl;
     find_rivet ( scene_cloud_ );
 
-
 		if ( scene_cloud_total->width * scene_cloud_total->height > 0  )
 		{
 			int counter = 0;
-			while ( counter < 30 )
+			while ( counter < 15 )
 			{
 	      scene_cloud_total->header.frame_id = reference_frame;
 				pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
 		    cloud_pub_.publish ( scene_cloud_total );
-				std::cout << "publishing " << scene_cloud_total->width * scene_cloud_total->height << " data points." << std::endl;
 				ros::Duration ( 0.01 ) .sleep ();
 				counter ++;
 			}
+			std::cout << "***On Topic [/rivet_localizer/points], published [" << scene_cloud_total->width * scene_cloud_total->height << "] data points***" << std::endl;
 		}
 
   }
