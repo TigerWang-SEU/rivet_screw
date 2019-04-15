@@ -156,7 +156,7 @@ public:
     this->z_s = 1.555;
     this->x_e = x_e;
     this->y_e = y_e;
-    this->z_e = 1.63;
+    this->z_e = 1.633;
     // this->z_e = 1.53;
   }
 
