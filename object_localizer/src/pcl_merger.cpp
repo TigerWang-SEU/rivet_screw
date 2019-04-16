@@ -65,10 +65,8 @@ public:
 		  }
 		}
 
-		// std::cout << "tf time difference is " << ros::Time::now() - sample_time << std::endl;
 		tf::Vector3 point(0, 0, 0);
 		tf::Vector3 point_n(0, 0, 0);
-		// std::cout << "input point cloud has " << cloud->size() << " points" << std::endl;
 		for ( PointT temp_point : cloud->points )
 		{
 			point.setX( temp_point.x );
@@ -139,10 +137,6 @@ public:
   bool end_pcl_merge ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
     is_merge_ = false;
-    // clear the scene_cloud_total point cloud and publish the empty one
-    // std::string pcl_file_path = ros::package::getPath ( "object_localizer" )+ "/data/pcl_out_0.ply";
-    // std::cout << "Saving point cloud to file: \n\t" << pcl_file_path << std::endl;
-    // writer.write ( pcl_file_path, *scene_cloud_total );
     return true;
   }
 
@@ -151,7 +145,7 @@ public:
     is_merge_ = false;
     start_pcl_merge_ = nh_.advertiseService ( "start_pcl_merge", &PointCloudMerger::start_pcl_merge, this );
     end_pcl_merge_ = nh_.advertiseService ( "stop_pcl_merge", &PointCloudMerger::end_pcl_merge, this );
-    ros::Duration ( 1 ).sleep ();
+    ros::Duration ( 1.0 ).sleep ();
 
     std::string cloud_topic_in_ = "/camera/depth_registered/points";
     cloud_sub_ = nh_.subscribe ( cloud_topic_in_, 200, &PointCloudMerger::cloud_cb, this );
@@ -173,15 +167,14 @@ private:
   ros::ServiceServer start_pcl_merge_, end_pcl_merge_;
   ros::Subscriber cloud_sub_;
   ros::Publisher cloud_pub_;
-  // pcl::PLYWriter writer;
 };
 
 int main ( int argc, char** argv )
 {
 	ros::init ( argc, argv, "pcl_merger" );
 	ros::AsyncSpinner spinner(4);
-  spinner.start();
+  spinner.start ();
   PointCloudMerger pcm;
-  ros::waitForShutdown();
+  ros::waitForShutdown ();
   return 0;
 }
