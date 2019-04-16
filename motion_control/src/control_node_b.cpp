@@ -143,8 +143,8 @@ public:
     std::cout << "1, set the robot pose to scan_start" << std::endl;
     if ( set_pose ( "scan_start" ) )
     {
-      // step 2, start services pcl_merger, rough_localizer, and box_segmenter
-      std::cout << "2, start services pcl_merger, rough_localizer, box_segmenter" << std::endl;
+      // step 2, start services rough_localizer, and box_segmenter
+      std::cout << "2, start services rough_localizer, box_segmenter" << std::endl;
       if ( start_rough_localizer_.call ( msg ) && start_box_segmenter_.call ( msg ) )
       {
         // step 3, start service move_camera
@@ -190,8 +190,6 @@ public:
   }
 
 };
-
-
 
 int main ( int argc, char** argv )
 {
