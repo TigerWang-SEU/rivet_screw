@@ -1,0 +1,8 @@
+item {
+  id: 1
+  name: 'Collar plate'
+}
+item {
+  id: 2
+  name: 'Bracket'
+}
