@@ -1,0 +1,209 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="tool">
+
+  <!-- change the value of rivet_tool_distance_offset to adjust the distance to the target-->
+  <xacro:property name="rivet_tool_distance_offset" value="-0.0020" />
+  <!-- change the value of rivet_tool_horizontal_adjust to adjust the tool horizontally, plus for left and minus for right -->
+  <xacro:property name="rivet_tool_horizontal_adjust" value="0.0017" />
+  <!-- change the value of rivet_tool_vertical_adjust to adjust the tool vertically, plus for up and minus for down -->
+  <xacro:property name="rivet_tool_vertical_adjust" value="0.0004" />
+
+  <xacro:include filename="$(find microepsilon_scancontrol)/description/urdf/scanCONTROL_2900-50_macro.urdf.xacro" />
+  <xacro:property name="rivet_tool_part_1_length" value="0.05078" />
+  <xacro:property name="rivet_tool_part_1_radius" value="0.015" />
+  <xacro:property name="rivet_tool_part_2_height" value="0.012" />
+  <xacro:property name="rivet_tool_part_2_length" value="0.066" />
+  <xacro:property name="rivet_tool_part_2_width" value="0.03" />
+  <xacro:property name="rivet_tool_part_3_length" value="0.06374" />
+  <xacro:property name="rivet_tool_part_3_radius" value="0.0075" />
+
+  <xacro:property name="rivet_tool_angle" value="154.6" />
+
+  <link name="tool_base">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="200" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="lightgray" />
+      <origin xyz="0.0 0.0 0.03725" />
+      <geometry>
+        <box size="0.070 0.0655 0.0705" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.03725" />
+      <geometry>
+        <box size="0.070 0.0655 0.0705" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="rivet_tool_part_1">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="200" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="black" />
+      <origin xyz="0.0 0.0 ${rivet_tool_part_1_length/2}" />
+      <geometry>
+        <cylinder radius="${rivet_tool_part_1_radius}" length="${rivet_tool_part_1_length}" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 ${rivet_tool_part_1_length/2}" />
+      <geometry>
+        <cylinder radius="${rivet_tool_part_1_radius}" length="${rivet_tool_part_1_length}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="tool_base_rivet_tool_part_1_joint" type="fixed">
+    <parent link="tool_base"/>
+    <child link="rivet_tool_part_1"/>
+    <!-- <origin xyz="0 -0.03275 ${0.03787 + rivet_tool_z_adjust}" rpy="${radians(90)} 0 0" /> -->
+    <origin xyz="${0 + rivet_tool_horizontal_adjust} -0.03275 ${0.03787 + rivet_tool_vertical_adjust}" rpy="${radians(90)} ${radians(rivet_tool_angle)} 0" />
+  </joint>
+
+  <link name="rivet_tool_part_2">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="200" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="black" />
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="${rivet_tool_part_2_length} ${rivet_tool_part_2_width} ${rivet_tool_part_2_height}" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="${rivet_tool_part_2_length} ${rivet_tool_part_2_width} ${rivet_tool_part_2_height}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rivet_tool_part_1_rivet_tool_part_2_joint" type="fixed">
+    <parent link="rivet_tool_part_1"/>
+    <child link="rivet_tool_part_2"/>
+    <origin xyz="0 ${rivet_tool_part_2_length/2} ${rivet_tool_part_1_length + rivet_tool_part_2_height/2}" rpy="0 0 ${radians(-90)}" />
+  </joint>
+
+  <link name="rivet_tool_part_3">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="200" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="black" />
+      <origin xyz="0.0 0.0 ${rivet_tool_part_3_length/2}" />
+      <geometry>
+        <cylinder radius="${rivet_tool_part_3_radius}" length="${rivet_tool_part_3_length}" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 ${rivet_tool_part_3_length/2}" />
+      <geometry>
+        <cylinder radius="${rivet_tool_part_3_radius}" length="${rivet_tool_part_3_length}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rivet_tool_part_2_rivet_tool_part_3_joint" type="fixed">
+    <parent link="rivet_tool_part_2"/>
+    <child link="rivet_tool_part_3"/>
+    <origin xyz="${-rivet_tool_part_2_length/2} 0 ${rivet_tool_part_2_height/2}" rpy="${radians(0)} 0 0" />
+  </joint>
+
+  <link name="rivet_tool" />
+
+  <joint name="rivet_tool_part_3_rivet_tool_joint" type="fixed">
+    <parent link="rivet_tool_part_3"/>
+    <child link="rivet_tool"/>
+    <origin xyz="0 0 ${rivet_tool_part_3_length + rivet_tool_distance_offset}" rpy="${radians(-90)} ${radians(90)} ${radians(90+rivet_tool_angle)}" />
+  </joint>
+
+  <!-- link camera_plate and link to tool_base -->
+  <link name="camera_plate">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="20" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="lightgray" />
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="0.003 0.126 0.132" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="0.003 0.126 0.132" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="tool_base_camera_plate_joint" type="fixed">
+    <parent link="tool_base"/>
+    <child link="camera_plate"/>
+    <origin xyz="-0.0392 0.0298 0.069" rpy="0 0 0" />
+  </joint>
+
+  <!-- scanCONTROL_2900-50 sensor and is connected to tool_base frame -->
+  <xacro:scanCONTROL_2900-50 prefix="scanCONTROL_2900-50_" parent="tool_base">
+    <origin xyz="-0.060 0.09 0.078" rpy="${radians(0)} ${radians(0)} ${radians(180)}" />
+  </xacro:scanCONTROL_2900-50>
+
+  <!-- camera_support link is connected to scanCONTROL_2900-50_scanner_link -->
+  <link name="camera_support">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" />
+      <mass value="20" />
+      <inertia  ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <material name="lightgray" />
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <cylinder radius="0.003" length="0.0415" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <cylinder radius="0.003" length="0.0415" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="scanner_link_camera_support_joint" type="fixed">
+    <parent link="scanCONTROL_2900-50_scanner_link"/>
+    <child link="camera_support"/>
+    <origin xyz="0 0.09 0.045" rpy="0.0 ${radians(90)} 0.0" />
+  </joint>
+
+  <link name="camera_support_2" />
+
+  <joint name="camera_support_2_camera_support_joint" type="fixed">
+    <parent link="camera_support"/>
+    <child link="camera_support_2"/>
+    <origin xyz="0 0.0 0.0208" rpy="0.0 ${radians(0)} ${radians(180)}" />
+  </joint>
+
+  <!-- connect camera to link camera_support_2 -->
+  <xacro:include filename="$(find realsense2_camera)/urdf/_r430.urdf.xacro"/>
+
+  <sensor_r430 parent="camera_support_2">
+    <origin xyz="-0.0225 0 0" rpy="0 0 ${radians(90)}"/>
+  </sensor_r430>
+
+</robot>
