@@ -83,3 +83,6 @@ target_link_libraries(rivet_localizer_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(rivet_localizer_c src/rivet_localizer_c.cpp)
 target_link_libraries(rivet_localizer_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+add_executable(rivet_localizer_c_15 src/rivet_localizer_c_15.cpp)
+target_link_libraries(rivet_localizer_c_15 ${catkin_LIBRARIES} ${Boost_LIBRARIES})
