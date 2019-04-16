@@ -65,28 +65,10 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     pitcht = 0;
     yawt = 0;
     target_pose2.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-    // just do one way of scanning
+    // do two way of scanning
     waypoints.push_back ( target_pose2 );
-
-    // geometry_msgs::Pose target_pose3 = target_pose2;
-    // target_pose3.position.x = end_point [ 0 ];
-    // target_pose3.position.y = end_point [ 1 ];
-    // target_pose3.position.z = end_point [ 2 ];
-    // rollt = rotation_deg * M_PI / 180.0;
-    // pitcht = 0;
-    // yawt = 0;
-    // target_pose3.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-    // waypoints.push_back ( target_pose3 );
-    //
-    // geometry_msgs::Pose target_pose4 = target_pose1;
-    // target_pose4.position.x = start_point [ 0 ];
-    // target_pose4.position.y = start_point [ 1 ];
-    // target_pose4.position.z = start_point [ 2 ];
-    // rollt = rotation_deg * M_PI / 180.0;
-    // pitcht = 0;
-    // yawt = 0;
-    // target_pose4.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-    // waypoints.push_back ( target_pose4 );
+    waypoints.push_back ( target_pose1 );
+    waypoints.push_back ( target_pose2 );
 
     moveit_msgs::RobotTrajectory trajectory;
     const double jump_threshold = 0.0;
@@ -119,10 +101,11 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
       std_srvs::Empty msg;
       start_profile_merger_.call ( msg );
       move_group.execute ( my_plan );
-      ros::Duration ( 3.0 ) .sleep ();
+      // wait for some time to make sure profile merge is over
+      // ros::Duration ( 3.0 ) .sleep ();
+      // stop the profile_merger service.
       stop_profile_merger_.call ( msg );
       std::cout << "write merged profile scan" << std::endl;
-      start_point_cloud_writer_.call ( msg );
     }
   }
 }
@@ -148,14 +131,14 @@ public:
 
 bool scanPlanComp ( ScanPlan i,ScanPlan j )
 {
-  return ( i.y_s < j.y_s );
+  return ( i.z_s < j.z_s );
 }
 
 void CfgFileReader ( std::vector< ScanPlan >& scan_plan_vector )
 {
   ros::NodeHandle nh_p_ ( "~" );
   std::string scanFileName;
-  nh_p_.getParam ( "scan_file", scanFileName );
+  nh_p_.getParam ( "scan_plan_file", scanFileName );
   std::string cfgFileName = ros::package::getPath ( "motion_control" ) + "/config/" + scanFileName;
   std::cout << "***The path of the do_scan configuration file is: [" << cfgFileName << "]" << std::endl;
 
@@ -175,28 +158,42 @@ void CfgFileReader ( std::vector< ScanPlan >& scan_plan_vector )
   input.close();
 }
 
+int read_idx ( )
+{
+  std::string scan_idx_file_name = "scan_idx.cfg";
+  std::string scan_idx_file = ros::package::getPath ( "motion_control" ) + "/config/" + scan_idx_file_name;
+  std::cout << "***The path of the scan_idx file is: [" << scan_idx_file << "]" << std::endl;
+
+  std::ifstream input ( scan_idx_file );
+  std::string line;
+  int scan_idx = 1;
+  if ( std::getline ( input, line ) )
+  {
+    std::istringstream iss ( line );
+    iss >> scan_idx;
+  }
+  input.close();
+
+  return scan_idx;
+}
+
 bool start_do_scan ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
 {
   // read the configuration file
   std::vector< ScanPlan > scan_plan_vector;
   CfgFileReader ( scan_plan_vector );
-  // std::cout << "Choose a scanning plan using the scan_plan_idx:" << std::endl;
-  int scan_plan_idx = 1;
-  ros::NodeHandle nh_p_ ( "~" );
-  nh_p_.getParam ( "scan_idx", scan_plan_idx );
+  // std::cout << "Choose a scanning plan using the scan_idx:" << std::endl;
+  int scan_plan_idx = read_idx ( );
   std::sort ( scan_plan_vector.begin(), scan_plan_vector.end(), scanPlanComp );
   for ( int i = 0; i < scan_plan_vector.size(); i++ )
   {
     ScanPlan scan_plan = scan_plan_vector [ i ];
     std::cout << "*** scan_plan_idx = [" << i << "] : [rotation_deg, x_s, y_s, z_s, x_e, y_e, z_e] = [" << scan_plan.rotation_deg << ", " << scan_plan.x_s << ", " << scan_plan.y_s << ", " << scan_plan.z_s << ", " << scan_plan.x_e << ", " << scan_plan.y_e << ", " << scan_plan.z_e << "]" << std::endl;
   }
-  if ( scan_plan_idx == 1 && scan_plan_vector.size() >= 1 )
+  // check whether there are enough scan plans
+  if ( scan_plan_idx <= scan_plan_vector.size() )
   {
-    ScanPlan scan_plan = scan_plan_vector [ 0 ];
-    do_scan ( scan_plan.rotation_deg, scan_plan.x_s, scan_plan.y_s, scan_plan.z_s, scan_plan.x_e, scan_plan.y_e, scan_plan.z_e );
-  } else if ( scan_plan_idx == 2 && scan_plan_vector.size() >= 2 )
-  {
-    ScanPlan scan_plan = scan_plan_vector [ 1 ];
+    ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx - 1 ];
     do_scan ( scan_plan.rotation_deg, scan_plan.x_s, scan_plan.y_s, scan_plan.z_s, scan_plan.x_e, scan_plan.y_e, scan_plan.z_e );
   }
   return true;
@@ -211,7 +208,6 @@ int main ( int argc, char** argv )
   ros::ServiceServer start_do_scan_;
   start_do_scan_ = nh_.advertiseService ( "start_do_scan", &start_do_scan );
   start_profile_merger_ = nh_.serviceClient < std_srvs::Empty > ( "start_profile_merger" );
-  start_point_cloud_writer_ = nh_.serviceClient < std_srvs::Empty > ( "start_point_cloud_writer" );
   stop_profile_merger_ = nh_.serviceClient < std_srvs::Empty > ( "stop_profile_merger" );
   ros::waitForShutdown ();
   return 0;
