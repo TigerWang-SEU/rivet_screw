@@ -4,7 +4,7 @@
   <node name="move_camera_b" pkg="motion_control" type="move_camera_b" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "rough_localizer_b" which provides the services "start_rough_localizer" and "start_rough_localizer" -->
+  <!-- start the node "rough_localizer_b" which provides the services "start_rough_localizer" and "stop_rough_localizer" -->
   <node name="rough_localizer_b" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
   </node>
 
@@ -12,7 +12,7 @@
   <node name="box_segmenter_b" pkg="object_localizer" type="box_segmenter_b" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "scan_planner_b" which provides the services "start_scan_planner" and "stop_scan_planner" -->
+  <!-- start the node "scan_planner_b" which provides the service "start_scan_planner" -->
   <node name="scan_planner_b" pkg="object_localizer" type="scan_planner_b" respawn="true" output="screen">
     <param name="scan_plan_file" type="str" value="scan_plan.cfg"/>
   </node>
@@ -31,7 +31,7 @@
   <node name="rivet_localizer_c" pkg="object_localizer" type="rivet_localizer_c" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "point_rivet_b" which provides the service "start_point_rivet" -->
+  <!-- start the node "point_rivet_c" which provides the service "start_point_rivet" -->
   <node name="point_rivet_c" pkg="motion_control" type="point_rivet_c" respawn="true" output="screen">
     <param name="XDK" type="int" value="-1"/>
     <param name="ip_address" type="str" value="192.168.2.183"/>
