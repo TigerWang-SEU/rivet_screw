@@ -1,56 +1,48 @@
 <launch>
 
-  <!-- start the neural network node
-  <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
-  </node>
-  -->
-
   <!-- start the node "add_and_remove_aircraft_frame" which provides the services "add_aircraft_frame" and "remove_aircraft_frame" -->
   <node name="add_and_remove_aircraft_frame" pkg="model_loader" type="add_and_remove_aircraft_frame" respawn="true" output="screen">
+  </node>
+
+  <!-- start the node "move_camera" which provides the service "start_move_camera" -->
+  <node name="move_camera" pkg="motion_control" type="move_camera" respawn="true" output="screen">
   </node>
 
   <!-- start the node "pcl_merger" which provides the services "start_pcl_merge" and "stop_pcl_merge" -->
   <node name="pcl_merger" pkg="object_localizer" type="pcl_merger" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "rough_localizer_b" which provides the services "start_rough_localizer" and "start_rough_localizer" -->
-  <node name="rough_localizer" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
+  <!-- start the node "rough_localizer_b" which provides the services "start_rough_localizer" and "stop_rough_localizer" -->
+  <node name="rough_localizer_b" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "box_segmenter" which provides the services "start_box_segmenter" and "stop_box_segmenter" -->
-  <node name="box_segmenter" pkg="object_localizer" type="box_segmenter" respawn="true" output="screen">
+  <!-- start the node "box_segmenter_b" which provides the services "start_box_segmenter" and "stop_box_segmenter" -->
+  <node name="box_segmenter_b" pkg="object_localizer" type="box_segmenter_b" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "scan_planner" which provides the services "start_scan_planner" and "stop_scan_planner" -->
-  <node name="scan_planner" pkg="object_localizer" type="scan_planner" respawn="true" output="screen">
-  </node>
-
-  <!-- start the node "move_camera" which provides the services "start_move_camera" and "stop_move_camera" -->
-  <node name="move_camera" pkg="motion_control" type="move_camera" respawn="true" output="screen">
+  <!-- start the node "scan_planner_b" which provides the service "start_scan_planner" -->
+  <node name="scan_planner_b" pkg="object_localizer" type="scan_planner_b" respawn="true" output="screen">
+    <param name="scan_plan_file" type="str" value="scan_plan.cfg"/>
   </node>
 
   <!-- start the node "do_scan" which provides the service "start_do_scan" -->
   <node name="do_scan" pkg="motion_control" type="do_scan" respawn="true" output="screen">
-      <param name="scan_file" type="str" value="do_scan.cfg"/>
-      <param name="scan_idx" type="int" value="1"/>
+    <param name="scan_plan_file" type="str" value="scan_plan.cfg"/>
+    <param name="scan_idx" type="int" value="1"/>
   </node>
 
   <!-- start the node "profile_merger" which provides the service "start_profile_merger" and "stop_profile_merger" -->
-  <node name="profile_merger" pkg="object_localizer" type="profile_merger" respawn="true" output="screen">
+  <node name="profile_merger_c" pkg="object_localizer" type="profile_merger_c" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "pc_writer" which provides the service "start_point_cloud_writer" -->
-  <node name="pc_writer" pkg="object_localizer" type="pc_writer" respawn="true" output="screen">
+  <!-- start the node "rivet_localizer_c_15" which provides the service "start_rivet_localizer" -->
+  <node name="rivet_localizer_c_15" pkg="object_localizer" type="rivet_localizer_c_15" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "rivet_localizer" which provides the service "start_rivet_localizer" -->
-  <node name="rivet_localizer" pkg="object_localizer" type="rivet_localizer" respawn="true" output="screen">
-  </node>
-
-  <!-- start the node "point_rivet_b" which provides the service "start_point_rivet" -->
-  <node name="point_rivet_b" pkg="motion_control" type="point_rivet_b" respawn="true" output="screen">
-      <param name="XDK" type="int" value="-1"/>
-      <param name="ip_address" type="str" value="192.168.2.183"/>
+  <!-- start the node "point_rivet_c" which provides the service "start_point_rivet" -->
+  <node name="point_rivet_c" pkg="motion_control" type="point_rivet_c" respawn="true" output="screen">
+    <param name="XDK" type="int" value="-1"/>
+    <param name="ip_address" type="str" value="192.168.2.183"/>
   </node>
 
 </launch>
