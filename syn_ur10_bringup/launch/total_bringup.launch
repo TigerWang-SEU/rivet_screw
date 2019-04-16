@@ -16,6 +16,6 @@
   <include file="$(find microepsilon_scancontrol)/launch/scanner.launch"/>
 
   <!-- using new motion control launch file [start_motion_control_b] -->
-  <include file="$(find motion_control)/launch/start_motion_control_b.launch"/>
+  <include file="$(find motion_control)/launch/start_motion_control.launch"/>
 
 </launch>
