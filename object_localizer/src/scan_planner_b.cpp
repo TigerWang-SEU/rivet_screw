@@ -369,7 +369,7 @@ public:
 			int bbox_idx = 0;
       for ( object_localizer_msg::BBox_float bbox : segment_list->BBox_list_float )
       // step 2, filter rivet areas
-      if ( bbox.x1 > -0.30 && bbox.x2 < 0.30 )
+      // if ( bbox.x1 > -0.30 && bbox.x2 < 0.30 )
       {
         std::cout << "Bounding box [" << bbox_idx << "] has [x1, x2, y1, y2]: [" << bbox.x1 << "," << bbox.x2 << "," << bbox.y1 << "," << bbox.y2  << "]" << std::endl;
 
