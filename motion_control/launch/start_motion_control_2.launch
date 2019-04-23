@@ -1,0 +1,15 @@
+<launch>
+
+  <!-- start the node "move_camera" which provides the services "start_move_camera" and "stop_move_camera" -->
+  <node name="move_camera" pkg="motion_control" type="move_camera" respawn="true" output="screen">
+  </node>
+
+  <!-- start the node "pcl_merger" which provides the services "start_pcl_merge" and "stop_pcl_merge" -->
+  <node name="pcl_merger" pkg="object_localizer" type="pcl_merger" respawn="true" output="screen">
+  </node>
+
+  <!-- start the node "avoid_obstacle_planner" which provides the service "start_avoid_obstacle_planner" -->
+  <!-- <node name="avoid_obstacle_planner" pkg="object_localizer" type="avoid_obstacle_planner" respawn="true" output="screen">
+  </node> -->
+
+</launch>
