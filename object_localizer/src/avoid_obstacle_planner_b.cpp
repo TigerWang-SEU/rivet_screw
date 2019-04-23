@@ -511,9 +511,9 @@ public:
 			// z  2.02  (+-0.02);  1.91 (+-0.02);  1.80 (+-0.02)
 			if ( ( x_tmp > (x_2 - 0.04) && x_tmp < (x_1 + 0.10) ) || (  x_tmp > (x_4 - 0.08) && x_tmp < (x_3 + 0.025) ) )
 			{
-				if ( z_tmp > ( z_1 - z_offset )  && z_tmp < ( z_1 + z_offset * 0.5 ) )
+				if ( z_tmp > ( z_1 - z_offset*2.5 )  && z_tmp < ( z_1 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_1 - y_offset * 0.0 ) )
+					if ( y_tmp > ( y_1 - y_offset * ( 0.0 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -526,9 +526,9 @@ public:
 						cloud_cut_counter ++;
 					}
 				}
-				else if ( z_tmp > ( z_2 - z_offset )  && z_tmp < ( z_2 + z_offset * 0.5 ) )
+				else if ( z_tmp > ( z_2 - z_offset*2.5 )  && z_tmp < ( z_2 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_2 - y_offset * 0.8 ) )
+					if ( y_tmp > ( y_2 - y_offset * ( 0.3 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -541,9 +541,9 @@ public:
 						cloud_cut_counter ++;
 					}
 				}
-				else if ( z_tmp > ( z_3 - z_offset*2 )  && z_tmp < ( z_3 + z_offset * 0.5 ) )
+				else if ( z_tmp > ( z_3 - z_offset*2.5 )  && z_tmp < ( z_3 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_3 - y_offset * 0.9 ) )
+					if ( y_tmp > ( y_3 - y_offset * ( 0.35 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -557,7 +557,7 @@ public:
 					}
 				}
 			}
-			if ( x_tmp > (x_4 - 0.015) && x_tmp < (x_4 + 0.055) && z_tmp < (z_1 - 0.02) && z_tmp > (z_2 + 0.035) )
+			if ( x_tmp > ( x_4 - 0.015 ) && x_tmp < ( x_4 + 0.055 ) && z_tmp < ( z_1 - 0.030 ) && z_tmp > ( z_2 + 0.015 ) )
 			{
 				float k = ( y_1 - y_2 ) / ( z_1 - z_2 );
 				float k_2 = ( y_1 - y_tmp ) / ( z_1 - z_tmp );
@@ -567,14 +567,14 @@ public:
 					new_point.x = x_tmp;
 					new_point.y = y_tmp;
 					new_point.z = z_tmp;
-					uint8_t r = 255, g = 0, b = 0;
+					uint8_t r = 255, g = 255, b = 0;
 					uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
 					new_point.rgb = *reinterpret_cast<float*>( &rgb );
 					cloud_cut->points.push_back( new_point );
 					cloud_cut_counter ++;
 				}
 			}
-			if ( x_tmp > (x_1 - 0.015) && x_tmp < (x_1 + 0.055) && z_tmp < (z_2 - 0.02) && z_tmp > (z_3 + 0.035) )
+			if ( x_tmp > (x_1 - 0.015) && x_tmp < (x_1 + 0.055) && z_tmp < (z_2 - 0.030 ) && z_tmp > ( z_3 + 0.015 ) )
 			{
 				float k = ( y_2 - y_3 ) / ( z_2 - z_3 );
 				float k_2 = ( y_2 - y_tmp ) / ( z_2 - z_tmp );
@@ -584,7 +584,7 @@ public:
 					new_point.x = x_tmp;
 					new_point.y = y_tmp;
 					new_point.z = z_tmp;
-					uint8_t r = 0, g = 255, b = 0;
+					uint8_t r = 0, g = 255, b = 255;
 					uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
 					new_point.rgb = *reinterpret_cast<float*>( &rgb );
 					cloud_cut->points.push_back( new_point );
@@ -705,12 +705,12 @@ public:
 			if ( minPoint.x > 0.0 )
 			{
 				x_min_tmp = minPoint.x - 0.04;
-				x_max_tmp = x_min_tmp + 0.11;
+				x_max_tmp = x_min_tmp + 0.095;
 			}
 			if ( maxPoint.x < 0.0 )
 			{
 				x_max_tmp = maxPoint.x + 0.02;
-				x_min_tmp = x_max_tmp - 0.10;
+				x_min_tmp = x_max_tmp - 0.11;
 			}
 			if ( std::abs( z_tmp - z_1 ) < 0.03 )
 			{
@@ -728,7 +728,7 @@ public:
 				Obstacle obstacle_tmp_3 ( x_max_tmp, x_min_tmp, maxPoint.y, minPoint.y, z_tmp, cloud_tmp->points.size () );
 		    obstacle_vector_3.push_back ( obstacle_tmp_3 );
 			}
-			if ( z_tmp < z_1 - 0.03 && z_tmp > z_2 + 0.03 )
+			if ( z_tmp < z_1 - 0.03 && z_tmp > z_2 + 0.015 )
 			{
 				is_down_1 = true;
 				float k = ( y_1 - y_2 ) / ( z_1 - z_2 );
@@ -748,7 +748,7 @@ public:
 					z_end_1 = z_end;
 				}
 			}
-			if ( z_tmp < z_2 - 0.03 && z_tmp > z_3 + 0.03 )
+			if ( z_tmp < z_2 - 0.03 && z_tmp > z_3 + 0.015 )
 			{
 				is_down_2 = true;
 				float k = ( y_2 - y_3 ) / ( z_2 - z_3 );
@@ -833,7 +833,8 @@ public:
 
 		// step 6, show the point cloud
 		PointCloudT::Ptr scene_cloud_total	( new PointCloudT );
-		*scene_cloud_total += *cloud_filtered;
+		// *scene_cloud_total += *cloud_filtered;
+		// *scene_cloud_total += *cloud_cut;
 		*scene_cloud_total += *obstacle_cloud_total;
 		scene_cloud_total->header.frame_id = "world";
 		cloud_pub_.publish ( scene_cloud_total );
