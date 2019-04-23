@@ -51,6 +51,9 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS} common/include)
 link_directories(${catkin_LIBRARY_DIRS})
 
+add_executable(avoid_obstacle src/avoid_obstacle.cpp)
+target_link_libraries(avoid_obstacle ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(motion_control src/motion_control.cpp)
 target_link_libraries(motion_control ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
