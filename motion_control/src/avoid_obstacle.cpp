@@ -246,7 +246,7 @@ public:
     // step 0, update the table position
     std::cout << "0, update the table position" << std::endl;
     stop_fix_table_position_.call ( msg );
-    ros::Duration ( 2.0 ) .sleep ();
+    ros::Duration ( 1.0 ) .sleep ();
 
     // step 1, fix the table position and set robot pose to [scan_start].
     std::cout << "1, fix the table position and set robot pose to [scan_start]" << std::endl;
@@ -265,17 +265,21 @@ public:
         // step 4.1, set robot pose to [scan_start].
         set_pose ( "scan_start" );
 
-        // // step 5, generate an avoid obstacle path
-        // std::cout << "5, start to avoid obstacle path" << std::endl;
-        // start_avoid_obstacle_planner_.call ( msg );
-        // // step 6, execute the avoid obstacle path
-        // std::cout << "6, execute the avoid obstacle path y/n:" << std::endl;
-        // std::string answer;
-        // std::cin >> answer;
-        // if ( answer == "y" )
-    		// {
-        //   do_move ();
-        // }
+        // step 5, generate an avoid obstacle path
+        std::cout << "5, start to avoid obstacle path" << std::endl;
+        start_avoid_obstacle_planner_.call ( msg );
+        // step 5.1, set robot pose to [screw_start].
+        std::cout << "\t5.1,  set robot pose to [screw_start]" << std::endl;
+        set_pose ( "screw_start" );
+
+        // step 6, execute the avoid obstacle path
+        std::cout << "6, execute the avoid obstacle path y/n:" << std::endl;
+        std::string answer;
+        std::cin >> answer;
+        if ( answer == "y" )
+    		{
+          do_move ();
+        }
       }
     }
   }
