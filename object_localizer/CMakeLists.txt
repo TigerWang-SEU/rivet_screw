@@ -33,6 +33,12 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
+add_executable(avoid_obstacle_planner src/avoid_obstacle_planner.cpp)
+target_link_libraries(avoid_obstacle_planner ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+add_executable(avoid_obstacle_planner_b src/avoid_obstacle_planner_b.cpp)
+target_link_libraries(avoid_obstacle_planner_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(pcl_merger src/pcl_merger.cpp)
 target_link_libraries(pcl_merger ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
