@@ -31,7 +31,7 @@ void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
   static pcl::VoxelGrid<pcl::PointXYZRGB> grid;
   grid.setInputCloud ( cloud );
-  grid.setLeafSize ( 0.005f, 0.005f, 0.005f );
+  grid.setLeafSize ( 0.008f, 0.008f, 0.008f );
   grid.filter ( *cloud_sampled );
 	std::printf( "Downsampled cloud size is %d, %d\n", cloud_sampled->width, cloud_sampled->height );
 }
@@ -72,10 +72,18 @@ public:
 			point.setX( temp_point.x );
 			point.setY( temp_point.y );
 			point.setZ( temp_point.z );
+      if ( temp_point.z < 0.5 )
+      {
+        continue;
+      }
 			tf::Vector3 point_n = transform * point;
 			temp_point.x = point_n.getX();
 			temp_point.y = point_n.getY();
 			temp_point.z = point_n.getZ();
+      if ( temp_point.y < -2.0 )
+      {
+        continue;
+      }
 			cloud_out->points.push_back ( temp_point );
 		}
 	}
