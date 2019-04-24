@@ -6,6 +6,6 @@
   <node name="scan_reader" pkg="model_loader" type="scan_reader" respawn="true" output="screen">
   </node>
 
-  <include file="$(find motion_control)/launch/start_motion_control_2.launch"/>
+  <include file="$(find motion_control)/launch/start_avoid_obstacle_motion_control.launch"/>
 
 </launch>
