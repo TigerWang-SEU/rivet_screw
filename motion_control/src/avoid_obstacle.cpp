@@ -274,12 +274,14 @@ public:
 
         // step 6, execute the avoid obstacle path
         std::cout << "6, execute the avoid obstacle path y/n:" << std::endl;
-        std::string answer;
-        std::cin >> answer;
-        if ( answer == "y" )
-    		{
+        // std::string answer;
+        // std::cin >> answer;
+        // if ( answer == "y" )
+    		// {
           do_move ();
-        }
+        // }
+
+        set_pose ( "screw_start" );
       }
     }
   }
