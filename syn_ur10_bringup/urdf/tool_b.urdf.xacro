@@ -155,12 +155,12 @@
   <joint name="tool_base_camera_plate_joint" type="fixed">
     <parent link="tool_base"/>
     <child link="camera_plate"/>
-    <origin xyz="-0.0392 0.0298 0.069" rpy="0 0 0" />
+    <origin xyz="-0.0392 0.0298 0.079" rpy="0 0 0" />
   </joint>
 
   <!-- scanCONTROL_2900-50 sensor and is connected to tool_base frame -->
   <xacro:scanCONTROL_2900-50 prefix="scanCONTROL_2900-50_" parent="tool_base">
-    <origin xyz="-0.060 0.09 0.078" rpy="${radians(0)} ${radians(0)} ${radians(180)}" />
+    <origin xyz="-0.05951 0.09345 0.09596" rpy="${radians(0.9)} ${radians(1)} ${radians(180.45)}" />
   </xacro:scanCONTROL_2900-50>
 
   <!-- camera_support link is connected to scanCONTROL_2900-50_scanner_link -->
