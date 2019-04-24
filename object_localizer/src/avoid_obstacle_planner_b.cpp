@@ -469,6 +469,10 @@ void write_string_down_1_buffer ( ofstream &avoid_obstacle_planner_fs )
 	for (int idx = 0; idx < string_down_1_buffer.size(); idx++)
 	{
 		avoid_obstacle_planner_fs << string_down_1_buffer[idx];
+		if ( idx == 3 )
+		{
+			break;
+		}
 	}
 }
 
@@ -478,6 +482,10 @@ void write_string_down_2_buffer ( ofstream &avoid_obstacle_planner_fs )
 	for (int idx = 0; idx < string_down_2_buffer.size(); idx++)
 	{
 		avoid_obstacle_planner_fs << string_down_2_buffer[idx];
+		if ( idx == 3 )
+		{
+			break;
+		}
 	}
 }
 
@@ -528,7 +536,7 @@ public:
 				}
 				else if ( z_tmp > ( z_2 - z_offset*2.5 )  && z_tmp < ( z_2 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_2 - y_offset * ( 0.3 ) ) )
+					if ( y_tmp > ( y_2 - y_offset * ( 0.29 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -543,7 +551,7 @@ public:
 				}
 				else if ( z_tmp > ( z_3 - z_offset*2.5 )  && z_tmp < ( z_3 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_3 - y_offset * ( 0.35 ) ) )
+					if ( y_tmp > ( y_3 - y_offset * ( 0.29 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -732,9 +740,13 @@ public:
 			{
 				is_down_1 = true;
 				float k = ( y_1 - y_2 ) / ( z_1 - z_2 );
-				float z_start = maxPoint.z;
+				float z_start = maxPoint.z + 0.022;
+				if ( z_start >= z_1 - 0.005 )
+				{
+					z_start = z_1 - 0.005;
+				}
 				float y_start = y_1 - k * ( z_1 - z_start );
-				float z_end = minPoint.z - 0.03;
+				float z_end = minPoint.z - 0.015;
 				float y_end = y_1 - k * ( z_1 - z_end );
 
 				if ( z_start > z_start_1 )
@@ -752,9 +764,13 @@ public:
 			{
 				is_down_2 = true;
 				float k = ( y_2 - y_3 ) / ( z_2 - z_3 );
-				float z_start = maxPoint.z;
+				float z_start = maxPoint.z + 0.022;
+				if ( z_start >= z_2 - 0.005 )
+				{
+					z_start = z_2 - 0.005;
+				}
 				float y_start = y_2 - k * ( z_2 - z_start );
-				float z_end = minPoint.z - 0.025;
+				float z_end = minPoint.z - 0.015;
 				float y_end = y_2 - k * ( z_2 - z_end );
 
 				if ( z_start > z_start_2 )
