@@ -475,7 +475,7 @@ void find_near_point ( PointCloudT::Ptr cloud_in_transformed, PointCloudT::Ptr c
 {
 	pcl::KdTreeFLANN < PointT > kdtree;
   kdtree.setInputCloud ( cloud_in_transformed );
-	float search_radius = 0.006;
+	float search_radius = 0.008;
 	std::vector<int> pointIdx;
 	std::vector<float> pointRadius;
 
@@ -510,12 +510,12 @@ void getRivetOrientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_in_
 	PointT searchPoint_new_1;
 	searchPoint_new_1.x = 0.0;
 	searchPoint_new_1.y = searchPoint.y;
-	searchPoint_new_1.z = searchPoint.z - 0.003;
+	searchPoint_new_1.z = searchPoint.z - 0.005;
 	find_near_point ( cloud_in_transformed, cloud_rivet_cycle, searchPoint_new_1 );
 	PointT searchPoint_new_2;
 	searchPoint_new_2.x = 0.0;
 	searchPoint_new_2.y = searchPoint.y;
-	searchPoint_new_2.z = searchPoint.z + 0.003;
+	searchPoint_new_2.z = searchPoint.z + 0.005;
 	find_near_point ( cloud_in_transformed, cloud_rivet_cycle, searchPoint_new_2 );
 
 	//step 2, fit a plane with cloud_rivet_cycle
