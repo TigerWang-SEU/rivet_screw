@@ -85,6 +85,11 @@ public:
 			point.setX( temp_point.x );
 			point.setY( temp_point.y );
 			point.setZ( temp_point.z );
+			// std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << std::endl;
+			if ( temp_point.y < 0.07 )
+      {
+        continue;
+      }
 			tf::Vector3 point_n = transform * point;
 			temp_point.x = point_n.getX();
 			temp_point.y = point_n.getY();
