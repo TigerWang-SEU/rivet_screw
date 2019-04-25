@@ -2,11 +2,14 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="tool">
 
   <!-- change the value of rivet_tool_distance_offset to adjust the distance to the target-->
-  <xacro:property name="rivet_tool_distance_offset" value="-0.0020" />
+  <!-- old value = -0.0020 -->
+  <xacro:property name="rivet_tool_distance_offset" value="0.0000" />
   <!-- change the value of rivet_tool_horizontal_adjust to adjust the tool horizontally, plus for left and minus for right -->
-  <xacro:property name="rivet_tool_horizontal_adjust" value="0.0017" />
+  <!-- old value = 0.00485 -->
+  <xacro:property name="rivet_tool_horizontal_adjust" value="0.00485" />
   <!-- change the value of rivet_tool_vertical_adjust to adjust the tool vertically, plus for up and minus for down -->
-  <xacro:property name="rivet_tool_vertical_adjust" value="0.0004" />
+  <!-- old value = 0.01575 -->
+  <xacro:property name="rivet_tool_vertical_adjust" value="0.01575" />
 
   <xacro:include filename="$(find microepsilon_scancontrol)/description/urdf/scanCONTROL_2900-50_macro.urdf.xacro" />
   <xacro:property name="rivet_tool_part_1_length" value="0.05078" />
