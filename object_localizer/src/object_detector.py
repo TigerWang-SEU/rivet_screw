@@ -91,7 +91,7 @@ class image_converter:
         except CvBridgeError as e:
             print( e )
         ( im_width, im_height, depth ) = image_np.shape
-        print( 'Input image has shape:', im_width, im_height, depth )
+        # print( 'Input image has shape:', im_width, im_height, depth )
 
         ###########################################################################################
         # cv2.imshow( "Image window", image_np )
@@ -110,7 +110,7 @@ class image_converter:
             output_dict[ 'detection_masks' ] = output_dict[ 'detection_masks' ][ 0 ]
 
         output_dict[ 'detection_scores' ][ output_dict[ 'detection_scores' ] < threshold ] = 0.0
-        print( output_dict[ 'detection_scores' ][ output_dict[ 'detection_scores' ] > threshold ] )
+        # print( output_dict[ 'detection_scores' ][ output_dict[ 'detection_scores' ] > threshold ] )
         # if output_dict[ 'detection_scores' ][ 0 ] < 0.5 and output_dict[ 'detection_scores' ][ 0 ] > 0.1:
         #     output_dict[ 'detection_scores' ][0 ] = 0.51
         # if output_dict[ 'detection_scores' ][ 1 ] < 0.5 and output_dict[ 'detection_scores' ][ 1 ] > 0.1:
