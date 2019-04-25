@@ -82,7 +82,7 @@ void RivetToolControl::start_screwing ()
   // ros::Duration ( 5 ) .sleep ();
 }
 
-boost::shared_ptr < RivetToolControl > rivet_tool_ctrl_ptr;
+// boost::shared_ptr < RivetToolControl > rivet_tool_ctrl_ptr;
 
 class Target
 {
@@ -290,8 +290,8 @@ int main ( int argc, char** argv )
 
   ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
-  rivet_tool_ctrl_ptr.reset ( new RivetToolControl () );
-  rivet_tool_ctrl_ptr -> connect ();
+  // rivet_tool_ctrl_ptr.reset ( new RivetToolControl () );
+  // rivet_tool_ctrl_ptr -> connect ();
   ros::ServiceServer start_point_rivet_;
   start_point_rivet_ = nh_.advertiseService ( "start_point_rivet", &start_point_rivet );
   ros::waitForShutdown ();
