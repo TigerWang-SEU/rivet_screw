@@ -42,6 +42,9 @@ target_link_libraries(avoid_obstacle_planner_b ${catkin_LIBRARIES} ${Boost_LIBRA
 add_executable(pcl_merger src/pcl_merger.cpp)
 target_link_libraries(pcl_merger ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+add_executable(pcl_merger_b src/pcl_merger_b.cpp)
+target_link_libraries(pcl_merger_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(cam_pc_processor src/cam_pc_processor.cpp)
 target_link_libraries(cam_pc_processor ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
