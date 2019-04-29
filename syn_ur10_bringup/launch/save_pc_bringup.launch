@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+  <include file="$(find syn_ur10_bringup)/launch/syn_ur10_bringup_b.launch"/>
+
+  <!-- <node name="scan_reader" pkg="model_loader" type="scan_reader" respawn="true" output="screen">
+  </node> -->
+
+  <!-- add new tf dummy node to fix the table on the floor -->
+  <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
+  </node>
+
+  <include file="$(find motion_control)/launch/start_save_pc_control.launch"/>
+
+</launch>
