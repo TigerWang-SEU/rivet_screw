@@ -231,9 +231,9 @@ void do_point_rivet ()
         while ( !target_queue.empty () )
         {
           // get the new rivet
-          new_nut_.call ( msg );
-          ros::Duration ( 2.0 ) .sleep ();
-          stop_.call ( msg );
+          // new_nut_.call ( msg );
+          // ros::Duration ( 3.0 ) .sleep ();
+          // stop_.call ( msg );
           ros::Duration ( 0.5 ) .sleep ();
           new_nut_.call ( msg );
           ros::Duration ( 2.0 ) .sleep ();
@@ -256,6 +256,10 @@ void do_point_rivet ()
           set_target_pose ( target, target_pose2 );
           move_trajectory ( target_pose1, target_pose2, move_group );
           stop_.call ( msg );
+          ros::Duration ( 0.5 ) .sleep ();
+          new_nut_.call ( msg );
+          ros::Duration ( 2.0 ) .sleep ();
+          stop_.call ( msg );
           target_pose1 = target_pose2;
           // move to the next rivet if there exist the next rivet
           if ( !target_queue.empty () )
@@ -266,8 +270,10 @@ void do_point_rivet ()
             move_trajectory ( target_pose1, target_pose2, move_group );
             target_pose1 = target_pose2;
           }
+          //  ros::Duration ( 1.5 ) .sleep ();  
         }
       //ros::Duration ( 1.0 ) .sleep ();
+
       }
     }
   }
