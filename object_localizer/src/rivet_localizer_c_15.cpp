@@ -586,7 +586,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
   seg.setOptimizeCoefficients (true);
   seg.setModelType ( pcl::SACMODEL_PLANE );
   seg.setMethodType ( pcl::SAC_RANSAC );
-  seg.setDistanceThreshold ( 0.0005 );
+  seg.setDistanceThreshold ( 0.002 );
   seg.setInputCloud ( segment_cloud_transformed );
   seg.segment ( *inliers, *coefficients );
   if ( inliers->indices.size () == 0 )
