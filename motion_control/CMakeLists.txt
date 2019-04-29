@@ -75,6 +75,9 @@ target_link_libraries(move_camera ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(move_camera_b src/move_camera_b.cpp)
 target_link_libraries(move_camera_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+add_executable(move_camera_c src/move_camera_c.cpp)
+target_link_libraries(move_camera_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(do_scan src/do_scan.cpp)
 target_link_libraries(do_scan ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
