@@ -140,8 +140,8 @@ public:
         // step 4.1, set robot pose to [scan_start].
         set_pose ( "scan_start" );
 
-        // step 7, start profile scan
-        std::cout << "7, Saving profile point cloud" << std::endl;
+        // step 5, start profile scan
+        std::cout << "5, Saving profile point cloud" << std::endl;
         save_pc ();
       }
     }
