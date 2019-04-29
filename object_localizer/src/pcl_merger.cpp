@@ -180,7 +180,7 @@ private:
 int main ( int argc, char** argv )
 {
 	ros::init ( argc, argv, "pcl_merger" );
-	ros::AsyncSpinner spinner(4);
+	ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
   PointCloudMerger pcm;
   ros::waitForShutdown ();
