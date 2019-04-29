@@ -80,10 +80,10 @@ public:
 			temp_point.x = point_n.getX();
 			temp_point.y = point_n.getY();
 			temp_point.z = point_n.getZ();
-      if ( temp_point.y < -2.0 )
-      {
-        continue;
-      }
+      // if ( temp_point.y < -2.0 )
+      // {
+      //   continue;
+      // }
 			cloud_out->points.push_back ( temp_point );
 		}
 	}
@@ -108,25 +108,25 @@ public:
 		sample_time = cloud->header.stamp;
 		std::cout << "[" << sample_time << "] Input point cloud has [" << scene_cloud_->width << "*" << scene_cloud_->height << " = " << scene_cloud_->width * scene_cloud_->height << "] data points" << std::endl;
 
-		// downsampling and transforming the input point cloud
-		// filterOutliner ( scene_cloud_ );
+		// transforming the input point cloud
 		PointCloudT::Ptr scene_cloud_sampled	(new PointCloudT);
-		downSampling ( scene_cloud_, scene_cloud_sampled );
+    *scene_cloud_sampled += *scene_cloud_;
 		PointCloudT::Ptr scene_cloud_world	(new PointCloudT);
+    scene_cloud_world->header.frame_id = reference_frame;
 		transform_point_cloud ( scene_cloud_sampled, scene_cloud_world );
-		std::cout << "Input point cloud after downSampling has [" << scene_cloud_world->size() << "] data points" << std::endl;
+    pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_world->header.stamp );
+    // cloud_pub_.publish ( scene_cloud_world );
+		std::cout << "***scene_cloud_world has [" << scene_cloud_world->size() << "] data points" << std::endl;
 
-		// merging the old point cloud with the input one
+		// merging the input point cloud
 		*scene_cloud_total += *scene_cloud_world;
-		scene_cloud_total->header.frame_id = reference_frame;
-    scene_cloud_total->width = scene_cloud_total->size() + scene_cloud_world->size();
-		scene_cloud_total->height = 1;
-		std::cout << "Merged point cloud has [" << scene_cloud_total->size() << "] data points" << std::endl;
-		pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
+		std::cout << "@@@scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
 		PointCloudT::Ptr scene_cloud_total_temp	( new PointCloudT );
 		downSampling ( scene_cloud_total, scene_cloud_total_temp );
-		std::cout << "Merged point cloud after downsampling has [" << scene_cloud_total_temp->size() << "] data points" << std::endl;
+		std::cout << "###scene_cloud_total_temp has [" << scene_cloud_total_temp->size() << "] data points" << std::endl;
 		scene_cloud_total = scene_cloud_total_temp;
+    scene_cloud_total->header.frame_id = reference_frame;
+    pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
     cloud_pub_.publish ( scene_cloud_total );
   }
 
