@@ -231,9 +231,6 @@ void do_point_rivet ()
         while ( !target_queue.empty () )
         {
           // get the new rivet
-          // new_nut_.call ( msg );
-          // ros::Duration ( 3.0 ) .sleep ();
-          // stop_.call ( msg );
           ros::Duration ( 0.5 ) .sleep ();
           new_nut_.call ( msg );
           ros::Duration ( 2.0 ) .sleep ();
