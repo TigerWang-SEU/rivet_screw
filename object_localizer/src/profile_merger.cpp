@@ -85,6 +85,10 @@ public:
 			point.setX( temp_point.x );
 			point.setY( temp_point.y );
 			point.setZ( temp_point.z );
+			if( !pcl_isfinite ( temp_point.x ) )
+      {
+        continue;
+      }
 			tf::Vector3 point_n = transform * point;
 			temp_point.x = point_n.getX();
 			temp_point.y = point_n.getY();
