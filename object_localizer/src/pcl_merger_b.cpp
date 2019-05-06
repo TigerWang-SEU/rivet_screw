@@ -31,7 +31,7 @@ void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
   static pcl::VoxelGrid<pcl::PointXYZRGB> grid;
   grid.setInputCloud ( cloud );
-  grid.setLeafSize ( 0.005f, 0.005f, 0.005f );
+  grid.setLeafSize ( 0.005f, 0.005f, 0.01f );
   grid.filter ( *cloud_sampled );
 	std::printf( "Downsampled cloud size is %d, %d\n", cloud_sampled->width, cloud_sampled->height );
 }
@@ -72,7 +72,11 @@ public:
 			point.setX( temp_point.x );
 			point.setY( temp_point.y );
 			point.setZ( temp_point.z );
-      if ( temp_point.z < 0.85 || temp_point.z > 1.24 )
+      if( !pcl_isfinite ( temp_point.x ) )
+      {
+        continue;
+      }
+      if ( temp_point.z < 0.40 || temp_point.z > 1.22 )
       {
         continue;
       }
@@ -80,10 +84,10 @@ public:
 			temp_point.x = point_n.getX();
 			temp_point.y = point_n.getY();
 			temp_point.z = point_n.getZ();
-      // if ( temp_point.y > -2.0 )
-      // {
-      //   continue;
-      // }
+      if ( temp_point.z < 1.49 || temp_point.z > 1.82 )
+      {
+        continue;
+      }
 			cloud_out->points.push_back ( temp_point );
 		}
 	}
@@ -121,10 +125,10 @@ public:
 		// merging the input point cloud
 		*scene_cloud_total += *scene_cloud_world;
 		std::cout << "@@@scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
-		// PointCloudT::Ptr scene_cloud_total_temp	( new PointCloudT );
-		// downSampling ( scene_cloud_total, scene_cloud_total_temp );
-		// std::cout << "###scene_cloud_total_temp has [" << scene_cloud_total_temp->size() << "] data points" << std::endl;
-		// scene_cloud_total = scene_cloud_total_temp;
+		PointCloudT::Ptr scene_cloud_total_temp	( new PointCloudT );
+		downSampling ( scene_cloud_total, scene_cloud_total_temp );
+		std::cout << "###scene_cloud_total_temp has [" << scene_cloud_total_temp->size() << "] data points" << std::endl;
+		scene_cloud_total = scene_cloud_total_temp;
     scene_cloud_total->header.frame_id = reference_frame;
     pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
     cloud_pub_.publish ( scene_cloud_total );
