@@ -34,7 +34,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 static const std::string PLANNING_GROUP = "camera";
 
@@ -66,6 +66,7 @@ public:
     ROS_INFO_NAMED ( "control_node", "Reference frame: %s", move_group->getPlanningFrame().c_str() );
     ROS_INFO_NAMED ( "control_node", "End effector link: %s", move_group->getEndEffectorLink().c_str() );
 
+    // /camera/depth_registered/points
     std::string cloud_in_name = "/point_cloud_merger/points";
     cloud_sub_ = nh_.subscribe ( cloud_in_name, 3, &ControlNode::cloud_cb, this );
     ROS_INFO_STREAM ( "Listening point cloud message on topic " << cloud_in_name );
