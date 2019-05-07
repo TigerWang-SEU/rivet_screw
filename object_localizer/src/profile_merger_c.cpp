@@ -86,7 +86,7 @@ public:
 			point.setY( temp_point.y );
 			point.setZ( temp_point.z );
 			// std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << std::endl;
-			if ( temp_point.y < 0.07 )
+			if ( temp_point.y < 0.085 )
       {
         continue;
       }
