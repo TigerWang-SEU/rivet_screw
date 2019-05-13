@@ -381,6 +381,20 @@ public:
         // show_segment_cloud( segment_cloud );
         // calculate_bounding_box( segment_cloud );
 
+        ///////////////////////////////////////////////////////////////////////
+        PointT minPt, maxPt;
+        getMinMax3D ( *segment_cloud, minPt, maxPt );
+        std::cout << "Min [x, y, z]: = [" << minPt.x << ", " << minPt.y << ", " << minPt.z << "]" << std::endl;
+        std::cout << "Max [x, y, z]: = [" << maxPt.x << ", " << maxPt.y << ", " << maxPt.z << "]" << std::endl;
+
+        float distance_ = std::sqrt ( std::pow ( ( maxPt.y - minPt.y ), 2 ) + std::pow ( ( maxPt.z - minPt.z ), 2 ) );
+        std::cout << "$$$$$$ distance_ = [" << distance_ << "]" << std::endl;
+        if ( distance_  < 0.08 )
+        {
+          continue;
+        }
+        ///////////////////////////////////////////////////////////////////////
+
         Eigen::Vector3f central_point;
         // new method to find theta and the central point.
         float theta = get_central_point ( segment_cloud, central_point );
