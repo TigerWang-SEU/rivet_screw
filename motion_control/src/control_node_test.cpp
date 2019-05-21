@@ -129,43 +129,35 @@ public:
 
   void execute_pipeline ()
   {
-    // std::cout << "\tContinue with current position (y/n): ";
-    // std::string answer_str;
-    // // answer_str = "y";
-    // std::cin >> answer_str;
-    // if ( answer_str == "n" )
-    // {
-    //   return;
-    // }
 
     // step 1, set the robot pose to pose.
     std_srvs::Empty msg;
     std::cout << "1, set the robot pose to scan_start" << std::endl;
     if ( set_pose ( "scan_start" ) )
     {
-      // step 6, start profile scan
-      std::cout << "6, start profile scanning" << std::endl;
+      // step 2, start profile scan
+      std::cout << "2, start profile scanning" << std::endl;
       start_do_scan_.call ( msg );
 
-      // step 7, start profile scan
-      std::cout << "7, Saving profile point cloud" << std::endl;
+      // step 3, start profile scan
+      std::cout << "3, Saving profile point cloud" << std::endl;
       save_profile_pc ();
 
-      // step 8, move back to pose scan_start
-      std::cout << "8, set the robot pose back to scan_start and then screw_start" << std::endl;
+      // step 4, move back to pose scan_start
+      std::cout << "4, set the robot pose back to scan_start and then screw_start" << std::endl;
       if ( set_pose ( "scan_start" ) )
       {
         set_pose ( "screw_start" );
-        // step 9, call the service rivet_localizer
-        std::cout << "9, start rivet localizer" << std::endl;
+        // step 5, call the service rivet_localizer
+        std::cout << "5, start rivet localizer" << std::endl;
         start_rivet_localizer_.call ( msg );
 
-        // step 10, call the service point_rivet
-        std::cout << "10, start to point to rivet" << std::endl;
+        // step 6, call the service point_rivet
+        std::cout << "6, start to point to rivet" << std::endl;
         start_point_rivet_.call ( msg );
 
-        // step 11, set the robot pose back to pose screw_start
-        std::cout << "11, set the robot pose back to pose screw_start" << std::endl;
+        // step 7, set the robot pose back to pose screw_start
+        std::cout << "7, set the robot pose back to pose screw_start" << std::endl;
         set_pose ( "screw_start" );
       }
     }
