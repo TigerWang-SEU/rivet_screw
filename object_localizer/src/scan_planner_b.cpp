@@ -227,7 +227,15 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& c
   {
     float y = std::abs( eigenVectorsPCA ( 1, 0 ) );
     float z = std::abs( eigenVectorsPCA ( 2, 0 ) );
-    float theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    float theta = 0.0;
+    if ( sgn<float> ( y ) != sgn<float> ( z ) )
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI;
+    }
+    else
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    }
     return theta;
   }
 
@@ -236,7 +244,15 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& c
   {
     float y = std::abs( eigenVectorsPCA ( 1, 1 ) );
     float z = std::abs( eigenVectorsPCA ( 2, 1 ) );
-    float theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    float theta = 0.0;
+    if ( sgn<float> ( y ) != sgn<float> ( z ) )
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI;
+    }
+    else
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    }
     return theta;
   }
 
@@ -245,7 +261,15 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& c
   {
     float y = std::abs( eigenVectorsPCA ( 1, 2 ) );
     float z = std::abs( eigenVectorsPCA ( 2, 2 ) );
-    float theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    float theta = 0.0;
+    if ( sgn<float> ( y ) != sgn<float> ( z ) )
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI;
+    }
+    else
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    }
     return theta;
   }
 }
@@ -368,12 +392,10 @@ public:
       // iterate through all segments
 			int bbox_idx = 0;
       for ( object_localizer_msg::BBox_float bbox : segment_list->BBox_list_float )
-      // step 2, filter rivet areas
-      // if ( bbox.x1 > -0.30 && bbox.x2 < 0.30 )
       {
         std::cout << "Bounding box [" << bbox_idx << "] has [x1, x2, y1, y2]: [" << bbox.x1 << "," << bbox.x2 << "," << bbox.y1 << "," << bbox.y2  << "]" << std::endl;
 
-        // step 2, generate scan plan for the each segment
+        // step 1, convert a segment message to a point cloud.
         pcl::PCLPointCloud2 pcl_pc2;
         pcl_conversions::toPCL ( segment_list->Segment_list [ bbox_idx ], pcl_pc2 );
         PointCloudT::Ptr segment_cloud ( new PointCloudT );
@@ -382,10 +404,14 @@ public:
         // calculate_bounding_box( segment_cloud );
 
         ///////////////////////////////////////////////////////////////////////
+        // step 2, filter out point clouds which is not longer than 0.08
+        float min_x, max_x;
         PointT minPt, maxPt;
         getMinMax3D ( *segment_cloud, minPt, maxPt );
         std::cout << "Min [x, y, z]: = [" << minPt.x << ", " << minPt.y << ", " << minPt.z << "]" << std::endl;
+        min_x = minPt.x;
         std::cout << "Max [x, y, z]: = [" << maxPt.x << ", " << maxPt.y << ", " << maxPt.z << "]" << std::endl;
+        max_x = maxPt.x;
 
         float distance_ = std::sqrt ( std::pow ( ( maxPt.y - minPt.y ), 2 ) + std::pow ( ( maxPt.z - minPt.z ), 2 ) );
         std::cout << "$$$$$$ distance_ = [" << distance_ << "]" << std::endl;
@@ -393,31 +419,56 @@ public:
         {
           continue;
         }
+
+        // step 2.1, filter the segment point cloud
+        PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
+        for ( PointT temp_point: segment_cloud->points )
+        {
+          float x = temp_point.x;
+          float y = temp_point.y;
+          float z = temp_point.z;
+          if ( ( x - min_x ) / ( max_x - min_x ) < 0.4 )
+          {
+            continue;
+          }
+          PointT new_point;
+          new_point.x = x - 0.01;
+          new_point.y = y;
+          new_point.z = z;
+          filtered_segment_cloud->points.push_back( new_point );
+        }
+        segment_cloud = filtered_segment_cloud;
         ///////////////////////////////////////////////////////////////////////
 
         Eigen::Vector3f central_point;
-        // new method to find theta and the central point.
-        float theta = get_central_point ( segment_cloud, central_point );
+        // step 3, find the central point of the segment point cloud
+        // float theta = get_central_point ( segment_cloud, central_point );
+        float theta = calculate_theta ( segment_cloud, central_point );
+        if ( theta == 0 )
+        {
+          theta = 90;
+        }
+        std::cout << std::endl << "[***] Rotation around x is [" << theta << "] degrees" << std::endl;
         float x_0 = central_point ( 0 );
         float y_0 = central_point ( 1 );
         float z_0 = central_point ( 2 );
 
+        // step 4, calculate the scanning start point and the scanning end point
         float theta_tmp = ( theta - 90.0 ) * M_PI / 180.0;
         float x_tmp = x_0 + x_adjust;
         float y_tmp = y_0 + scan_distance * std::sin ( theta_tmp );
         float z_tmp = z_0 - scan_distance * std::cos ( theta_tmp );
+        // std::cout << "[***] Scan central point is [x, y, z] = [" << x_tmp << ", " << y_tmp << ", " << z_tmp << "]" << std::endl;
         float x_s = x_tmp;
         float y_s = y_tmp - scan_half_length * std::cos ( theta_tmp ) * s_scale;
         float z_s = z_tmp - scan_half_length * std::sin ( theta_tmp ) * s_scale;
+        std::cout << "[***] Scan start point is [x, y, z] = [" << x_s << ", " << y_s << ", " << z_s << "]" << std::endl;
         float x_e = x_tmp;
         float y_e = y_tmp + scan_half_length * std::cos ( theta_tmp ) * e_scale;
         float z_e = z_tmp + scan_half_length * std::sin ( theta_tmp ) * e_scale;
-
-        // step 3, write scanning plannings.
-        std::cout << std::endl << "[***] Rotation around x is [" << theta << "] degrees" << std::endl;
-        // std::cout << "[***] Scan central point is [x, y, z] = [" << x_tmp << ", " << y_tmp << ", " << z_tmp << "]" << std::endl;
-        std::cout << "[***] Scan start point is [x, y, z] = [" << x_s << ", " << y_s << ", " << z_s << "]" << std::endl;
         std::cout << "[***] Scan end point is [x, y, z] = [" << x_e << ", " << y_e << ", " << z_e << "]" << std::endl << std::endl;
+
+        // step 5, write scanning plannings into the scanning plan file.
         do_scan_fs << theta << " " << x_s << " " << y_s << " " << z_s << " " << x_e << " " << y_e << " " << z_e << std::endl;
 
         bbox_idx ++;
