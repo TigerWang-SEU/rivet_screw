@@ -7,7 +7,6 @@
   <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
   </node>
 
-  <!-- using new motion control launch file [start_motion_control_b] -->
-  <!-- <include file="$(find motion_control)/launch/start_motion_control_b.launch"/> -->
+  <include file="$(find motion_control)/launch/start_motion_control.launch"/>
 
 </launch>
