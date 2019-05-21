@@ -66,6 +66,9 @@ target_link_libraries(control_node_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(control_node_test src/control_node_test.cpp)
 target_link_libraries(control_node_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+add_executable(control_node_plan_test src/control_node_plan_test.cpp)
+target_link_libraries(control_node_plan_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(save_pc_control_node src/save_pc_control_node.cpp)
 target_link_libraries(save_pc_control_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
