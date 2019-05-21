@@ -30,6 +30,22 @@
         <joint name="ur10_wrist_2_joint" value="1.5707" />
         <joint name="ur10_wrist_3_joint" value="3.1415" />
     </group_state>
+    <group_state name="scan_start_1" group="camera">
+        <joint name="ur10_elbow_joint" value="-1.5428" />
+        <joint name="ur10_shoulder_lift_joint" value="-1.7234" />
+        <joint name="ur10_shoulder_pan_joint" value="0.0551" />
+        <joint name="ur10_wrist_1_joint" value="1.2184" />
+        <joint name="ur10_wrist_2_joint" value="1.2201" />
+        <joint name="ur10_wrist_3_joint" value="-0.0298" />
+    </group_state>
+    <group_state name="scan_start_2" group="camera">
+        <joint name="ur10_elbow_joint" value="-1.4795" />
+        <joint name="ur10_shoulder_lift_joint" value="-1.9369" />
+        <joint name="ur10_shoulder_pan_joint" value="0.06157" />
+        <joint name="ur10_wrist_1_joint" value="-1.9598" />
+        <joint name="ur10_wrist_2_joint" value="1.2874" />
+        <joint name="ur10_wrist_3_joint" value="-0.0873" />
+    </group_state>
     <group_state name="scan_end" group="camera">
         <joint name="ur10_elbow_joint" value="-2.187" />
         <joint name="ur10_shoulder_lift_joint" value="-0.6065" />
