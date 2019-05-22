@@ -303,6 +303,81 @@ void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double
 }
 
 //##############################################################################################################################################################
+
+template < typename T > int sgn ( T val )
+{
+    return ( T ( 0 ) < val ) - ( val < T ( 0 ) );
+}
+
+float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
+{
+  // Compute principal directions
+  Eigen::Vector4f pcaCentroid;
+  pcl::compute3DCentroid ( *cloudSegmented, pcaCentroid );
+  // std::cout << "central point is " << pcaCentroid.head< 3 >() << std::endl;
+
+  Eigen::Matrix3f covariance;
+  pcl::computeCovarianceMatrixNormalized ( *cloudSegmented, pcaCentroid, covariance );
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
+  Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
+  // This line is necessary for proper orientation in some cases. The numbers come out the same without it, but
+  // the signs are different and the box doesn't get correctly oriented in some cases.
+  eigenVectorsPCA.col ( 2 ) = eigenVectorsPCA.col ( 0 ).cross ( eigenVectorsPCA.col ( 1 ) );
+
+  std::cout << "eigen vector 0: [" << eigenVectorsPCA (0, 0) << ", " << eigenVectorsPCA (1, 0) << ", " << eigenVectorsPCA (2, 0) << "]" << std::endl;
+  if ( std::abs( eigenVectorsPCA ( 0, 0 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 0 ) ) == sgn<float>( eigenVectorsPCA ( 2, 0 ) ) )
+  {
+    float y = std::abs( eigenVectorsPCA ( 1, 0 ) );
+    float z = std::abs( eigenVectorsPCA ( 2, 0 ) );
+    float theta = 0.0;
+    if ( sgn<float> ( y ) != sgn<float> ( z ) )
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI;
+    }
+    else
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    }
+    return theta;
+  }
+
+  std::cout << "eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "]" << std::endl;
+  if ( std::abs( eigenVectorsPCA ( 0, 1 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 1 ) ) == sgn<float>( eigenVectorsPCA ( 2, 1 ) ) )
+  {
+    float y = std::abs( eigenVectorsPCA ( 1, 1 ) );
+    float z = std::abs( eigenVectorsPCA ( 2, 1 ) );
+    float theta = 0.0;
+    if ( sgn<float> ( y ) != sgn<float> ( z ) )
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI;
+    }
+    else
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    }
+    return theta;
+  }
+
+  std::cout << "eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "]" << std::endl;
+  if ( std::abs( eigenVectorsPCA ( 0, 2 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 2 ) ) == sgn<float>( eigenVectorsPCA ( 2, 2 ) ) )
+  {
+    float y = std::abs( eigenVectorsPCA ( 1, 2 ) );
+    float z = std::abs( eigenVectorsPCA ( 2, 2 ) );
+    float theta = 0.0;
+    if ( sgn<float> ( y ) != sgn<float> ( z ) )
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI;
+    }
+    else
+    {
+      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
+    }
+    return theta;
+  }
+}
+
+//##############################################################################################################################################################
 PointCloudT::Ptr rivet_cloud_new	( new PointCloudT );
 
 // find new center of a rivet by find a new rivet point cloud
