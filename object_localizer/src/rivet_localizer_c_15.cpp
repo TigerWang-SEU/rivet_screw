@@ -369,7 +369,13 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 		y_tmp = eigenVectorsPCA ( 1, 1 );
 	  z_tmp = eigenVectorsPCA ( 2, 1 );
 	}
-	float theta = - atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
+  if ( y_tmp < 0.0 )
+  {
+    y_tmp = - y_tmp;
+    z_tmp = - z_tmp;
+  }
+  std::cout << "\t[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]\n";
+	float theta = atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
 	return theta;
 
 }
@@ -636,8 +642,18 @@ void getRivetOrientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_in_
 }
 //##############################################################################################################################################################
 
-int find_rivet ( PointCloudT::Ptr cloud_in )
+bool rotate_45 = false;
+float theta_x_45 = 45.0 / 180.0*3.14159265359;
+Eigen::Matrix4f r_x_45, r_x_45_inv;
+
+int check_theta ( PointCloudT::Ptr cloud_in )
 {
+	r_x_45     << 1,   0,  0, 0,
+							  0, cos(theta_x_45), -sin(theta_x_45), 0,
+							  0, sin(theta_x_45),  cos(theta_x_45), 0,
+							  0,  0,  0, 1;
+	getInverseMatrix ( r_x_45, r_x_45_inv );
+
 	// step 1, filter, downsampling, and scaling the input point cloud and change the color of each point
 	PointCloudT::Ptr cloud_filtered	( new PointCloudT );
 	PointCloudT::Ptr segment_cloud ( new PointCloudT );
@@ -786,6 +802,175 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	// std::cout << "***average x = " << sum_x / cloud_rivet_counter << std::endl;
 
 	//////////////////////////////////////////////////////////////////////////////
+	// step 7.1, check the theta angle of the planar_cloud_new
+	getInverseMatrix ( transform_total, transform_total_inverse_temp );
+	pcl::transformPointCloud( *planar_cloud_new, *planar_cloud_new, transform_total_inverse_temp );
+	float planar_theta = calculate_theta ( planar_cloud_new );
+	std::cout << "$$$$$$ planar_theta = " << planar_theta << std::endl;
+
+	if ( planar_theta < 100.0 )
+	{
+		rotate_45 = true;
+	}
+	//////////////////////////////////////////////////////////////////////////////
+}
+
+int find_rivet ( PointCloudT::Ptr cloud_in )
+{
+	if ( rotate_45 )
+	{
+		pcl::transformPointCloud( *cloud_in, *cloud_in, r_x_45 );
+	}
+
+	// step 1, filter, downsampling, and scaling the input point cloud and change the color of each point
+	PointCloudT::Ptr cloud_filtered	( new PointCloudT );
+	PointCloudT::Ptr segment_cloud ( new PointCloudT );
+  // filterOutliner ( cloud_in );
+	downSampling ( cloud_in, cloud_filtered );
+	scale_and_color_point_cloud ( cloud_filtered, segment_cloud );
+
+	// step 2, transform the input point cloud
+	PointCloudT::Ptr segment_cloud_transformed ( new PointCloudT );
+	Eigen::Matrix4f transform_1 ( Eigen::Matrix4f::Identity() );
+	calculate_transform ( segment_cloud, transform_1 );
+	pcl::transformPointCloud( *segment_cloud, *segment_cloud_transformed, transform_1 );
+
+	// step 3, find the planar
+	pcl::ModelCoefficients::Ptr coefficients ( new pcl::ModelCoefficients );
+  pcl::PointIndices::Ptr inliers ( new pcl::PointIndices );
+  pcl::SACSegmentation < PointT > seg;
+  seg.setOptimizeCoefficients (true);
+  seg.setModelType ( pcl::SACMODEL_PLANE );
+  seg.setMethodType ( pcl::SAC_RANSAC );
+  seg.setDistanceThreshold ( 0.002 );
+  seg.setInputCloud ( segment_cloud_transformed );
+  seg.segment ( *inliers, *coefficients );
+  if ( inliers->indices.size () == 0 )
+  {
+    PCL_ERROR ( "Could not estimate a planar model for the given dataset." );
+    return ( -1 );
+  }
+	float planar_coef [3] = { coefficients->values [0], coefficients->values [1], coefficients->values [2] };
+	float d_coef = coefficients->values[3];
+  std::cerr << "Planar coefficients: " << planar_coef [0] << " " << planar_coef [1] << " " << planar_coef [2] << " " << d_coef << std::endl;
+  std::cerr << "Planar inliers: " << inliers->indices.size () << std::endl;
+	uint8_t r = 255, g = 0, b = 0;
+	uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+	PointCloudT::Ptr planar_cloud	( new PointCloudT );
+	int planar_cloud_counter = 0;
+  for ( size_t i = 0; i < inliers->indices.size (); ++i )
+	{
+		segment_cloud_transformed->points[ inliers->indices[ i ] ].rgb = *reinterpret_cast<float*>( &rgb );
+		PointT new_point;
+    new_point.x = segment_cloud_transformed->points[ inliers->indices[ i ] ].x;
+    new_point.y = segment_cloud_transformed->points[ inliers->indices[ i ] ].y;
+    new_point.z = segment_cloud_transformed->points[ inliers->indices[ i ] ].z;
+    new_point.rgb = *reinterpret_cast<float*>( &rgb );
+    planar_cloud->points.push_back( new_point );
+    planar_cloud_counter++;
+  }
+  planar_cloud->width = planar_cloud_counter;
+  planar_cloud->height = 1;
+  planar_cloud->header.frame_id = reference_frame;
+
+	// step 4, do refined transformation to show the point cloud
+	Eigen::Matrix4f transform_2 ( Eigen::Matrix4f::Identity() );
+	calculate_transform ( planar_cloud, transform_2 );
+	// filterOutliner ( planar_cloud );
+	pcl::transformPointCloud ( *planar_cloud, *planar_cloud, transform_2 );
+
+	// step 5, get the total transformation and transform the whole profile scan
+	Eigen::Matrix4f r_x_180, r_z_180;
+	r_x_180 <<  1,  0,  0, 0,
+              0, -1,  0, 0,
+              0,  0, -1, 0,
+              0,  0,  0, 1;
+	r_z_180 << -1,  0,  0, 0,
+              0, -1,  0, 0,
+              0,  0,  1, 0,
+              0,  0,  0, 1;
+	std::cout << "r_x_180 = \n" << r_x_180 << "\n r_z_180 = \n" << r_z_180 << std::endl;
+	Eigen::Matrix4f transform_total = transform_2 * transform_1;
+	std::cout << "transform_2 = \n" << transform_2 << std::endl;
+	std::cout << "transform_1 = \n" << transform_1 << std::endl;
+	std::cout << "transform_total = \n" << transform_total << std::endl;
+	Eigen::Matrix4f transform_total_inverse_temp ( Eigen::Matrix4f::Identity() );
+	getInverseMatrix ( transform_total, transform_total_inverse_temp );
+	std::cout << "transform_total_inverse_temp = \n" << transform_total_inverse_temp << std::endl;
+	pcl::transformPointCloud ( *planar_cloud, *planar_cloud, transform_total_inverse_temp );
+
+	float min_v = std::min ( std::min ( std::abs ( transform_total (0, 0) ), std::abs ( transform_total (0, 1) ) ),
+													 std::abs ( transform_total (0, 2) ) );
+	if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 and transform_total (0, 2) > 0 )
+	{
+		transform_total = r_z_180 * transform_total;
+		std::cout << "new transform_total after [r_z_180] = \n" << transform_total << std::endl;
+	}
+	if ( transform_total (1, 0) < 0 )
+	{
+		transform_total = r_x_180 * transform_total;
+		std::cout << "new transform_total after [r_x_180] = \n" << transform_total << std::endl;
+	}
+	std::cout << "new transform_total = \n" << transform_total << std::endl;
+	PointCloudT::Ptr cloud_in_transformed	( new PointCloudT );
+	scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
+	pcl::transformPointCloud( *cloud_in_transformed, *cloud_in_transformed, transform_total );
+	pcl::transformPointCloud ( *planar_cloud, *planar_cloud, transform_total );
+	pcl::PointXYZRGB minPoint, maxPoint;
+  getMinMax3D ( *planar_cloud, minPoint, maxPoint );
+	std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
+	std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
+
+	// step 6, check the x axis of the planar after the total transformation
+	float planar_coef_abs [3] = { std::abs( planar_coef [0] ), std::abs( planar_coef [1] ), std::abs( planar_coef [2] ) };
+	int max_idx = std::distance ( planar_coef_abs, std::max_element ( planar_coef_abs, planar_coef_abs + 3 ) );
+	std::cout << "***Max_idx = " << max_idx << std::endl;
+
+	// step 7, filter out points belongs to rivets
+	r = 0, g = 255, b = 0;
+	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+	PointCloudT::Ptr cloud_rivet ( new PointCloudT );
+	PointCloudT::Ptr planar_cloud_new ( new PointCloudT );
+	int cloud_rivet_counter = 0;
+	// double sum_x = 0.0;
+	if ( max_idx == 0 )
+	{
+		for ( PointT temp_point: cloud_in_transformed->points )
+	  {
+			float x = temp_point.x;
+			float x_compare = std::abs ( std::abs ( x ) - rivet_height );
+			float y = temp_point.y;
+			float z = temp_point.z;
+			if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z
+					 && x_compare <= 0.0015 && x > 0 )
+			{
+		    PointT new_point;
+				// sum_x += x;
+		    new_point.x = x;
+		    new_point.y = y;
+		    new_point.z = z;
+		    new_point.rgb = *reinterpret_cast<float*> ( &rgb );
+		    cloud_rivet->points.push_back ( new_point );
+		    cloud_rivet_counter ++;
+			}
+			if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && std::abs ( x ) <= 0.002 )
+			{
+		    PointT new_point;
+		    new_point.x = x;
+		    new_point.y = y;
+		    new_point.z = z;
+		    planar_cloud_new->points.push_back ( new_point );
+			}
+	  }
+	}
+	cloud_rivet->width = cloud_rivet_counter;
+  cloud_rivet->height = 1;
+  cloud_rivet->header.frame_id = reference_frame;
+	std::cout << "***cloud_rivet has " << cloud_rivet_counter << " data points" << std::endl;
+	// std::cout << "***average x = " << sum_x / cloud_rivet_counter << std::endl;
+
+	//////////////////////////////////////////////////////////////////////////////
+	// step 7.1, check the theta angle of the planar_cloud_new
 	getInverseMatrix ( transform_total, transform_total_inverse_temp );
 	pcl::transformPointCloud( *planar_cloud_new, *planar_cloud_new, transform_total_inverse_temp );
 	float planar_theta = calculate_theta ( planar_cloud_new );
@@ -922,6 +1107,25 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 			continue;
 		}
 
+		tf::Matrix3x3 old_rotation;
+	  old_rotation.setRPY ( roll, pitch, yaw );
+		Eigen::Matrix4f old_rotation_matrix;
+		old_rotation_matrix <<
+									old_rotation[0][0], old_rotation[0][1], old_rotation[0][2], 0,
+								  old_rotation[1][0], old_rotation[1][1], old_rotation[1][2], 0,
+								  old_rotation[2][0], old_rotation[2][1], old_rotation[2][2], 0,
+								  0,  0,  0,  1;
+		std::cout << "old_rotation_matrix = " << old_rotation_matrix << std::endl;
+
+		if ( rotate_45 )
+		{
+			rivet_point_new_final = r_x_45_inv * rivet_point_new_final;
+			rivet_point_in_final = r_x_45_inv * rivet_point_in_final;
+			Eigen::Matrix4f new_rotation_matrix;
+			new_rotation_matrix = r_x_45_inv * old_rotation_matrix;
+			get_rpy_from_matrix ( new_rotation_matrix.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
+		}
+
 		std::cout << "*** [" << rivet_counter << "] : " << rivet_point_new_final.head< 3 >().transpose() << std::endl;
 
 		show_frame ( "rivet_" + std::to_string ( rivet_counter ) + "_start", rivet_point_new_final ( 0 ), rivet_point_new_final ( 1 ), rivet_point_new_final ( 2 ), roll, pitch, yaw );
@@ -940,6 +1144,36 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	// step 11, show the point cloud
 	if ( show_viz )
 	{
+		// if ( rotate_45 )
+		// {
+		// 	for ( size_t j = 0; j < cloud_in_transformed->size (); ++j )
+		// 	{
+		// 		Eigen::Vector4f _point_new;
+		// 		_point_new << cloud_in_transformed->points[ j ].x, cloud_in_transformed->points[ j ].y, cloud_in_transformed->points[ j ].z, 1.0;
+		// 		_point_new = r_x_45_inv * _point_new;
+		// 		cloud_in_transformed->points[ j ].x = _point_new ( 0 );
+		// 		cloud_in_transformed->points[ j ].y = _point_new ( 1 );
+		// 		cloud_in_transformed->points[ j ].z = _point_new ( 2 );
+		// 	}
+		// 	for ( size_t j = 0; j < cycle_planar_cloud->size (); ++j )
+		// 	{
+		// 		Eigen::Vector4f _point_new;
+		// 		_point_new << cycle_planar_cloud->points[ j ].x, cycle_planar_cloud->points[ j ].y, cycle_planar_cloud->points[ j ].z, 1.0;
+		// 		_point_new = r_x_45_inv * _point_new;
+		// 		cycle_planar_cloud->points[ j ].x = _point_new ( 0 );
+		// 		cycle_planar_cloud->points[ j ].y = _point_new ( 1 );
+		// 		cycle_planar_cloud->points[ j ].z = _point_new ( 2 );
+		// 	}
+		// 	for ( size_t j = 0; j < rivet_cloud_new->size (); ++j )
+		// 	{
+		// 		Eigen::Vector4f _point_new;
+		// 		_point_new << rivet_cloud_new->points[ j ].x, rivet_cloud_new->points[ j ].y, rivet_cloud_new->points[ j ].z, 1.0;
+		// 		_point_new = r_x_45_inv * _point_new;
+		// 		rivet_cloud_new->points[ j ].x = _point_new ( 0 );
+		// 		rivet_cloud_new->points[ j ].y = _point_new ( 1 );
+		// 		rivet_cloud_new->points[ j ].z = _point_new ( 2 );
+		// 	}
+		// }
 		Visualize ( cloud_in_transformed, cycle_planar_cloud, rivet_cloud_new );
 	}
 }
@@ -958,6 +1192,7 @@ public:
       return;
     }
     std::cout << "Loaded " << scene_cloud_->width * scene_cloud_->height << " data points from " << SceneFilePath << std::endl;
+		check_theta ( scene_cloud_ );
     find_rivet ( scene_cloud_ );
 
 		if ( scene_cloud_total->width * scene_cloud_total->height > 0  )
