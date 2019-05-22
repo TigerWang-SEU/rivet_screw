@@ -521,40 +521,40 @@ Visualization Manager:
       Reference Frame: world
       Value: true
     - Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 0.150000006
       Name: Axes
       Radius: 0.0149999997
       Reference Frame: table_top
-      Value: true
+      Value: false
     - Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 0.0199999996
       Name: Axes
       Radius: 0.00300000003
       Reference Frame: scanCONTROL_2900-50_scanner_laser_link
-      Value: true
+      Value: false
     - Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 0.100000001
       Name: Axes
       Radius: 0.00999999978
       Reference Frame: rivet_tool
-      Value: true
+      Value: false
     - Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 1
       Name: Axes
       Radius: 0.00300000003
       Reference Frame: rivet_0_end
-      Value: true
+      Value: false
     - Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 1
       Name: Axes
       Radius: 0.00300000003
       Reference Frame: rivet_0_start
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -765,6 +765,270 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
+    - Class: rviz/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        camera_aligned_depth_to_color_frame:
+          Value: true
+        camera_aligned_depth_to_infra1_frame:
+          Value: true
+        camera_aligned_depth_to_infra2_frame:
+          Value: true
+        camera_color_frame:
+          Value: true
+        camera_color_optical_frame:
+          Value: true
+        camera_depth_frame:
+          Value: true
+        camera_depth_optical_frame:
+          Value: true
+        camera_fisheye_frame:
+          Value: true
+        camera_fisheye_optical_frame:
+          Value: true
+        camera_infra1_frame:
+          Value: true
+        camera_infra1_optical_frame:
+          Value: true
+        camera_infra2_frame:
+          Value: true
+        camera_infra2_optical_frame:
+          Value: true
+        camera_left_ir_frame:
+          Value: true
+        camera_left_ir_optical_frame:
+          Value: true
+        camera_link:
+          Value: true
+        camera_plate:
+          Value: true
+        camera_right_ir_frame:
+          Value: true
+        camera_right_ir_optical_frame:
+          Value: true
+        camera_support:
+          Value: true
+        camera_support_2:
+          Value: true
+        floor:
+          Value: true
+        map:
+          Value: true
+        rivet_0_end:
+          Value: true
+        rivet_0_start:
+          Value: true
+        rivet_10_end:
+          Value: true
+        rivet_10_start:
+          Value: true
+        rivet_11_end:
+          Value: true
+        rivet_11_start:
+          Value: true
+        rivet_1_end:
+          Value: true
+        rivet_1_start:
+          Value: true
+        rivet_2_end:
+          Value: true
+        rivet_2_start:
+          Value: true
+        rivet_3_end:
+          Value: true
+        rivet_3_start:
+          Value: true
+        rivet_4_end:
+          Value: true
+        rivet_4_start:
+          Value: true
+        rivet_5_end:
+          Value: true
+        rivet_5_start:
+          Value: true
+        rivet_6_end:
+          Value: true
+        rivet_6_start:
+          Value: true
+        rivet_7_end:
+          Value: true
+        rivet_7_start:
+          Value: true
+        rivet_8_end:
+          Value: true
+        rivet_8_start:
+          Value: true
+        rivet_9_end:
+          Value: true
+        rivet_9_start:
+          Value: true
+        rivet_tool:
+          Value: true
+        rivet_tool_part_1:
+          Value: true
+        rivet_tool_part_2:
+          Value: true
+        rivet_tool_part_3:
+          Value: true
+        scan:
+          Value: true
+        scanCONTROL_2900-50_scanner_laser_link:
+          Value: true
+        scanCONTROL_2900-50_scanner_link:
+          Value: true
+        table:
+          Value: true
+        table_top:
+          Value: true
+        tool_base:
+          Value: true
+        ur10_base:
+          Value: true
+        ur10_base_link:
+          Value: true
+        ur10_ee_link:
+          Value: true
+        ur10_forearm_link:
+          Value: true
+        ur10_mount:
+          Value: true
+        ur10_shoulder_link:
+          Value: true
+        ur10_tool0:
+          Value: true
+        ur10_tool0_controller:
+          Value: true
+        ur10_upper_arm_link:
+          Value: true
+        ur10_wrist_1_link:
+          Value: true
+        ur10_wrist_2_link:
+          Value: true
+        ur10_wrist_3_link:
+          Value: true
+        world:
+          Value: true
+      Marker Scale: 0.100000001
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        world:
+          floor:
+            table:
+              table_top:
+                scan:
+                  {}
+                ur10_mount:
+                  ur10_base_link:
+                    ur10_base:
+                      ur10_tool0_controller:
+                        {}
+                    ur10_shoulder_link:
+                      ur10_upper_arm_link:
+                        ur10_forearm_link:
+                          ur10_wrist_1_link:
+                            ur10_wrist_2_link:
+                              ur10_wrist_3_link:
+                                ur10_ee_link:
+                                  {}
+                                ur10_tool0:
+                                  tool_base:
+                                    camera_plate:
+                                      {}
+                                    rivet_tool_part_1:
+                                      rivet_tool_part_2:
+                                        rivet_tool_part_3:
+                                          rivet_tool:
+                                            {}
+                                    scanCONTROL_2900-50_scanner_link:
+                                      camera_support:
+                                        camera_support_2:
+                                          camera_link:
+                                            camera_aligned_depth_to_color_frame:
+                                              camera_color_optical_frame:
+                                                {}
+                                            camera_aligned_depth_to_infra1_frame:
+                                              camera_infra1_optical_frame:
+                                                {}
+                                            camera_aligned_depth_to_infra2_frame:
+                                              camera_infra2_optical_frame:
+                                                {}
+                                            camera_color_frame:
+                                              {}
+                                            camera_depth_frame:
+                                              camera_depth_optical_frame:
+                                                {}
+                                              camera_fisheye_frame:
+                                                camera_fisheye_optical_frame:
+                                                  {}
+                                              camera_left_ir_frame:
+                                                camera_left_ir_optical_frame:
+                                                  {}
+                                              camera_right_ir_frame:
+                                                camera_right_ir_optical_frame:
+                                                  {}
+                                            camera_infra1_frame:
+                                              {}
+                                            camera_infra2_frame:
+                                              {}
+                                      scanCONTROL_2900-50_scanner_laser_link:
+                                        {}
+          map:
+            {}
+          rivet_0_end:
+            {}
+          rivet_0_start:
+            {}
+          rivet_10_end:
+            {}
+          rivet_10_start:
+            {}
+          rivet_11_end:
+            {}
+          rivet_11_start:
+            {}
+          rivet_1_end:
+            {}
+          rivet_1_start:
+            {}
+          rivet_2_end:
+            {}
+          rivet_2_start:
+            {}
+          rivet_3_end:
+            {}
+          rivet_3_start:
+            {}
+          rivet_4_end:
+            {}
+          rivet_4_start:
+            {}
+          rivet_5_end:
+            {}
+          rivet_5_start:
+            {}
+          rivet_6_end:
+            {}
+          rivet_6_start:
+            {}
+          rivet_7_end:
+            {}
+          rivet_7_start:
+            {}
+          rivet_8_end:
+            {}
+          rivet_8_start:
+            {}
+          rivet_9_end:
+            {}
+          rivet_9_start:
+            {}
+      Update Interval: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -790,25 +1054,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 16.757061
+      Distance: 0.23619476
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.14601177
-        Y: -1.27200449
-        Z: 1.56836271
+        X: -0.362972736
+        Y: -0.665090621
+        Z: 2.17045236
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.374796361
+      Pitch: 0.512867749
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.44752979
+      Yaw: 2.19402885
     Saved: ~
 Window Geometry:
   Displays:
@@ -832,5 +1096,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1514
-  X: 399
-  Y: 30
+  X: 977
+  Y: 276
