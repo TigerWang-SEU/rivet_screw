@@ -238,7 +238,13 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& c
 		y_tmp = eigenVectorsPCA ( 1, 1 );
 	  z_tmp = eigenVectorsPCA ( 2, 1 );
 	}
-	float theta = - atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
+  if ( y_tmp < 0.0 )
+  {
+    y_tmp = - y_tmp;
+    z_tmp = - z_tmp;
+  }
+  std::cout << "\t[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]\n";
+	float theta = atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
 	return theta;
 }
 
@@ -395,12 +401,12 @@ public:
           float x = temp_point.x;
           float y = temp_point.y;
           float z = temp_point.z;
-          if ( ( x - min_x ) / ( max_x - min_x ) < 0.4 )
+          if ( ( x - min_x ) / ( max_x - min_x ) < 0.6 )
           {
             continue;
           }
           PointT new_point;
-          new_point.x = x - 0.01;
+          new_point.x = x - 0.02;
           new_point.y = y;
           new_point.z = z;
           filtered_segment_cloud->points.push_back( new_point );
