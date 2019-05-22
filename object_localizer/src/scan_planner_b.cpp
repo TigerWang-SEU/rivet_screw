@@ -209,69 +209,37 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& c
 {
   // Compute principal directions
   Eigen::Vector4f pcaCentroid;
-  pcl::compute3DCentroid( *cloudSegmented, pcaCentroid );
+  pcl::compute3DCentroid ( *cloudSegmented, pcaCentroid );
   central_point = pcaCentroid.head< 3 >();
-  // std::cout << "central point is " << central_point << std::endl;
 
   Eigen::Matrix3f covariance;
-  pcl::computeCovarianceMatrixNormalized( *cloudSegmented, pcaCentroid, covariance );
+  pcl::computeCovarianceMatrixNormalized ( *cloudSegmented, pcaCentroid, covariance );
 
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver( covariance, Eigen::ComputeEigenvectors );
-  Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
-  // This line is necessary for proper orientation in some cases. The numbers come out the same without it, but
-  // the signs are different and the box doesn't get correctly oriented in some cases.
-  eigenVectorsPCA.col ( 2 ) = eigenVectorsPCA.col ( 0 ).cross ( eigenVectorsPCA.col ( 1 ) );
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
+	Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
+  Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
 
-  std::cout << "eigen vector 0: [" << eigenVectorsPCA (0, 0) << ", " << eigenVectorsPCA (1, 0) << ", " << eigenVectorsPCA (2, 0) << "]" << std::endl;
-  if ( std::abs( eigenVectorsPCA ( 0, 0 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 0 ) ) == sgn<float>( eigenVectorsPCA ( 2, 0 ) ) )
-  {
-    float y = std::abs( eigenVectorsPCA ( 1, 0 ) );
-    float z = std::abs( eigenVectorsPCA ( 2, 0 ) );
-    float theta = 0.0;
-    if ( sgn<float> ( y ) != sgn<float> ( z ) )
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI;
-    }
-    else
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
-    }
-    return theta;
-  }
+	int max_idx_1_r, max_idx_2_r, max_idx_3_r, max_idx_1_c, max_idx_2_c, max_idx_3_c;
+	eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
+	eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
+	eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
+  std::cout << "****** eigen value 1 = [" << eigenvaluesPCA (0) << "] ******\n\t eigen vector 0: [" << eigenVectorsPCA (0, 0) << ", " << eigenVectorsPCA (1, 0) << ", " << eigenVectorsPCA (2, 0) << "] \n\t max_idx = " << max_idx_1_r << std::endl;
+  std::cout << "****** eigen value 2 = [" << eigenvaluesPCA (1) << "] ******\n\t eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "] \n\t max_idx = " << max_idx_2_r << std::endl;
+  std::cout << "****** eigen value 3 = [" << eigenvaluesPCA (2) << "] ******\n\t eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "] \n\t max_idx = " << max_idx_3_r << std::endl;
 
-  std::cout << "eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "]" << std::endl;
-  if ( std::abs( eigenVectorsPCA ( 0, 1 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 1 ) ) == sgn<float>( eigenVectorsPCA ( 2, 1 ) ) )
-  {
-    float y = std::abs( eigenVectorsPCA ( 1, 1 ) );
-    float z = std::abs( eigenVectorsPCA ( 2, 1 ) );
-    float theta = 0.0;
-    if ( sgn<float> ( y ) != sgn<float> ( z ) )
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI;
-    }
-    else
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
-    }
-    return theta;
-  }
-
-  std::cout << "eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "]" << std::endl;
-  if ( std::abs( eigenVectorsPCA ( 0, 2 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 2 ) ) == sgn<float>( eigenVectorsPCA ( 2, 2 ) ) )
-  {
-    float y = std::abs( eigenVectorsPCA ( 1, 2 ) );
-    float z = std::abs( eigenVectorsPCA ( 2, 2 ) );
-    float theta = 0.0;
-    if ( sgn<float> ( y ) != sgn<float> ( z ) )
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI;
-    }
-    else
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
-    }
-    return theta;
-  }
+	float y_tmp, z_tmp;
+	if ( max_idx_3_r != 0 )
+	{
+		y_tmp = eigenVectorsPCA ( 1, 2 );
+	  z_tmp = eigenVectorsPCA ( 2, 2 );
+	}
+	else
+	{
+		y_tmp = eigenVectorsPCA ( 1, 1 );
+	  z_tmp = eigenVectorsPCA ( 2, 1 );
+	}
+	float theta = - atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
+	return theta;
 }
 
 float get_central_point ( PointCloudT::Ptr segment_cloud, Eigen::Vector3f& central_point )
