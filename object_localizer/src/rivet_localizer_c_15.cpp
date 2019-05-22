@@ -311,70 +311,67 @@ template < typename T > int sgn ( T val )
 
 float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 {
+	// step 1, get min_x and max_x
+	float min_x, max_x;
+	PointT minPt, maxPt;
+	getMinMax3D ( *cloudSegmented, minPt, maxPt );
+	min_x = minPt.x;
+	std::cout << "\tmin_x = " << min_x << std::endl;
+	max_x = maxPt.x;
+	std::cout << "\tmax_x = " << max_x << std::endl;
+
+	// step 2, filter the segment point cloud
+	PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
+	for ( PointT temp_point: cloudSegmented->points )
+	{
+		float x = temp_point.x;
+		float y = temp_point.y;
+		float z = temp_point.z;
+		if ( ( x - min_x ) / ( max_x - min_x ) < 0.2 )
+		{
+			continue;
+		}
+		PointT new_point;
+		new_point.x = x;
+		new_point.y = y;
+		new_point.z = z;
+		filtered_segment_cloud->points.push_back( new_point );
+	}
+	filtered_segment_cloud;
+
   // Compute principal directions
   Eigen::Vector4f pcaCentroid;
-  pcl::compute3DCentroid ( *cloudSegmented, pcaCentroid );
-  // std::cout << "central point is " << pcaCentroid.head< 3 >() << std::endl;
+  pcl::compute3DCentroid ( *filtered_segment_cloud, pcaCentroid );
 
   Eigen::Matrix3f covariance;
-  pcl::computeCovarianceMatrixNormalized ( *cloudSegmented, pcaCentroid, covariance );
+  pcl::computeCovarianceMatrixNormalized ( *filtered_segment_cloud, pcaCentroid, covariance );
 
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
+	Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
   Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
-  // This line is necessary for proper orientation in some cases. The numbers come out the same without it, but
-  // the signs are different and the box doesn't get correctly oriented in some cases.
-  eigenVectorsPCA.col ( 2 ) = eigenVectorsPCA.col ( 0 ).cross ( eigenVectorsPCA.col ( 1 ) );
 
-  std::cout << "eigen vector 0: [" << eigenVectorsPCA (0, 0) << ", " << eigenVectorsPCA (1, 0) << ", " << eigenVectorsPCA (2, 0) << "]" << std::endl;
-  if ( std::abs( eigenVectorsPCA ( 0, 0 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 0 ) ) == sgn<float>( eigenVectorsPCA ( 2, 0 ) ) )
-  {
-    float y = std::abs( eigenVectorsPCA ( 1, 0 ) );
-    float z = std::abs( eigenVectorsPCA ( 2, 0 ) );
-    float theta = 0.0;
-    if ( sgn<float> ( y ) != sgn<float> ( z ) )
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI;
-    }
-    else
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
-    }
-    return theta;
-  }
+	int max_idx_1_r, max_idx_2_r, max_idx_3_r, max_idx_1_c, max_idx_2_c, max_idx_3_c;
+	eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
+	eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
+	eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
+	std::cout << "****** eigen value 1 = [" << eigenvaluesPCA (0) << "] ******\n\t eigen vector 0: [" << eigenVectorsPCA (0, 0) << ", " << eigenVectorsPCA (1, 0) << ", " << eigenVectorsPCA (2, 0) << "] \n\t max_idx = " << max_idx_1_r << std::endl;
+  std::cout << "****** eigen value 2 = [" << eigenvaluesPCA (1) << "] ******\n\t eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "] \n\t max_idx = " << max_idx_2_r << std::endl;
+  std::cout << "****** eigen value 3 = [" << eigenvaluesPCA (2) << "] ******\n\t eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "] \n\t max_idx = " << max_idx_3_r << std::endl;
 
-  std::cout << "eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "]" << std::endl;
-  if ( std::abs( eigenVectorsPCA ( 0, 1 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 1 ) ) == sgn<float>( eigenVectorsPCA ( 2, 1 ) ) )
-  {
-    float y = std::abs( eigenVectorsPCA ( 1, 1 ) );
-    float z = std::abs( eigenVectorsPCA ( 2, 1 ) );
-    float theta = 0.0;
-    if ( sgn<float> ( y ) != sgn<float> ( z ) )
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI;
-    }
-    else
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
-    }
-    return theta;
-  }
+	float y_tmp, z_tmp;
+	if ( max_idx_3_r != 0 )
+	{
+		y_tmp = eigenVectorsPCA ( 1, 2 );
+	  z_tmp = eigenVectorsPCA ( 2, 2 );
+	}
+	else
+	{
+		y_tmp = eigenVectorsPCA ( 1, 1 );
+	  z_tmp = eigenVectorsPCA ( 2, 1 );
+	}
+	float theta = - atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
+	return theta;
 
-  std::cout << "eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "]" << std::endl;
-  if ( std::abs( eigenVectorsPCA ( 0, 2 ) ) < 0.1 &&  sgn<float>( eigenVectorsPCA ( 1, 2 ) ) == sgn<float>( eigenVectorsPCA ( 2, 2 ) ) )
-  {
-    float y = std::abs( eigenVectorsPCA ( 1, 2 ) );
-    float z = std::abs( eigenVectorsPCA ( 2, 2 ) );
-    float theta = 0.0;
-    if ( sgn<float> ( y ) != sgn<float> ( z ) )
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI;
-    }
-    else
-    {
-      theta = atan2 ( z, y ) * 180.0 / M_PI + 90.0;
-    }
-    return theta;
-  }
 }
 
 //##############################################################################################################################################################
@@ -717,6 +714,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	getInverseMatrix ( transform_total, transform_total_inverse_temp );
 	std::cout << "transform_total_inverse_temp = \n" << transform_total_inverse_temp << std::endl;
 	pcl::transformPointCloud ( *planar_cloud, *planar_cloud, transform_total_inverse_temp );
+
 	float min_v = std::min ( std::min ( std::abs ( transform_total (0, 0) ), std::abs ( transform_total (0, 1) ) ),
 													 std::abs ( transform_total (0, 2) ) );
 	if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 and transform_total (0, 2) > 0 )
@@ -748,6 +746,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 	r = 0, g = 255, b = 0;
 	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
 	PointCloudT::Ptr cloud_rivet ( new PointCloudT );
+	PointCloudT::Ptr planar_cloud_new ( new PointCloudT );
 	int cloud_rivet_counter = 0;
 	// double sum_x = 0.0;
 	if ( max_idx == 0 )
@@ -770,6 +769,14 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 		    cloud_rivet->points.push_back ( new_point );
 		    cloud_rivet_counter ++;
 			}
+			if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && std::abs ( x ) <= 0.002 )
+			{
+		    PointT new_point;
+		    new_point.x = x;
+		    new_point.y = y;
+		    new_point.z = z;
+		    planar_cloud_new->points.push_back ( new_point );
+			}
 	  }
 	}
 	cloud_rivet->width = cloud_rivet_counter;
@@ -777,6 +784,13 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
   cloud_rivet->header.frame_id = reference_frame;
 	std::cout << "***cloud_rivet has " << cloud_rivet_counter << " data points" << std::endl;
 	// std::cout << "***average x = " << sum_x / cloud_rivet_counter << std::endl;
+
+	//////////////////////////////////////////////////////////////////////////////
+	getInverseMatrix ( transform_total, transform_total_inverse_temp );
+	pcl::transformPointCloud( *planar_cloud_new, *planar_cloud_new, transform_total_inverse_temp );
+	float planar_theta = calculate_theta ( planar_cloud_new );
+	std::cout << "$$$$$$ planar_theta = " << planar_theta << std::endl;
+	//////////////////////////////////////////////////////////////////////////////
 
 	// step 8, partition the rivet cloud to seperate rivets
 	pcl::KdTreeFLANN < PointT > kdtree;
