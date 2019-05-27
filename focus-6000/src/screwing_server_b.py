@@ -78,7 +78,13 @@ def stand_by():
 def new_nut ( req ):
     with grpc.insecure_channel("localhost:50051") as channel:
         client = festo_pb2_grpc.valveControllerStub ( channel )
-        client.openValve ( festo_pb2.ValveRequest ( valveNo=2 ) )
+        client.openValve ( festo_pb2.ValveRequest ( valveNo = 2 ) )
+    return {}
+
+def stop_new_nut ( req ):
+    with grpc.insecure_channel("localhost:50051") as channel:
+        client = festo_pb2_grpc.valveControllerStub ( channel )
+        client.closeValve ( festo_pb2.ValveRequest ( valveNo = 2 ) )
     return {}
 
 # the service recall function for screwing
@@ -86,17 +92,13 @@ def start_screwing ( req ):
     start_tightening = sock.sendMID(op.message('Digital Input Function', '001', '3', ' ', '  '))
     return {}
 
+def stop_screwing ( req ):
+    stop = sock.sendMID(op.message('Digital Input Function', '001', '5', ' ', '  '))
+    return {}
+
 # the service recall function for loosening
 def start_loosening ( req ):
     start_loosening = sock.sendMID(op.message('Digital Input Function', '001','3', ' ', '  '))
-    return {}
-
-# the service recall function for stop screwing
-def stop ( req ):
-    stop = sock.sendMID(op.message('Digital Input Function', '001', '5', ' ', '  '))
-    with grpc.insecure_channel("localhost:50051") as channel:
-        client = festo_pb2_grpc.valveControllerStub ( channel )
-        client.closeValve ( festo_pb2.ValveRequest ( valveNo = 2 ) )
     return {}
 
 if __name__ == "__main__":
@@ -117,8 +119,9 @@ if __name__ == "__main__":
     wake_up()
 
     new_nut = rospy.Service('new_nut', Empty, new_nut)
+    stop_new_nut = rospy.Service('stop_new_nut', Empty, stop_new_nut)
     start_screwing = rospy.Service('start_screwing', Empty, start_screwing)
-    stop = rospy.Service('stop', Empty, stop)
+    stop_screwing = rospy.Service('stop_screwing', Empty, stop_screwing)
     # start_tightening = sock.sendMID ( op.message ( 'Digital Input Function', '001', '1', ' ', '  ' ) )
     # rospy.sleep(3)
     # stop = sock.sendMID ( op.message ( 'Digital Input Function', '001', '5', ' ', '  ' ) )
