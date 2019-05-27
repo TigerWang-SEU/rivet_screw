@@ -20,7 +20,7 @@
 #include "modbus.h"
 #include "modbus_exception.h"
 
-ros::ServiceClient new_nut_, start_screwing_, stop_;
+ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
 
 class RivetToolControl
 {
@@ -165,7 +165,7 @@ void set_target_pose_1 ( Target& target, geometry_msgs::Pose& target_pose )
 {
   target_pose.position.x = target.x + 0.04;
   target_pose.position.y = target.y + 0.05;
-  target_pose.position.z = target.z;
+  target_pose.position.z = target.z - 0.05;
   float rollt  = target.roll;
   float pitcht = target.pitch;
   float yawt   = target.yaw;
@@ -232,8 +232,15 @@ void do_point_rivet ()
         {
           // get the new rivet
           ros::Duration ( 0.5 ) .sleep ();
+          // for ( int pop_counter = 0; pop_counter < 2; pop_counter++ )
+          // {
+          //   new_nut_.call ( msg );
+          //   ros::Duration ( 0.5 ) .sleep ();
+          //   stop_new_nut_.call ( msg );
+          //   ros::Duration ( 0.2 ) .sleep ();
+          // }
           new_nut_.call ( msg );
-          ros::Duration ( 2.0 ) .sleep ();
+          ros::Duration ( 0.5 ) .sleep ();
 
           // rivet_tool_ctrl_ptr -> new_rivet ();
           Target target = target_queue.front ();
@@ -245,6 +252,7 @@ void do_point_rivet ()
           set_target_pose ( target, target_pose2 );
           move_trajectory ( target_pose1, target_pose2, move_group );
           ros::Duration ( 5 ) .sleep ();
+          stop_screwing_.call ( msg );
           target_pose1 = target_pose2;
 
           // move back the rivet_tool
@@ -252,11 +260,14 @@ void do_point_rivet ()
           target_queue.pop();
           set_target_pose ( target, target_pose2 );
           move_trajectory ( target_pose1, target_pose2, move_group );
-          stop_.call ( msg );
-          ros::Duration ( 0.5 ) .sleep ();
-          new_nut_.call ( msg );
-          ros::Duration ( 2.0 ) .sleep ();
-          stop_.call ( msg );
+          stop_new_nut_.call ( msg );
+          for ( int pop_counter = 0; pop_counter < 2; pop_counter++ )
+          {
+            new_nut_.call ( msg );
+            ros::Duration ( 1.2 ) .sleep ();
+            stop_new_nut_.call ( msg );
+            ros::Duration ( 0.2 ) .sleep ();
+          }
           target_pose1 = target_pose2;
           // move to the next rivet if there exist the next rivet
           if ( !target_queue.empty () )
@@ -267,7 +278,7 @@ void do_point_rivet ()
             move_trajectory ( target_pose1, target_pose2, move_group );
             target_pose1 = target_pose2;
           }
-          //  ros::Duration ( 1.5 ) .sleep ();  
+          //  ros::Duration ( 1.5 ) .sleep ();
         }
       //ros::Duration ( 1.0 ) .sleep ();
 
@@ -284,12 +295,13 @@ bool start_point_rivet ( std_srvs::Empty::Request& req, std_srvs::Empty::Respons
 
 int main ( int argc, char** argv )
 {
-  ros::init ( argc, argv, "point_rivet_b" );
+  ros::init ( argc, argv, "point_rivet_c" );
   ros::NodeHandle nh_;
 
   new_nut_ = nh_.serviceClient < std_srvs::Empty > ( "new_nut" );
+  stop_new_nut_ = nh_.serviceClient < std_srvs::Empty > ( "stop_new_nut" );
   start_screwing_ = nh_.serviceClient < std_srvs::Empty > ( "start_screwing" );
-  stop_ = nh_.serviceClient < std_srvs::Empty > ( "stop" );
+  stop_screwing_ = nh_.serviceClient < std_srvs::Empty > ( "stop_screwing" );
 
   ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
