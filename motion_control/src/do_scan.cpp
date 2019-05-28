@@ -131,7 +131,7 @@ public:
 
 bool scanPlanComp ( ScanPlan i,ScanPlan j )
 {
-  return ( i.z_s < j.z_s );
+  return ( i.rotation_deg < j.rotation_deg );
 }
 
 void CfgFileReader ( std::vector< ScanPlan >& scan_plan_vector )
