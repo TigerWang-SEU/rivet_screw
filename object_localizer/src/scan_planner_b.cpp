@@ -374,6 +374,7 @@ public:
         pcl_conversions::toPCL ( segment_list->Segment_list [ bbox_idx ], pcl_pc2 );
         PointCloudT::Ptr segment_cloud ( new PointCloudT );
         pcl::fromPCLPointCloud2 ( pcl_pc2, *segment_cloud );
+        bbox_idx ++;
         // show_segment_cloud( segment_cloud );
         // calculate_bounding_box( segment_cloud );
 
@@ -445,7 +446,6 @@ public:
         // step 5, write scanning plannings into the scanning plan file.
         do_scan_fs << theta << " " << x_s << " " << y_s << " " << z_s << " " << x_e << " " << y_e << " " << z_e << std::endl;
 
-        bbox_idx ++;
       }
     	do_scan_fs.close();
     }
