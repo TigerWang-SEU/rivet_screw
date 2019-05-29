@@ -5,7 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /MotionPlanning1/Planning Request1
-        - /Axes1
       Splitter Ratio: 0.648541093
     Tree Height: 320
   - Class: rviz/Selection
@@ -513,48 +512,6 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
-    - Class: rviz/Axes
-      Enabled: true
-      Length: 0.100000001
-      Name: Axes
-      Radius: 0.00999999978
-      Reference Frame: world
-      Value: true
-    - Class: rviz/Axes
-      Enabled: false
-      Length: 0.150000006
-      Name: Axes
-      Radius: 0.0149999997
-      Reference Frame: table_top
-      Value: false
-    - Class: rviz/Axes
-      Enabled: false
-      Length: 0.0199999996
-      Name: Axes
-      Radius: 0.00300000003
-      Reference Frame: scanCONTROL_2900-50_scanner_laser_link
-      Value: false
-    - Class: rviz/Axes
-      Enabled: false
-      Length: 0.100000001
-      Name: Axes
-      Radius: 0.00999999978
-      Reference Frame: rivet_tool
-      Value: false
-    - Class: rviz/Axes
-      Enabled: false
-      Length: 1
-      Name: Axes
-      Radius: 0.00300000003
-      Reference Frame: rivet_0_end
-      Value: false
-    - Class: rviz/Axes
-      Enabled: false
-      Length: 1
-      Name: Axes
-      Radius: 0.00300000003
-      Reference Frame: rivet_0_start
-      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -816,54 +773,6 @@ Visualization Manager:
           Value: true
         map:
           Value: true
-        rivet_0_end:
-          Value: true
-        rivet_0_start:
-          Value: true
-        rivet_10_end:
-          Value: true
-        rivet_10_start:
-          Value: true
-        rivet_11_end:
-          Value: true
-        rivet_11_start:
-          Value: true
-        rivet_1_end:
-          Value: true
-        rivet_1_start:
-          Value: true
-        rivet_2_end:
-          Value: true
-        rivet_2_start:
-          Value: true
-        rivet_3_end:
-          Value: true
-        rivet_3_start:
-          Value: true
-        rivet_4_end:
-          Value: true
-        rivet_4_start:
-          Value: true
-        rivet_5_end:
-          Value: true
-        rivet_5_start:
-          Value: true
-        rivet_6_end:
-          Value: true
-        rivet_6_start:
-          Value: true
-        rivet_7_end:
-          Value: true
-        rivet_7_start:
-          Value: true
-        rivet_8_end:
-          Value: true
-        rivet_8_start:
-          Value: true
-        rivet_9_end:
-          Value: true
-        rivet_9_start:
-          Value: true
         rivet_tool:
           Value: true
         rivet_tool_part_1:
@@ -979,54 +888,6 @@ Visualization Manager:
                                         {}
           map:
             {}
-          rivet_0_end:
-            {}
-          rivet_0_start:
-            {}
-          rivet_10_end:
-            {}
-          rivet_10_start:
-            {}
-          rivet_11_end:
-            {}
-          rivet_11_start:
-            {}
-          rivet_1_end:
-            {}
-          rivet_1_start:
-            {}
-          rivet_2_end:
-            {}
-          rivet_2_start:
-            {}
-          rivet_3_end:
-            {}
-          rivet_3_start:
-            {}
-          rivet_4_end:
-            {}
-          rivet_4_start:
-            {}
-          rivet_5_end:
-            {}
-          rivet_5_start:
-            {}
-          rivet_6_end:
-            {}
-          rivet_6_start:
-            {}
-          rivet_7_end:
-            {}
-          rivet_7_start:
-            {}
-          rivet_8_end:
-            {}
-          rivet_8_start:
-            {}
-          rivet_9_end:
-            {}
-          rivet_9_start:
-            {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -1054,7 +915,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.23619476
+      Distance: 15.4640303
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -1069,10 +930,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.512867749
+      Pitch: 0.12286786
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.19402885
+      Yaw: 1.64402938
     Saved: ~
 Window Geometry:
   Displays:
@@ -1096,5 +957,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1514
-  X: 977
-  Y: 276
+  X: 928
+  Y: 1103
