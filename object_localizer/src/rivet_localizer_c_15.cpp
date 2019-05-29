@@ -942,7 +942,7 @@ int find_rivet ( PointCloudT::Ptr cloud_in )
 			float y = temp_point.y;
 			float z = temp_point.z;
 			if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z
-					 && x_compare <= 0.0015 && x > 0 )
+					 && x_compare <= 0.0015 )
 			{
 		    PointT new_point;
 				// sum_x += x;
