@@ -1,16 +1,21 @@
-# ros_ws
-The ros workspace repository, my work space for ros Kinetic.
+# ros_screw
+A ros software package for screwing rivets. the ros version is Kinetic.
 
 ## Including driver packages for the following hardware:
-  - Camera
-    - The Kinect-2 sensor
-    - The ZED stereo camera
-    - RealSense
-  - Distance sensor
-    - PMD CamBoard pico flexx
-    - Pepperl+Fuchs R2000
-    - ScanCONTROL_2900-50
-  - Tracking Systems
-    - Phasespace
-  - Robot
+  - RealSense
+    - realsense2_camera
+  - Pepperl+Fuchs R2000
+    - pepperl_fuchs
+  - ScanCONTROL_2900-50
+    - microepsilon_scancontrol
+  - Robot UR 10
     - Ur_modern_driver
+  - Atlas Copco Focus 6000
+    - focus-6000
+    
+## URDF description is in syn_ur10_bringup package
+
+## object_localizer includes the neural network and rivet localizer
+
+## the control_node is in the motion_control package 
+    
