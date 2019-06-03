@@ -13,9 +13,9 @@ A ros software package for screwing rivets. the ros version is Kinetic.
   - Atlas Copco Focus 6000
     - focus-6000
     
-## URDF description is in syn_ur10_bringup package
+## URDF description is in the syn_ur10_bringup package
 
-## object_localizer includes the neural network and rivet localizer
+## The neural network and rivet localizer are in the object_localizer
 
-## the control_node is in the motion_control package 
+## The control_node is in the motion_control package 
     
