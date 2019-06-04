@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  <arg name="joint_ranges_config" default="$(find syn_ur10_bringup)/config/joint_ranges/default.yaml"/>
-  <arg name="limited" default="true"/>
-
-  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find syn_ur10_bringup)/urdf/syn_ur10_setup_b.urdf.xacro' joint_ranges_config:=$(arg joint_ranges_config) limited:=$(arg limited)" />
-</launch>
