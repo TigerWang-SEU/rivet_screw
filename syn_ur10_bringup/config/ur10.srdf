@@ -28,9 +28,9 @@
         <joint name="ur10_shoulder_pan_joint" value="0" />
         <joint name="ur10_wrist_1_joint" value="-1.8434" />
         <joint name="ur10_wrist_2_joint" value="1.5707" />
-        <joint name="ur10_wrist_3_joint" value="3.1415" />
+        <joint name="ur10_wrist_3_joint" value="0" />
     </group_state>
-    <group_state name="scan_start_1" group="camera">
+    <!-- <group_state name="scan_start_1" group="camera">
         <joint name="ur10_elbow_joint" value="-1.5428" />
         <joint name="ur10_shoulder_lift_joint" value="-1.7234" />
         <joint name="ur10_shoulder_pan_joint" value="0.0551" />
@@ -45,14 +45,14 @@
         <joint name="ur10_wrist_1_joint" value="-1.9598" />
         <joint name="ur10_wrist_2_joint" value="1.2874" />
         <joint name="ur10_wrist_3_joint" value="-0.0873" />
-    </group_state>
+    </group_state> -->
     <group_state name="scan_end" group="camera">
         <joint name="ur10_elbow_joint" value="-2.187" />
         <joint name="ur10_shoulder_lift_joint" value="-0.6065" />
         <joint name="ur10_shoulder_pan_joint" value="0" />
         <joint name="ur10_wrist_1_joint" value="0" />
         <joint name="ur10_wrist_2_joint" value="1.5707" />
-        <joint name="ur10_wrist_3_joint" value="3.14156" />
+        <joint name="ur10_wrist_3_joint" value="0" />
     </group_state>
     <group_state name="screw_start" group="camera">
         <joint name="ur10_elbow_joint" value="-2.187" />
@@ -60,7 +60,7 @@
         <joint name="ur10_shoulder_pan_joint" value="0" />
         <joint name="ur10_wrist_1_joint" value="-1.8434" />
         <joint name="ur10_wrist_2_joint" value="1.5707" />
-        <joint name="ur10_wrist_3_joint" value="0" />
+        <joint name="ur10_wrist_3_joint" value="3.1415" />
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <!-- <end_effector name="camera" parent_link="camera_depth_optical_frame" group="camera" parent_group="camera" />
