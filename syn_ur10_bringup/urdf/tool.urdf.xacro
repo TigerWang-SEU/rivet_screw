@@ -3,24 +3,24 @@
 
   <!-- change the value of rivet_tool_distance_offset to adjust the distance to the target-->
   <!-- old value = -0.0020 -->
-  <xacro:property name="rivet_tool_distance_offset" value="0.0013" />
+  <xacro:property name="rivet_tool_distance_offset" value="0.00" />
   <!-- change the value of rivet_tool_horizontal_adjust to adjust the tool horizontally, plus for left and minus for right -->
   <!-- old value = 0.0046 0.0050 -->
-  <xacro:property name="rivet_tool_horizontal_adjust" value="0.0047" />
+  <xacro:property name="rivet_tool_horizontal_adjust" value="-0.013" />
   <!-- change the value of rivet_tool_vertical_adjust to adjust the tool vertically, plus for up and minus for down -->
   <!-- old value = 0.0155 0.0152 -->
-  <xacro:property name="rivet_tool_vertical_adjust" value="0.0160" />
+  <xacro:property name="rivet_tool_vertical_adjust" value="-0.007" />
 
   <xacro:include filename="$(find microepsilon_scancontrol)/description/urdf/scanCONTROL_2900-50_macro.urdf.xacro" />
   <xacro:property name="rivet_tool_part_1_length" value="0.05078" />
   <xacro:property name="rivet_tool_part_1_radius" value="0.015" />
   <xacro:property name="rivet_tool_part_2_height" value="0.012" />
-  <xacro:property name="rivet_tool_part_2_length" value="0.066" />
+  <xacro:property name="rivet_tool_part_2_length" value="0.088" />
   <xacro:property name="rivet_tool_part_2_width" value="0.03" />
   <xacro:property name="rivet_tool_part_3_length" value="0.06374" />
   <xacro:property name="rivet_tool_part_3_radius" value="0.0075" />
 
-  <xacro:property name="rivet_tool_angle" value="154.6" />
+  <xacro:property name="rivet_tool_angle" value="155.2" />
 
   <link name="tool_base">
     <inertial>
@@ -30,15 +30,15 @@
     </inertial>
     <visual>
       <material name="lightgray" />
-      <origin xyz="0.0 0.0 0.03725" />
+      <origin xyz="0.0 0.0 0.0604" />
       <geometry>
-        <box size="0.070 0.0655 0.0705" />
+        <box size="0.070 0.0655 0.1208" />
       </geometry>
     </visual>
     <collision>
-      <origin xyz="0.0 0.0 0.03725" />
+      <origin xyz="0.0 0.0 0.0604" />
       <geometry>
-        <box size="0.070 0.0655 0.0705" />
+        <box size="0.070 0.0655 0.1208" />
       </geometry>
     </collision>
   </link>
@@ -64,11 +64,19 @@
     </collision>
   </link>
 
+  <link name="rivet_base" />
+
+  <joint name="tool_base_rivet_base_joint" type="fixed">
+    <parent link="tool_base"/>
+    <child link="rivet_base"/>
+    <origin xyz="0 -0.03275 0.09423" rpy="${radians(180)} 0 0"/>
+  </joint>
+
   <joint name="tool_base_rivet_tool_part_1_joint" type="fixed">
     <parent link="tool_base"/>
     <child link="rivet_tool_part_1"/>
     <!-- <origin xyz="0 -0.03275 ${0.03787 + rivet_tool_z_adjust}" rpy="${radians(90)} 0 0" /> -->
-    <origin xyz="${0 + rivet_tool_horizontal_adjust} -0.03275 ${0.03787 + rivet_tool_vertical_adjust}" rpy="${radians(90)} ${radians(rivet_tool_angle)} 0" />
+    <origin xyz="${0 + rivet_tool_horizontal_adjust} -0.03275 ${0.09423 + rivet_tool_vertical_adjust}" rpy="${radians(90)} ${radians(rivet_tool_angle)} 0"/>
   </joint>
 
   <link name="rivet_tool_part_2">
@@ -144,13 +152,13 @@
       <material name="lightgray" />
       <origin xyz="0.0 0.0 0.0" />
       <geometry>
-        <box size="0.003 0.126 0.132" />
+        <box size="0.003 0.126 0.162" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" />
       <geometry>
-        <box size="0.003 0.126 0.132" />
+        <box size="0.003 0.126 0.162" />
       </geometry>
     </collision>
   </link>
@@ -158,12 +166,12 @@
   <joint name="tool_base_camera_plate_joint" type="fixed">
     <parent link="tool_base"/>
     <child link="camera_plate"/>
-    <origin xyz="-0.0392 0.0298 0.079" rpy="0 0 0" />
+    <origin xyz="-0.0382 0.0298 0.079" rpy="0 0 0" />
   </joint>
 
   <!-- scanCONTROL_2900-50 sensor and is connected to tool_base frame -->
   <xacro:scanCONTROL_2900-50 prefix="scanCONTROL_2900-50_" parent="tool_base">
-    <origin xyz="-0.05951 0.09345 0.09596" rpy="${radians(0.9)} ${radians(1)} ${radians(180.45)}" />
+    <origin xyz="-0.05755 0.08971 0.10693" rpy="${radians(1.3)} ${radians(0)} ${radians(180)}" />
   </xacro:scanCONTROL_2900-50>
 
   <!-- camera_support link is connected to scanCONTROL_2900-50_scanner_link -->
