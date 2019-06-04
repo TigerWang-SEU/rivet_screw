@@ -20,7 +20,7 @@
     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
   </joint>
 
-  <link name="map" /> 
+  <link name="map" />
 
   <joint name="map_world_joint" type="fixed">
     <parent link="world" />
@@ -37,7 +37,7 @@
   <joint name="ur10_tool_joint" type="fixed">
     <parent link="ur10_tool0" />
     <child link = "tool_base" />
-    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 ${radians(180)}" />
   </joint>
 
 </robot>
