@@ -10,7 +10,7 @@
 
   <!-- Load universal robot description format (URDF) -->
   <group if="$(arg load_robot_description)">
-    <param name="$(arg robot_description)" command="$(find xacro)/xacro --inorder '$(find syn_ur10_bringup)/urdf/syn_ur10_setup_b.urdf.xacro' joint_ranges_config:=$(arg joint_ranges_config)" />
+    <param name="$(arg robot_description)" command="$(find xacro)/xacro --inorder '$(find syn_ur10_bringup)/urdf/syn_ur10_setup.urdf.xacro' joint_ranges_config:=$(arg joint_ranges_config)" />
   </group>
 
   <!-- The semantic description that corresponds to the URDF -->
