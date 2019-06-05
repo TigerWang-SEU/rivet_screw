@@ -19,7 +19,7 @@ ur10_elbow_joint:
     upper: 3.141592
 ur10_wrist_1_joint:
     lower: -2.094333
-    upper: 0.000000
+    upper: 1.04716
 ur10_wrist_2_joint:
     lower: −2.094334
     upper: 2.094333
