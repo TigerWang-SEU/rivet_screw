@@ -2,8 +2,8 @@
 A ros software package for screwing rivets. the ros version is Kinetic.
 
 ## Including driver packages for the following hardware:
-  - RealSense
-    - realsense2_camera
+  - RealSense D435
+    - realsense
   - Pepperl+Fuchs R2000
     - pepperl_fuchs
   - ScanCONTROL_2900-50
