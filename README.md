@@ -1,5 +1,5 @@
 # ros_screw
-A ros software package for screwing rivets. the ros version is Kinetic.
+A ros software package for screwing rivets. The used ros version is Kinetic.
 
 ## Including driver packages for the following hardware:
   - RealSense D435
@@ -13,9 +13,9 @@ A ros software package for screwing rivets. the ros version is Kinetic.
   - Atlas Copco Focus 6000
     - focus-6000
     
-## URDF description is in the syn_ur10_bringup package
+## URDF description is in package syn_ur10_bringup 
 
-## The neural network and rivet localizer are in the object_localizer
+## The neural network and rivet localizer are in package object_localizer
 
-## The control_node is in the motion_control package 
+## The control_node is in package motion_control
     
