@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="tool">
+<robot name="tool" xmlns:xacro="http://ros.org/wiki/xacro">
 
   <!-- change the value of rivet_tool_distance_offset to adjust the distance to the target-->
   <!-- old value = -0.0020 -->
@@ -211,10 +211,11 @@
   </joint>
 
   <!-- connect camera to link camera_support_2 -->
-  <xacro:include filename="$(find realsense2_camera)/urdf/_r430.urdf.xacro"/>
+  <xacro:include filename="$(find realsense2_description)/urdf/_r430.urdf.xacro" />
 
   <sensor_r430 parent="camera_support_2">
     <origin xyz="-0.0225 0 0" rpy="0 0 ${radians(90)}"/>
+    <!-- <origin xyz="0 0 0" rpy="0 0 ${radians(0)}"/> -->
   </sensor_r430>
 
 </robot>
