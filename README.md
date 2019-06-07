@@ -1,4 +1,4 @@
-# ros_screw
+# rivet_screw
 A ros software package for screwing rivets. The used ros version is Kinetic.
 
 ## Including driver packages for the following hardware:
