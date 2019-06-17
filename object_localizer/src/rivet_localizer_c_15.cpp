@@ -800,7 +800,6 @@ public:
 		// step 1, filter, downsampling, and scaling the input point cloud and change the color of each point
 		PointCloudT::Ptr cloud_filtered	( new PointCloudT );
 		PointCloudT::Ptr segment_cloud ( new PointCloudT );
-	  // filterOutliner ( cloud_in );
 		downSampling ( cloud_in, cloud_filtered );
 		scale_and_color_point_cloud ( cloud_filtered, segment_cloud );
 
@@ -907,7 +906,6 @@ public:
 		PointCloudT::Ptr cloud_rivet ( new PointCloudT );
 		PointCloudT::Ptr planar_cloud_new ( new PointCloudT );
 		int cloud_rivet_counter = 0;
-		// double sum_x = 0.0;
 		if ( max_idx == 0 )
 		{
 			for ( PointT temp_point: cloud_in_transformed->points )
@@ -916,11 +914,9 @@ public:
 				float x_compare = std::abs ( std::abs ( x ) - rivet_height );
 				float y = temp_point.y;
 				float z = temp_point.z;
-				if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z
-						 && x_compare <= 0.0015 )
+				if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0015 )
 				{
 			    PointT new_point;
-					// sum_x += x;
 			    new_point.x = x;
 			    new_point.y = y;
 			    new_point.z = z;
@@ -944,13 +940,13 @@ public:
 		std::cout << "***cloud_rivet has " << cloud_rivet_counter << " data points" << std::endl;
 		// std::cout << "***average x = " << sum_x / cloud_rivet_counter << std::endl;
 
-		//////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////
 		// step 7.1, check the theta angle of the planar_cloud_new
 		getInverseMatrix ( transform_total, transform_total_inverse_temp );
 		pcl::transformPointCloud( *planar_cloud_new, *planar_cloud_new, transform_total_inverse_temp );
 		float planar_theta = calculate_theta ( planar_cloud_new );
 		std::cout << "$$$$$$ planar_theta = " << planar_theta << std::endl;
-		//////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////
 
 		// step 8, partition the rivet cloud to seperate rivets
 		pcl::KdTreeFLANN < PointT > kdtree;
@@ -1144,7 +1140,7 @@ public:
 		if ( scene_cloud_total->width * scene_cloud_total->height > 0  )
 		{
 			int counter = 0;
-			while ( counter < 15 )
+			while ( counter < 10 )
 			{
 				scene_cloud_total->header.frame_id = reference_frame;
 				pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
