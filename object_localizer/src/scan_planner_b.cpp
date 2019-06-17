@@ -419,9 +419,13 @@ public:
         // step 3, find the central point of the segment point cloud
         // float theta = get_central_point ( segment_cloud, central_point );
         float theta = calculate_theta ( segment_cloud, central_point );
-        if ( theta == 0 )
+        if ( central_point ( 1 ) < -0.212 && theta < 30 )
         {
-          theta = 90;
+          theta += 180;
+        }
+        if ( central_point ( 1 ) > -0.212 && theta > 150 )
+        {
+          theta -= 180;
         }
         std::cout << std::endl << "[***] Rotation around x is [" << theta << "] degrees" << std::endl;
         float x_0 = central_point ( 0 );
