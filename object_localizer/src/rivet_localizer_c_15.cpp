@@ -144,21 +144,7 @@ public:
 
 };
 
-PointCloudT::Ptr scene_cloud_total	( new PointCloudT );
 Eigen::Matrix4f transform_inverse ( Eigen::Matrix4f::Identity() );
-
-// show the point cloud in rviz
-void Visualize ( PointCloudT::Ptr cloud_in_transformed, PointCloudT::Ptr planar_cloud, PointCloudT::Ptr cloud_rivet )
-{
-	*scene_cloud_total += *cloud_in_transformed;
-	*scene_cloud_total += *planar_cloud;
-	*scene_cloud_total += *cloud_rivet;
-	pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, transform_inverse );
-	scene_cloud_total->header.frame_id = reference_frame;
-	scene_cloud_total->width = cloud_in_transformed->size() + planar_cloud->size() + cloud_rivet->size();
-	scene_cloud_total->height = 1;
-	std::cout << "scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
-}
 
 // downsampling an input point cloud
 void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
@@ -1133,37 +1119,40 @@ public:
 		// step 11, show the point cloud
 		if ( show_viz )
 		{
-			// if ( rotate_45 )
-			// {
-			// 	for ( size_t j = 0; j < cloud_in_transformed->size (); ++j )
-			// 	{
-			// 		Eigen::Vector4f _point_new;
-			// 		_point_new << cloud_in_transformed->points[ j ].x, cloud_in_transformed->points[ j ].y, cloud_in_transformed->points[ j ].z, 1.0;
-			// 		_point_new = r_x_45_inv * _point_new;
-			// 		cloud_in_transformed->points[ j ].x = _point_new ( 0 );
-			// 		cloud_in_transformed->points[ j ].y = _point_new ( 1 );
-			// 		cloud_in_transformed->points[ j ].z = _point_new ( 2 );
-			// 	}
-			// 	for ( size_t j = 0; j < cycle_planar_cloud->size (); ++j )
-			// 	{
-			// 		Eigen::Vector4f _point_new;
-			// 		_point_new << cycle_planar_cloud->points[ j ].x, cycle_planar_cloud->points[ j ].y, cycle_planar_cloud->points[ j ].z, 1.0;
-			// 		_point_new = r_x_45_inv * _point_new;
-			// 		cycle_planar_cloud->points[ j ].x = _point_new ( 0 );
-			// 		cycle_planar_cloud->points[ j ].y = _point_new ( 1 );
-			// 		cycle_planar_cloud->points[ j ].z = _point_new ( 2 );
-			// 	}
-			// 	for ( size_t j = 0; j < rivet_cloud_new->size (); ++j )
-			// 	{
-			// 		Eigen::Vector4f _point_new;
-			// 		_point_new << rivet_cloud_new->points[ j ].x, rivet_cloud_new->points[ j ].y, rivet_cloud_new->points[ j ].z, 1.0;
-			// 		_point_new = r_x_45_inv * _point_new;
-			// 		rivet_cloud_new->points[ j ].x = _point_new ( 0 );
-			// 		rivet_cloud_new->points[ j ].y = _point_new ( 1 );
-			// 		rivet_cloud_new->points[ j ].z = _point_new ( 2 );
-			// 	}
-			// }
 			Visualize ( cloud_in_transformed, cycle_planar_cloud, rivet_cloud_new );
+		}
+	}
+
+	// show the point cloud in rviz
+	void Visualize ( PointCloudT::Ptr cloud_in_transformed, PointCloudT::Ptr planar_cloud, PointCloudT::Ptr cloud_rivet )
+	{
+		PointCloudT::Ptr scene_cloud_total	( new PointCloudT );
+
+		*scene_cloud_total += *cloud_in_transformed;
+		*scene_cloud_total += *planar_cloud;
+		*scene_cloud_total += *cloud_rivet;
+		pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, transform_inverse );
+		if ( rotate_45 )
+		{
+			pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, r_x_45_inv );
+		}
+		scene_cloud_total->header.frame_id = reference_frame;
+		scene_cloud_total->width = cloud_in_transformed->size() + planar_cloud->size() + cloud_rivet->size();
+		scene_cloud_total->height = 1;
+		std::cout << "scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
+
+		if ( scene_cloud_total->width * scene_cloud_total->height > 0  )
+		{
+			int counter = 0;
+			while ( counter < 15 )
+			{
+				scene_cloud_total->header.frame_id = reference_frame;
+				pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
+				cloud_pub_.publish ( scene_cloud_total );
+				ros::Duration ( 0.01 ) .sleep ();
+				counter ++;
+			}
+			std::cout << "***On Topic [/rivet_localizer/points], published [" << scene_cloud_total->width * scene_cloud_total->height << "] data points***" << std::endl;
 		}
 	}
 
@@ -1177,23 +1166,10 @@ public:
       return;
     }
     std::cout << "Loaded " << scene_cloud_->width * scene_cloud_->height << " data points from " << SceneFilePath << std::endl;
+
+		// process the saved scene point cloud
 		check_theta ( scene_cloud_ );
     find_rivet ( scene_cloud_ );
-
-		if ( scene_cloud_total->width * scene_cloud_total->height > 0  )
-		{
-			int counter = 0;
-			while ( counter < 15 )
-			{
-	      scene_cloud_total->header.frame_id = reference_frame;
-				pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
-		    cloud_pub_.publish ( scene_cloud_total );
-				ros::Duration ( 0.01 ) .sleep ();
-				counter ++;
-			}
-			std::cout << "***On Topic [/rivet_localizer/points], published [" << scene_cloud_total->width * scene_cloud_total->height << "] data points***" << std::endl;
-		}
-
   }
 
 	bool start_rivet_localizer ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
