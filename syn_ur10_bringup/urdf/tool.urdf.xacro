@@ -5,11 +5,11 @@
   <!-- old value = -0.0020 -->
   <xacro:property name="rivet_tool_distance_offset" value="0.00" />
   <!-- change the value of rivet_tool_horizontal_adjust to adjust the tool horizontally, plus for left and minus for right -->
-  <!-- old value = 0.0046 0.0050 -->
-  <xacro:property name="rivet_tool_horizontal_adjust" value="-0.015" />
+  <!-- old value = -0.015 (15 degree)-->
+  <xacro:property name="rivet_tool_horizontal_adjust" value="-0.0078" />
   <!-- change the value of rivet_tool_vertical_adjust to adjust the tool vertically, plus for up and minus for down -->
-  <!-- old value = 0.0155 0.0152 -->
-  <xacro:property name="rivet_tool_vertical_adjust" value="-0.007" />
+  <!-- old value = -0.007 (15 degree)-->
+  <xacro:property name="rivet_tool_vertical_adjust" value="-0.0083" />
 
   <xacro:include filename="$(find microepsilon_scancontrol)/description/urdf/scanCONTROL_2900-50_macro.urdf.xacro" />
   <xacro:property name="rivet_tool_part_1_length" value="0.05078" />
