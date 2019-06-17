@@ -2,6 +2,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <array>
+#include <list>
+#include <set>
+#include <map>
 #include <ctime>
 #include <cmath>
 #include <boost/algorithm/string/predicate.hpp>
@@ -49,11 +53,12 @@ float tool_angle = -15.0;
 // define the union-find data structure
 class UF
 {
-	int cnt, *id, *sz;
+	int size, cnt, *id, *sz;
 public:
 	// Create an empty union find data structure with N isolated sets.
 	UF ( int N )
 	{
+		size = N;
 		cnt = N;
 		id = new int[N];
 		sz = new int[N];
@@ -116,6 +121,27 @@ public:
 	{
 		return cnt;
   }
+
+	// return the list of connected components
+	std::map < int, std::list < int > > get_components ()
+	{
+		std::map < int, std::list < int > > component_map;
+		for ( int i = 0; i < size; i++ )
+		{
+			int component_id = find ( i );
+			if ( component_map.find ( component_id ) != component_map.end() )
+			{
+				component_map[ component_id ].push_back( i );
+			}
+			else
+			{
+				std::list < int > component = {i};
+				component_map.insert ( std::pair< int, std::list < int > > ( component_id, component ) );
+			}
+		}
+		return component_map;
+	}
+
 };
 
 PointCloudT::Ptr scene_cloud_total	( new PointCloudT );
