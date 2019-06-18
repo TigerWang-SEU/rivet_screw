@@ -54,27 +54,37 @@ double get_trajectory ( std::vector < geometry_msgs::Pose>& waypoints, moveit::p
   return fraction;
 }
 
+void set_joint_angle ( moveit::planning_interface::MoveGroupInterface& move_group, const robot_state::JointModelGroup* joint_model_group, int joint_idx, double joint_angle )
+{
+  moveit::core::RobotStatePtr current_state = move_group.getCurrentState ();
+  std::vector < double > joint_group_positions;
+  current_state->copyJointGroupPositions ( joint_model_group, joint_group_positions );
+
+  joint_group_positions [ joint_idx ] = joint_angle;
+  move_group.setJointValueTarget ( joint_group_positions );
+  moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+  bool success = ( move_group.plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
+  if ( success )
+  {
+    move_group.setMaxVelocityScalingFactor ( 0.1 );
+    move_group.setMaxAccelerationScalingFactor ( 0.1 );
+    move_group.move ();
+  }
+}
+
 void set_rivet_tool_forward ( moveit::planning_interface::MoveGroupInterface& move_group, const robot_state::JointModelGroup* joint_model_group )
 {
   moveit::core::RobotStatePtr current_state = move_group.getCurrentState ();
   std::vector < double > joint_group_positions;
   current_state->copyJointGroupPositions ( joint_model_group, joint_group_positions );
-  std::cout << "current wrist 3: " << joint_group_positions [ 5 ] << std::endl;
+  double wrist_1_angle = joint_group_positions [ 3 ];
+  double wrist_2_angle = joint_group_positions [ 4 ];
+  double wrist_3_angle = joint_group_positions [ 5 ];
+  std::cout << "current wrist 3: " << wrist_3_angle << std::endl;
 
-  if ( std::abs ( joint_group_positions [ 5 ] - 0 ) <= 0.01 )
-  {
-    joint_group_positions [ 5 ] = 3.1415;
-    move_group.setJointValueTarget ( joint_group_positions );
-    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-    bool success = ( move_group.plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
-    if ( success )
-    {
-      std::cout << "set wrist 3 to: " << joint_group_positions [ 5 ] << std::endl;
-      move_group.setMaxVelocityScalingFactor ( 0.1 );
-      move_group.setMaxAccelerationScalingFactor ( 0.1 );
-      move_group.move ();
-    }
-  }
+  set_joint_angle ( move_group, joint_model_group, 4, 0 );
+  set_joint_angle ( move_group, joint_model_group, 5, wrist_3_angle + 3.1415 );
+  set_joint_angle ( move_group, joint_model_group, 4, wrist_2_angle );
 }
 
 void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, float y_e, float z_e, float x_final, float y_final, float z_final )
