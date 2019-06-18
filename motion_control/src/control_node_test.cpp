@@ -129,7 +129,6 @@ public:
 
   void execute_pipeline ()
   {
-
     // step 1, set the robot pose to pose.
     std_srvs::Empty msg;
     std::cout << "1, set the robot pose to scan_start" << std::endl;
@@ -143,23 +142,17 @@ public:
       std::cout << "3, Saving profile point cloud" << std::endl;
       save_profile_pc ();
 
-      // step 4, move back to pose scan_start
-      std::cout << "4, set the robot pose back to scan_start and then screw_start" << std::endl;
-      if ( set_pose ( "scan_start" ) )
-      {
-        set_pose ( "screw_start" );
-        // step 5, call the service rivet_localizer
-        std::cout << "5, start rivet localizer" << std::endl;
-        start_rivet_localizer_.call ( msg );
+      // step 4, call the service rivet_localizer
+      std::cout << "4, start rivet localizer" << std::endl;
+      start_rivet_localizer_.call ( msg );
 
-        // step 6, call the service point_rivet
-        std::cout << "6, start to point to rivet" << std::endl;
-        start_point_rivet_.call ( msg );
+      // step 5, call the service point_rivet
+      std::cout << "5, start to point to rivet" << std::endl;
+      start_point_rivet_.call ( msg );
 
-        // step 7, set the robot pose back to pose screw_start
-        std::cout << "7, set the robot pose back to pose screw_start" << std::endl;
-        set_pose ( "screw_start" );
-      }
+      // step 6, set the robot pose back to pose screw_start
+      std::cout << "6, set the robot pose back to pose screw_start" << std::endl;
+      set_pose ( "screw_start" );
     }
   }
 
