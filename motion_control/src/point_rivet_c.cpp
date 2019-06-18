@@ -110,14 +110,14 @@ Target::Target ( int id_i, double x_i, double y_i, double z_i, double roll_i, do
 void targetFileReader ( std::queue< Target >& target_queue )
 {
   float tool_angle = read_tool_angle();
-  Eigen::Matrix4f y_z_adjust, r_x_theta;
-  y_z_adjust << 1, 0, 0, 0,
+  Eigen::Matrix4f h_v_adjust, r_x_theta;
+  h_v_adjust << 1, 0, 0, 0,
     				    0, 1, 0, h_adjust,
     				    0, 0, 1, v_adjust,
     					  0, 0, 0, 1;
   float theta_x = tool_angle / 180.0 * 3.14159265359;
   get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );
-  
+
   std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg";
   std::cout << "***The path of the point_rivet configuration file is: [" << cfgFileName << "]" << std::endl;
 
@@ -140,7 +140,7 @@ void targetFileReader ( std::queue< Target >& target_queue )
       getInverseMatrix ( origin_matrix, inv_origin_matrix );
       Eigen::Vector4f point_origin;
       point_origin << 0.0, 0.0, 0.0, 1.0;
-      Eigen::Matrix4f total_transform = inv_origin_matrix * r_x_theta * y_z_adjust;
+      Eigen::Matrix4f total_transform = inv_origin_matrix * r_x_theta * h_v_adjust;
       point_origin = total_transform * point_origin;
       x = point_origin ( 0 );
       y = point_origin ( 1 );
