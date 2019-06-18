@@ -8,6 +8,7 @@
 #include <std_msgs/Int64.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf/transform_listener.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit_msgs/DisplayRobotState.h>
@@ -17,72 +18,75 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
-#include "modbus.h"
-#include "modbus_exception.h"
-
+std::string reference_frame = "world";
 ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
+float h_adjust = 0.0;
+float v_adjust = 0.0;
 
-class RivetToolControl
+double read_tool_angle ( )
 {
-private:
-  boost::shared_ptr < modbus > mb_ptr;
-  std::string ip_address;
-  int XDKIO = -1;
-public:
-  RivetToolControl ();
-  ~RivetToolControl ();
-  void connect ();
-  void new_rivet ();
-  void start_screwing ();
-};
+  std::string tool_angle_file_name = "tool_angle.cfg";
+  std::string tool_angle_file = ros::package::getPath ( "motion_control" ) + "/config/" + tool_angle_file_name;
+  std::cout << "***The path of the tool_angle_file is: [" << tool_angle_file << "]" << std::endl;
 
-RivetToolControl::RivetToolControl ()
-{
-  ros::NodeHandle nh_p_ ( "~" );
-  nh_p_.getParam ( "XDK", XDKIO );
-  nh_p_.getParam ( "ip_address", ip_address );
-  mb_ptr.reset ( new modbus ( ip_address, 502 ) );
-}
-
-RivetToolControl::~RivetToolControl ()
-{
-  mb_ptr->modbus_close ();
-}
-
-void RivetToolControl::connect ()
-{
-  if ( XDKIO == -1 )
+  std::ifstream input ( tool_angle_file );
+  std::string line;
+  double tool_angle = 0.0;
+  if ( std::getline ( input, line ) )
   {
-    std::cout << "RivetToolControl::connect ip_address = " << ip_address << std::endl;
-    return;
+    std::istringstream iss ( line );
+    iss >> tool_angle >> h_adjust >> v_adjust;
   }
-  mb_ptr->modbus_set_slave_id ( 1 );
-  mb_ptr->modbus_connect ();
+  input.close();
+
+  return tool_angle;
 }
 
-void RivetToolControl::new_rivet ()
+void show_frame ( std::string frame_name, double x, double y, double z, double roll, double pitch, double yaw )
 {
-  if ( XDKIO == -1 )
-  {
-    std::cout << "RivetToolControl::new_rivet" << std::endl;
-    return;
+  static tf2_ros::StaticTransformBroadcaster br;
+	geometry_msgs::TransformStamped transformStamped;
+	// create a frame for each object
+  transformStamped.header.stamp = ros::Time::now();
+  transformStamped.header.frame_id = reference_frame;
+  transformStamped.child_frame_id = frame_name;
+  transformStamped.transform.translation.x = x;
+  transformStamped.transform.translation.y = y;
+  transformStamped.transform.translation.z = z;
+  tf2::Quaternion q;
+  q.setRPY(roll, pitch, yaw);
+  transformStamped.transform.rotation.x = q.x();
+  transformStamped.transform.rotation.y = q.y();
+  transformStamped.transform.rotation.z = q.z();
+  transformStamped.transform.rotation.w = q.w();
+  ros::Rate loop_rate(10);
+  for ( int i = 0; i < 10; i++ )
+	{
+      br.sendTransform(transformStamped);
+      loop_rate.sleep();
   }
-  mb_ptr->modbus_write_register ( 40003, 1 );
-  // ros::Duration ( 0.5 ) .sleep ();
+  std::cout << "\tFrame " << frame_name << " is added\n";
 }
 
-void RivetToolControl::start_screwing ()
+void getInverseMatrix ( Eigen::Matrix4f& original_transform, Eigen::Matrix4f& inverse_transform )
 {
-  if ( XDKIO == -1 )
-  {
-    std::cout << "RivetToolControl::start_screwing" << std::endl;
-    return;
-  }
-  mb_ptr->modbus_write_register(40003, 3);
-  // ros::Duration ( 5 ) .sleep ();
+	inverse_transform.block< 3, 3 >( 0, 0 ) = original_transform.block< 3, 3 >( 0, 0 ).transpose();
+  inverse_transform.block< 3, 1 >( 0, 3 ) = -1.0f * ( inverse_transform.block< 3, 3 >( 0, 0 ) * original_transform.block< 3, 1 >( 0, 3 ) );
 }
 
-// boost::shared_ptr < RivetToolControl > rivet_tool_ctrl_ptr;
+void get_rpy_from_matrix ( Eigen::Matrix4f rotation_matrix, double& roll, double& pitch, double& yaw )
+{
+  tf::Matrix3x3 object_m ( rotation_matrix (0, 0), rotation_matrix (0, 1), rotation_matrix (0, 2), rotation_matrix (1, 0), rotation_matrix (1, 1), rotation_matrix (1, 2), rotation_matrix (2, 0), rotation_matrix (2, 1), rotation_matrix (2, 2) );
+  object_m.getRPY ( roll, pitch, yaw );
+}
+
+void get_matrix_from_rpy ( Eigen::Matrix4f& rotation_matrix, double roll, double pitch, double yaw )
+{
+  rotation_matrix << cos(yaw)*cos(pitch), cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll),  cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), 0,
+  				           sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), 0,
+  				           -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), 0,
+  					         0,  0,  0, 1;
+}
 
 class Target
 {
@@ -103,8 +107,17 @@ Target::Target ( int id_i, double x_i, double y_i, double z_i, double roll_i, do
   yaw = yaw_i;
 }
 
-void CfgFileReader ( std::queue< Target >& target_queue )
+void targetFileReader ( std::queue< Target >& target_queue )
 {
+  float tool_angle = read_tool_angle();
+  Eigen::Matrix4f y_z_adjust, r_x_theta;
+  y_z_adjust << 1, 0, 0, 0,
+    				    0, 1, 0, h_adjust,
+    				    0, 0, 1, v_adjust,
+    					  0, 0, 0, 1;
+  float theta_x = tool_angle / 180.0 * 3.14159265359;
+  get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );
+  
   std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg";
   std::cout << "***The path of the point_rivet configuration file is: [" << cfgFileName << "]" << std::endl;
 
@@ -116,6 +129,25 @@ void CfgFileReader ( std::queue< Target >& target_queue )
   {
     std::istringstream iss ( line );
     iss >> id >> x >> y >> z >> roll >> pitch >> yaw;
+
+    if ( tool_angle == -15 )
+    {
+      Eigen::Matrix4f origin_matrix, inv_origin_matrix;
+      get_matrix_from_rpy ( origin_matrix, roll, pitch, pitch );
+      origin_matrix(0, 3) = x;
+      origin_matrix(1, 3) = y;
+      origin_matrix(2, 3) = z;
+      getInverseMatrix ( origin_matrix, inv_origin_matrix );
+      Eigen::Vector4f point_origin;
+      point_origin << 0.0, 0.0, 0.0, 1.0;
+      Eigen::Matrix4f total_transform = inv_origin_matrix * r_x_theta * y_z_adjust;
+      point_origin = total_transform * point_origin;
+      x = point_origin ( 0 );
+      y = point_origin ( 1 );
+      z = point_origin ( 2 );
+      get_rpy_from_matrix ( total_transform, roll, pitch, yaw );
+    }
+
     Target target ( id, x, y, z, roll, pitch, yaw );
     target_queue.push ( target );
     std::cout << id << ": [x, y, z, roll, pitch, yaw] = [" << x << ", " << y << ", " << z << ", " << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
@@ -185,15 +217,18 @@ void set_target_pose ( Target& target, geometry_msgs::Pose& target_pose )
 
 void do_point_rivet ()
 {
+  // step 1, read in all target rivets
   std_srvs::Empty msg;
   std::queue< Target > target_queue;
-  CfgFileReader ( target_queue );
-  // create interface for motion planning
+  targetFileReader ( target_queue );
+
+  // step 2, create interface for motion planning
   static const std::string PLANNING_GROUP = "rivet_tool";
   moveit::planning_interface::MoveGroupInterface move_group ( PLANNING_GROUP );
   ROS_INFO_NAMED( "point_rivet", "Reference frame: %s", move_group.getPlanningFrame ().c_str () );
   ROS_INFO_NAMED( "point_rivet", "End effector link: %s", move_group.getEndEffectorLink ().c_str () );
 
+  // step 3, move to each rivet
   if ( !target_queue.empty () )
   {
     Target target = target_queue.front ();
@@ -230,46 +265,42 @@ void do_point_rivet ()
         // start the screwing part
         while ( !target_queue.empty () )
         {
-          // get the new rivet
+          // pump out a new nut
           ros::Duration ( 0.5 ) .sleep ();
-          // for ( int pop_counter = 0; pop_counter < 2; pop_counter++ )
-          // {
-          //   new_nut_.call ( msg );
-          //   ros::Duration ( 0.5 ) .sleep ();
-          //   stop_new_nut_.call ( msg );
-          //   ros::Duration ( 0.2 ) .sleep ();
-          // }
           new_nut_.call ( msg );
           ros::Duration ( 0.5 ) .sleep ();
 
-          // rivet_tool_ctrl_ptr -> new_rivet ();
+          // get the in pose
           Target target = target_queue.front ();
           target_queue.pop();
-          // start screwing the rivet before moving to the rivet
-          start_screwing_.call ( msg );
-          // rivet_tool_ctrl_ptr -> start_screwing ();
           geometry_msgs::Pose target_pose2;
           set_target_pose ( target, target_pose2 );
+
+          // start screwing the rivet and move into the rivet
+          start_screwing_.call ( msg );
           move_trajectory ( target_pose1, target_pose2, move_group );
           ros::Duration ( 5 ) .sleep ();
           stop_screwing_.call ( msg );
           target_pose1 = target_pose2;
 
-          // move back the rivet_tool
+          // move back the rivet_tool and stop pump the nut
           target = target_queue.front();
-          target_queue.pop();
+          target_queue.pop ();
           set_target_pose ( target, target_pose2 );
           move_trajectory ( target_pose1, target_pose2, move_group );
           stop_new_nut_.call ( msg );
-          for ( int pop_counter = 0; pop_counter < 2; pop_counter++ )
+
+          // try to pump out the broken part of the nut
+          for ( int pump_counter = 0; pump_counter < 2; pump_counter++ )
           {
             new_nut_.call ( msg );
             ros::Duration ( 1.2 ) .sleep ();
             stop_new_nut_.call ( msg );
-            ros::Duration ( 0.2 ) .sleep ();
+            ros::Duration ( 0.6 ) .sleep ();
           }
-          target_pose1 = target_pose2;
+
           // move to the next rivet if there exist the next rivet
+          target_pose1 = target_pose2;
           if ( !target_queue.empty () )
           {
             target = target_queue.front();
@@ -278,10 +309,7 @@ void do_point_rivet ()
             move_trajectory ( target_pose1, target_pose2, move_group );
             target_pose1 = target_pose2;
           }
-          //  ros::Duration ( 1.5 ) .sleep ();
         }
-      //ros::Duration ( 1.0 ) .sleep ();
-
       }
     }
   }
@@ -305,8 +333,6 @@ int main ( int argc, char** argv )
 
   ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
-  // rivet_tool_ctrl_ptr.reset ( new RivetToolControl () );
-  // rivet_tool_ctrl_ptr -> connect ();
   ros::ServiceServer start_point_rivet_;
   start_point_rivet_ = nh_.advertiseService ( "start_point_rivet", &start_point_rivet );
   ros::waitForShutdown ();
