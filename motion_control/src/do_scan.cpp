@@ -54,6 +54,29 @@ double get_trajectory ( std::vector < geometry_msgs::Pose>& waypoints, moveit::p
   return fraction;
 }
 
+void set_rivet_tool_forward ( moveit::planning_interface::MoveGroupInterface& move_group, const robot_state::JointModelGroup* joint_model_group )
+{
+  moveit::core::RobotStatePtr current_state = move_group.getCurrentState ();
+  std::vector < double > joint_group_positions;
+  current_state->copyJointGroupPositions ( joint_model_group, joint_group_positions );
+  std::cout << "current wrist 3: " << joint_group_positions [ 5 ] << std::endl;
+
+  if ( std::abs ( joint_group_positions [ 5 ] - 0 ) <= 0.01 )
+  {
+    joint_group_positions [ 5 ] = 3.1415;
+    move_group.setJointValueTarget ( joint_group_positions );
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    bool success = ( move_group.plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
+    if ( success )
+    {
+      std::cout << "set wrist 3 to: " << joint_group_positions [ 5 ] << std::endl;
+      move_group.setMaxVelocityScalingFactor ( 0.1 );
+      move_group.setMaxAccelerationScalingFactor ( 0.1 );
+      move_group.move ();
+    }
+  }
+}
+
 void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, float y_e, float z_e, float x_final, float y_final, float z_final )
 {
   float start_point [ 3 ] { x_s, y_s, z_s };
@@ -63,6 +86,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
   // create interface for motion planning
   static const std::string PLANNING_GROUP = "me_2900";
   moveit::planning_interface::MoveGroupInterface move_group ( PLANNING_GROUP );
+  const robot_state::JointModelGroup* joint_model_group = move_group.getCurrentState()->getJointModelGroup ( PLANNING_GROUP );
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
   ROS_INFO_NAMED( "do_scan", "Reference frame: %s", move_group.getPlanningFrame ().c_str () );
   ROS_INFO_NAMED( "do_scan", "End effector link: %s", move_group.getEndEffectorLink ().c_str () );
@@ -89,7 +113,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     move_group.setMaxAccelerationScalingFactor ( 0.3 );
     move_group.move ();
 
-    // start scanning the part
+    // start the scanning part
     std::vector<geometry_msgs::Pose> waypoints_1;
     waypoints_1.push_back ( target_pose1 );
     geometry_msgs::Pose target_pose2 = target_pose1;
@@ -114,6 +138,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
       stop_profile_merger_.call ( msg );
     }
 
+    // move backward and turn the rivet tool around
     std::vector<geometry_msgs::Pose> waypoints_2;
     geometry_msgs::Pose final_pose = target_pose1;
     final_pose.position.x = final_point [ 0 ];
@@ -130,6 +155,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     if ( fraction > 0.98 )
     {
       move_group.execute ( my_plan );
+      set_rivet_tool_forward ( move_group, joint_model_group );
     }
   }
 }
