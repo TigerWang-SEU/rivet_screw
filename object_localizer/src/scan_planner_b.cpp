@@ -40,6 +40,7 @@ typedef pcl::PointCloud< PointT > PointCloudT;
 
 float x_adjust = -0.01; // adjustment for the x poistion
 float scan_distance = 0.075; // set the distance to the scanning part
+float back_distance = 0.120; // backward distance
 float scan_half_length = 0.10; // scanning path length
 float s_scale = 0.2; // scale of the start scanning scan_half_length
 float e_scale = 1.1; // scale of the end scanning scan_half_length
@@ -63,6 +64,12 @@ void read_scan_planner_cfg_file ( )
     std::istringstream iss ( line );
 		// set the distance to the scanning part
     iss >> scan_distance;
+  }
+  if ( std::getline ( input, line ) )
+  {
+    std::istringstream iss ( line );
+		// set the backward distance
+    iss >> back_distance;
   }
 	if ( std::getline ( input, line ) )
   {
@@ -355,7 +362,7 @@ public:
   bool start_scan_planner ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
 		read_scan_planner_cfg_file ( );
-		std::cout << "[x_adjust, scan_distance, scan_half_length, s_scale, e_scale] = ["<< x_adjust << ", " << scan_distance << ", " << scan_half_length << ", " << s_scale << ", " << e_scale << "]"<< std::endl;
+		std::cout << "[x_adjust, scan_distance, back_distance, scan_half_length, s_scale, e_scale] = ["<< x_adjust << ", " << scan_distance << ", " << back_distance << ", " << scan_half_length << ", " << s_scale << ", " << e_scale << "]"<< std::endl;
 
     if ( segment_list->BBox_list_float.size() > 0 )
     {
@@ -437,19 +444,23 @@ public:
         float x_tmp = x_0 + x_adjust;
         float y_tmp = y_0 + scan_distance * std::sin ( theta_tmp );
         float z_tmp = z_0 - scan_distance * std::cos ( theta_tmp );
-        // std::cout << "[***] Scan central point is [x, y, z] = [" << x_tmp << ", " << y_tmp << ", " << z_tmp << "]" << std::endl;
+
         float x_s = x_tmp;
         float y_s = y_tmp - scan_half_length * std::cos ( theta_tmp ) * s_scale;
         float z_s = z_tmp - scan_half_length * std::sin ( theta_tmp ) * s_scale;
         std::cout << "[***] Scan start point is [x, y, z] = [" << x_s << ", " << y_s << ", " << z_s << "]" << std::endl;
+
         float x_e = x_tmp;
         float y_e = y_tmp + scan_half_length * std::cos ( theta_tmp ) * e_scale;
         float z_e = z_tmp + scan_half_length * std::sin ( theta_tmp ) * e_scale;
         std::cout << "[***] Scan end point is [x, y, z] = [" << x_e << ", " << y_e << ", " << z_e << "]" << std::endl << std::endl;
 
-        // step 5, write scanning plannings into the scanning plan file.
-        do_scan_fs << theta << " " << x_s << " " << y_s << " " << z_s << " " << x_e << " " << y_e << " " << z_e << std::endl;
+        float x_final = x_0 + x_adjust;
+        float y_final = y_0 + ( scan_distance + back_distance ) * std::sin ( theta_tmp );
+        float z_final = z_0 - ( scan_distance + back_distance ) * std::cos ( theta_tmp );
 
+        // step 5, write scanning plannings into the scanning plan file.
+        do_scan_fs << theta << " " << x_s << " " << y_s << " " << z_s << " " << x_e << " " << y_e << " " << z_e << " " << x_final << " " << y_final << " " << z_final << std::endl;
       }
     	do_scan_fs.close();
     }
