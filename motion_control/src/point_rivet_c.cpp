@@ -22,6 +22,7 @@ std::string reference_frame = "world";
 ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
 float h_adjust = 0.0;
 float v_adjust = 0.0;
+float tool_distance = 0.0;
 
 double read_tool_angle ( )
 {
@@ -35,7 +36,7 @@ double read_tool_angle ( )
   if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-    iss >> tool_angle >> h_adjust >> v_adjust;
+    iss >> tool_angle >> h_adjust >> v_adjust >> tool_distance;
   }
   input.close();
 
@@ -82,10 +83,25 @@ void get_rpy_from_matrix ( Eigen::Matrix4f rotation_matrix, double& roll, double
 
 void get_matrix_from_rpy ( Eigen::Matrix4f& rotation_matrix, double roll, double pitch, double yaw )
 {
-  rotation_matrix << cos(yaw)*cos(pitch), cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll),  cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), 0,
-  				           sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), 0,
-  				           -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), 0,
-  					         0,  0,  0, 1;
+  // Eigen::Matrix4f _r_x_m, _r_y_m, _r_z_m;
+  // _r_x_m << 1,         0,          0, 0,
+	// 				  0, cos(roll), -sin(roll), 0,
+	// 				  0, sin(roll),  cos(roll), 0,
+	// 					0,         0,          0, 1;
+  // _r_y_m <<  cos(pitch), 0, sin(pitch), 0,
+	// 				            0, 1,          0, 0,
+	// 				  -sin(pitch), 0, cos(pitch), 0,
+  //                     0, 0,         0, 1;
+  // _r_z_m << cos(yaw), -sin(yaw), 0, 0,
+	// 				  sin(yaw),  cos(yaw), 0, 0,
+	// 				         0,         0, 1, 0,
+	// 					       0,         0, 0, 1;
+  // rotation_matrix = _r_z_m * _r_y_m * _r_x_m;
+  rotation_matrix << cos(yaw)*cos(pitch),
+                     cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll),  cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), 0,
+                     sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), 0,
+                    -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), 0,
+                              0,                    0,                    0, 1;
 }
 
 class Target
@@ -111,9 +127,9 @@ void targetFileReader ( std::queue< Target >& target_queue )
 {
   float tool_angle = read_tool_angle();
   Eigen::Matrix4f h_v_adjust, r_x_theta;
-  h_v_adjust << 1, 0, 0, 0,
+  h_v_adjust << 1, 0, 0, tool_distance,
     				    0, 1, 0, h_adjust,
-    				    0, 0, 1, v_adjust,
+    				    0, 0, 1, -v_adjust,
     					  0, 0, 0, 1;
   float theta_x = tool_angle / 180.0 * 3.14159265359;
   get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );
@@ -121,7 +137,7 @@ void targetFileReader ( std::queue< Target >& target_queue )
   std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg";
   std::cout << "***The path of the point_rivet configuration file is: [" << cfgFileName << "]" << std::endl;
 
-  int id;
+  int id, current_id = -1;
   double x, y, z, roll, pitch, yaw;
   std::ifstream input ( cfgFileName );
   std::string line;
@@ -129,23 +145,31 @@ void targetFileReader ( std::queue< Target >& target_queue )
   {
     std::istringstream iss ( line );
     iss >> id >> x >> y >> z >> roll >> pitch >> yaw;
+    // std::cout << id << ": [x, y, z, roll, pitch, yaw] = [" << x << ", " << y << ", " << z << ", " << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
+    // show_frame ( "Target_" + std::to_string( id ) + "_0", x, y, z, roll, pitch, yaw );
 
-    if ( tool_angle == -15 )
+    if ( tool_angle != 0 )
     {
-      Eigen::Matrix4f origin_matrix, inv_origin_matrix;
-      get_matrix_from_rpy ( origin_matrix, roll, pitch, pitch );
-      origin_matrix(0, 3) = x;
-      origin_matrix(1, 3) = y;
-      origin_matrix(2, 3) = z;
-      getInverseMatrix ( origin_matrix, inv_origin_matrix );
+      Eigen::Matrix4f origin_trans;
+      get_matrix_from_rpy ( origin_trans, roll, pitch, yaw );
+      origin_trans(0, 3) = x;
+      origin_trans(1, 3) = y;
+      origin_trans(2, 3) = z;
+      // std::cout << origin_trans << std::endl;
+      Eigen::Matrix4f total_transform =  origin_trans * h_v_adjust * r_x_theta;
       Eigen::Vector4f point_origin;
       point_origin << 0.0, 0.0, 0.0, 1.0;
-      Eigen::Matrix4f total_transform = inv_origin_matrix * r_x_theta * h_v_adjust;
       point_origin = total_transform * point_origin;
       x = point_origin ( 0 );
       y = point_origin ( 1 );
       z = point_origin ( 2 );
       get_rpy_from_matrix ( total_transform, roll, pitch, yaw );
+    }
+
+    if ( current_id != id )
+    {
+      show_frame ( "Target_" + std::to_string( id ), x, y, z, roll, pitch, yaw );
+      current_id = id;
     }
 
     Target target ( id, x, y, z, roll, pitch, yaw );
