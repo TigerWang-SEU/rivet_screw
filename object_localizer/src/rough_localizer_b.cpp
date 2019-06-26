@@ -34,7 +34,6 @@
 namespace bg = boost::geometry;
 typedef bg::model::point<double, 2, bg::cs::cartesian> point_t_b;
 typedef bg::model::box<point_t_b> box_t_b;
-
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 
@@ -43,8 +42,7 @@ std::string camera_frame = "camera_depth_optical_frame";
 
 void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
-	// std::printf( "Downsampling point clouds...\n" );
-  static pcl::VoxelGrid<pcl::PointXYZRGB> grid;
+  static pcl::VoxelGrid<PointT> grid;
   grid.setInputCloud ( cloud );
   grid.setLeafSize ( 0.005f, 0.005f, 0.005f );
   grid.filter ( *cloud_sampled );
@@ -74,7 +72,8 @@ public:
     pcl_conversions::toPCL( *cloud, pcl_pc2 );
     pcl::fromPCLPointCloud2( pcl_pc2, *saved_cloud );
     // save the time for saved point cloud
-    sample_time = cloud->header.stamp;
+    sample_time = cloud->header.stamp - ros::Duration ( 0.03 );
+    // std::cout << "saved_cloud has [Width, Height] = ["<< saved_cloud->width << ", " << saved_cloud->height << "]"<< std::endl;
   }
 
   void publish_box_t_b_list()
@@ -95,7 +94,7 @@ public:
       bbox.y2 = max_y;
       bbox_list_msg->BBox_list_float.push_back( bbox );
     }
-    for ( pcl::PointCloud<pcl::PointXYZRGB>::Ptr segment_cloud : segment_list )
+    for ( pcl::PointCloud<PointT>::Ptr segment_cloud : segment_list )
     {
       pcl::PCLPointCloud2 segment_cloud_pc2;
       pcl::toPCLPointCloud2 ( *segment_cloud, segment_cloud_pc2 );
@@ -115,7 +114,7 @@ public:
     }
   }
 
-  void handle_box_tb ( box_t_b& box_n, pcl::PointCloud<pcl::PointXYZRGB>::Ptr box_cloud )
+  void handle_box_tb ( box_t_b& box_n, pcl::PointCloud<PointT>::Ptr box_cloud )
   {
     if ( box_t_b_list.size() == 0 )
     {
@@ -166,7 +165,7 @@ public:
             double min_y = box_intersection.min_corner().get<1>();
             double max_x = box_intersection.max_corner().get<0>();
             double max_y = box_intersection.max_corner().get<1>();
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr box_cloud_intersection ( new PointCloudT );
+            pcl::PointCloud<PointT>::Ptr box_cloud_intersection ( new PointCloudT );
             int point_counter = 0;
             for ( size_t i = 0; i < box_cloud->points.size (); ++i )
             {
@@ -201,23 +200,19 @@ public:
       return;
     }
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cropped_cloud ( new PointCloudT );
+    pcl::PointCloud<PointT>::Ptr cropped_cloud ( new PointCloudT );
     if ( bbox_list->BBox_list_int.size() > 0 )
     {
-      // ros::Duration time_diff = sample_time - bbox_list->header.stamp;
-      // std::cout << "Sample time for point cloud is " << sample_time << " sample time for image is " << bbox_list->header.stamp << std::endl << "Sample time difference is " << time_diff << std::endl;
       int point_counter = 0;
       tf::StampedTransform transform;
       try
       {
         tf_listener.lookupTransform ( reference_frame, camera_frame, sample_time, transform );
-        // std::cout << "Sample time for tf is " << sample_time << std::endl;
-        // std::cout << "Scene cloud has [frame_id, width, height]: " << saved_cloud->header.frame_id << ", " << saved_cloud->width << ", " << saved_cloud->height << std::endl;
-        tf::Vector3 point(0, 0, 0);
+        tf::Vector3 point ( 0, 0, 0 );
 
         for ( object_localizer_msg::BBox_int bbox : bbox_list->BBox_list_int )
         {
-          pcl::PointCloud<pcl::PointXYZRGB>::Ptr box_cloud ( new PointCloudT );
+          pcl::PointCloud<PointT>::Ptr box_cloud ( new PointCloudT );
           int box_point_counter = 0;
           float box_min_x = 1000;
           float box_max_x = -1000;
@@ -294,7 +289,7 @@ public:
       }
       catch ( tf::TransformException ex )
       {
-        ROS_ERROR("%s", ex.what());
+        // ROS_ERROR("%s", ex.what());
       }
     }
   }
@@ -314,7 +309,7 @@ public:
     return true;
   }
 
-  RoughLocalizer () : saved_cloud ( new pcl::PointCloud < pcl::PointXYZRGB > )
+  RoughLocalizer () : saved_cloud ( new pcl::PointCloud < PointT > )
   {
     is_publish_ = false;
     start_rough_localizer_ = nh_.advertiseService ( "start_rough_localizer", &RoughLocalizer::start_rough_localizer, this );
@@ -326,7 +321,7 @@ public:
     ROS_INFO_STREAM ( "Listening for point cloud on topic: " << cloud_in_name );
 
     std::string cloud_out_name = "/rough_localizer/points";
-    cloud_pub_ = nh_.advertise < pcl::PointCloud < pcl::PointXYZRGB > > ( cloud_out_name, 30 );
+    cloud_pub_ = nh_.advertise < pcl::PointCloud < PointT > > ( cloud_out_name, 30 );
     ROS_INFO_STREAM ( "Publishing point cloud on topic: " << cloud_out_name );
 
     std::string bbox_in_name = "/object_localizer/bbox_list";
@@ -336,7 +331,6 @@ public:
     std::string bbox_out_name = "/rough_localizer/bbox_list";
     bbox_pub_ = nh_.advertise < object_localizer_msg::BBox_list > ( bbox_out_name, 30 );
     ROS_INFO_STREAM ( "Publishing bounding box list on topic: " << bbox_out_name );
-
   }
 
   ~RoughLocalizer () { }
@@ -344,7 +338,7 @@ public:
 private:
   ros::NodeHandle nh_;
   tf::TransformListener tf_listener;
-  pcl::PointCloud < pcl::PointXYZRGB > ::Ptr saved_cloud;
+  pcl::PointCloud < PointT > ::Ptr saved_cloud;
   bool is_publish_;
   ros::ServiceServer start_rough_localizer_, stop_rough_localizer_;
   ros::Subscriber cloud_sub_;
@@ -353,7 +347,7 @@ private:
   ros::Publisher bbox_pub_;
   ros::Time sample_time;
   std::vector < box_t_b > box_t_b_list;
-  std::vector < pcl::PointCloud < pcl::PointXYZRGB > ::Ptr > segment_list;
+  std::vector < pcl::PointCloud < PointT > ::Ptr > segment_list;
 };
 
 int main ( int argc, char** argv )
