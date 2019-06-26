@@ -24,7 +24,7 @@ Package Note
 Installation Instructions
 ==========================
 
-1, Install CUDA 9.0 and libcudnn7
+1, Install CUDA 9.0, libcudnn7, and tensorflow 1.8.0
 ---------------------------------
     cd ~/Downloads
     wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
@@ -36,6 +36,7 @@ Installation Instructions
     echo "export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}" >> ~/.bashrc
     echo "export LD_LIBRARY_PATH=/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" >> ~/.bashrc
     sudo reboot -h now
+    pip install tensorflow-gpu==1.8.0
 
 2, Install ROS Kinetic
 ----------------------
