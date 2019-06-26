@@ -78,4 +78,10 @@ Installation Instructions
 
 6, install UR robot related packages
 ------------------------------------
-    sudo apt-get install ros-kinetic-universal-robot ros-kinetic-industrial-robot-status-interface ros-kinetic-rqt-controller-manager ros-kinetic-ur-msgs
+    sudo apt-get install ros-kinetic-universal-robot ros-kinetic-ur-msgs
+    sudo apt-get install ros-kinetic-industrial-robot-status-interface ros-kinetic-rqt-controller-manager 
+
+7, clone rivet_screw github code to the local ros work space
+--------------------------------
+    ###add python path for object detection neural network###
+    export PYTHONPATH=$PYTHONPATH:~/ros_ws/src/object_localizer/python:~/ros_ws/src/object_localizer/python/slim
