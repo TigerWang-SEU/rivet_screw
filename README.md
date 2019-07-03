@@ -68,9 +68,9 @@ Installation Instructions
 5, Install ScanCONTROL_2900-50 related head files and libs
 ----------------------------------------------------------
     sudo mkdir /usr/local/include/mescan-0.2
-    sudo cp ~/ros_ws/src/me_scancontrol_b/scanCONTROL_Linux_SDK_0.2.0/include/libllt/* /usr/local/include/mescan-0.2
-    sudo cp ~/ros_ws/src/me_scancontrol_b/scanCONTROL_Linux_SDK_0.2.0/include/libmescan/* /usr/local/include/mescan-0.2
-    sudo cp ~/ros_ws/src/me_scancontrol_b/scanCONTROL_Linux_SDK_0.2.0/lib/x86_64/* /usr/local/lib
+    sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/include/libllt/* /usr/local/include/mescan-0.2
+    sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/include/libmescan/* /usr/local/include/mescan-0.2
+    sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/so/* /usr/local/lib
     ###install aravis 0.6 ###
         cd ~/Downloads
         sudo apt-get install intltool
