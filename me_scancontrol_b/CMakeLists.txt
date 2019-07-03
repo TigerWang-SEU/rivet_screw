@@ -27,3 +27,7 @@ target_link_libraries ( me_scancontrol_b ${catkin_LIBRARIES} ${LLT_LIBRARY_2} ${
 add_executable ( me_scancontrol_b_node src/me_scancontrol_b_node.cpp )
 add_dependencies ( me_scancontrol_b_node me_scancontrol_b ${catkin_EXPORTED_TARGETS} )
 target_link_libraries ( me_scancontrol_b_node me_scancontrol_b ${catkin_LIBRARIES} )
+
+add_executable ( GetProfilesCallback src/GetProfilesCallback.cpp )
+add_dependencies ( GetProfilesCallback ${catkin_EXPORTED_TARGETS} )
+target_link_libraries ( GetProfilesCallback ${catkin_LIBRARIES} ${LLT_LIBRARY_2} ${MESCAN_LIBRARY_2} ${ARAVIS6_LIBRARIES} )
