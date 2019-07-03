@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import sys
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
@@ -14,16 +14,16 @@ import Open_Protocol.open_protocol as OpenProtocol
 import Open_Protocol.networking as networking
 
 if __name__ == "__main__":
-    print ('new_nut')
+    print 'new_nut'
     new_nut = rospy.ServiceProxy('new_nut', Empty)
     new_nut()
     rospy.sleep(1)
 
-    print ('start_scrweing')
+    print 'start_scrweing'
     start_screwing = rospy.ServiceProxy('start_screwing', Empty)
     start_screwing()
     rospy.sleep(10)
 
-    print("stop the screwing")
+    print "stop the screwing"
     stop = rospy.ServiceProxy('stop', Empty)
     stop()
