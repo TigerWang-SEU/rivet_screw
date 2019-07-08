@@ -10,25 +10,18 @@
 
 // define functions for connecting and disconnecting laser scanner
 void clean_up ( void );
-bool connect_scanner ( std::string serial_number_ )
+bool connect_scanner ( std::string serial_number_ );
 bool disconnect_scanner ( void );
 
 void NewProfile ( const void *data, size_t data_size, gpointer user_data );
 void ControlLostCallback ( gpointer user_data );
-void DisplayProfiles ( double *, double *, guint32 );
-
-// function save profile point cloud into different threads
-gint32 laser_thread ( void );
 
 // laser scanner information
+std::string  serial_number = "218020023";
 CInterfaceLLT *hLLT;
 guint32 resolution;
 std::vector<guint8> profile_buffer;
 TScannerType llt_type;
-guint32 profile_data_size;
-// time information
-guint32 profile_counter = 0;
-double shutter_closed = 0, shutter_opened = 0;
 // event handle
 EHANDLE *event;
 
@@ -232,6 +225,7 @@ bool connect_scanner ( std::string serial_number_ )
 // disconnect laser scanner
 bool disconnect_scanner ()
 {
+  gint32 ret = 0;
   std::cout << "Disconnecting..." << std::endl;
   if ( ( ret = hLLT->Disconnect() ) < GENERAL_FUNCTION_OK )
   {
@@ -247,7 +241,6 @@ void NewProfile ( const void *data, size_t data_size, gpointer user_data )
   if ( data_size == profile_buffer.size() )
   {
     memcpy ( &profile_buffer[0], data, data_size );
-    CInterfaceLLT::Timestamp2TimeAndCount ( &profile_buffer[ (resolution * 64) - 16 ], &shutter_closed, &shutter_opened, &profile_counter, NULL );
     set_event ( event );
   }
 }
@@ -257,65 +250,7 @@ void ControlLostCallback ( gpointer user_data )
 {
   std::cout << "Control lost" << std::endl;
   disconnect_scanner ();
-  connect_scanner ();
-}
-
-void DisplayProfiles ( double *x, double *z, guint32 resolution )
-{
-  for ( guint32 i = 0; i < resolution; i++ )
-  {
-    std::cout << "\rX: " << x[i] << "  Z: " << z[i];
-    usleep(1250);
-  }
-  std::cout << std::endl;
-}
-
-gint32 laser_thread ()
-{
-  gint32 ret = 0;
-
-  ret = connect_scanner ();
-  if ( ret ==  )
-  {
-
-  }
-
-  std::vector<double> value_x, value_z;
-  profile_buffer.resize ( resolution * 64 );
-  value_x.resize ( resolution );
-  value_z.resize ( resolution );
-
-  CInterfaceLLT::ResetEvent ( event );
-  // start transfer
-  if ( ( ret = hLLT->TransferProfiles(NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
-  {
-    std::cout << "Error in profile transfer! " << ret << "" << std::endl;
-    return ret;
-  }
-
-  while ()
-  {
-    std::cout << "Start acquisition of profiles" << std::endl;
-    if ( CInterfaceLLT::WaitForSingleObject ( event, 2000 ) != WAIT_OBJECT_0 )
-    {
-      std::cout << "Timeout!" << std::endl;
-      // display example points
-      if ( ( ret = CInterfaceLLT::ConvertProfile2Values ( &profile_buffer[0], profile_buffer.size(), resolution, PROFILE, llt_type, 0, NULL, NULL, NULL, &value_x[0], &value_z[0], NULL, NULL ) ) != ( CONVERT_X | CONVERT_Z ) )
-      {
-        std::cout << "Error while extracting profiles" << std::endl;
-        return ret;
-      }
-    }
-  }
-
-  // stop transfer
-  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, false ) ) < GENERAL_FUNCTION_OK )
-  {
-    std::cout << "Error while stopping transmission!" << std::endl;
-    return ret;
-  }
-
-  return GENERAL_FUNCTION_OK;
+  connect_scanner ( serial_number );
 }
 
 #endif // PROFILESCALLBACK_H
