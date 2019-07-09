@@ -205,7 +205,7 @@ void scanner_cb ()
     return;
   }
 
-  std::vector<double> value_x, value_z;
+  std::vector < double > value_x, value_z;
   profile_buffer.resize ( resolution * 64 );
   value_x.resize ( resolution );
   value_z.resize ( resolution );
@@ -223,7 +223,6 @@ void scanner_cb ()
   {
     if ( CInterfaceLLT::WaitForSingleObject ( event, 2000 ) != WAIT_OBJECT_0 )
     {
-      std::cout << "Timeout!" << std::endl;
       continue;
     }
     CInterfaceLLT::ResetEvent ( event );
