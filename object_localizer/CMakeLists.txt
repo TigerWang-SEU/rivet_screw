@@ -93,6 +93,9 @@ target_link_libraries(profile_merger_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(profile_merger_c_thread src/profile_merger_c_thread.cpp)
 target_link_libraries(profile_merger_c_thread ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${LLT_LIBRARY_2} ${MESCAN_LIBRARY_2} ${ARAVIS6_LIBRARIES})
 
+add_executable(GetProfilesCallback src/ProfilesCallback/GetProfilesCallback.cpp)
+target_link_libraries(GetProfilesCallback ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${LLT_LIBRARY_2} ${MESCAN_LIBRARY_2} ${ARAVIS6_LIBRARIES})
+
 add_executable(pc_writer src/pc_writer.cpp)
 target_link_libraries(pc_writer ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
