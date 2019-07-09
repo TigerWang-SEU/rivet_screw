@@ -33,15 +33,15 @@ std::string scanner_frame = "scanCONTROL_2900-50_scanner_laser_link";
 double lag_compensation_ = 0.001;
 static const int num_threads = 4;
 bool is_stop = false;
-int thread_idx = 0;
-std::mutex thread_profile_queue_mutex;
-std::queue<pcl::PointCloud<PointT>::Ptr> thread_profile_queue[num_threads];
-std::queue<ros::Time> thread_time_queue[num_threads];
+int current_thread_index = 0;
+std::mutex scene_cloud_mutex;
+std::mutex thread_profile_queue_mutex [ num_threads ];
+std::queue < PointCloudT::Ptr > thread_profile_queue [ num_threads ];
 
+// filtering point cloud
 void filterOutliner ( PointCloudT::Ptr cloud )
 {
-	// filtering point cloud
-	static pcl::StatisticalOutlierRemoval<PointT> sor;
+	static pcl::StatisticalOutlierRemoval < PointT > sor;
 	sor.setStddevMulThresh ( 1.0 );
   sor.setInputCloud ( cloud );
   sor.setMeanK ( cloud->size()/2 );
@@ -54,16 +54,17 @@ void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
   grid.setInputCloud ( cloud );
   grid.setLeafSize ( 0.0002f, 0.0002f, 0.0002f );
   grid.filter ( *cloud_sampled );
-	std::printf( "Downsampled cloud size is %d, %d\n", cloud_sampled->width, cloud_sampled->height );
+	std::printf( "Downsampled cloud size is [%d, %d]\n", cloud_sampled->width, cloud_sampled->height );
 }
 
 class ProfileMerger
 {
 public:
 
-	void transform_point_cloud ( PointCloudT::Ptr cloud, ros::Time sample_time, PointCloudT::Ptr cloud_out )
+	void transform_point_cloud ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_out )
 	{
 	  tf::StampedTransform transform;
+		ros::Time sample_time = pcl_conversions::fromPCL ( cloud->header.stamp );
 		bool is_lookuped = false;
 		int delay_counter = 0;
 		while ( is_lookuped == false )
@@ -79,12 +80,13 @@ public:
 				{
 					// wait for 0.01 second every time
 					ros::Duration ( 0.01 ) .sleep ();
-					delay_counter++;
 					if ( delay_counter == 4 )
 					{
 						return;
 					}
-				} else
+					delay_counter++;
+				}
+				else
 				{
 					ROS_ERROR ( "%s", ex.what() );
 					return;
@@ -92,55 +94,57 @@ public:
 		  }
 		}
 
-		tf::Vector3 point(0, 0, 0);
-		tf::Vector3 point_n(0, 0, 0);
+		tf::Vector3 point ( 0, 0, 0 );
+		tf::Vector3 point_n ( 0, 0, 0 );
 		for ( PointT temp_point : cloud->points )
 		{
-			point.setX( temp_point.x );
-			point.setY( temp_point.y );
-			point.setZ( temp_point.z );
+			point.setX ( temp_point.x );
+			point.setY ( temp_point.y );
+			point.setZ ( temp_point.z );
 			if ( temp_point.y < 0.085 )
       {
         continue;
       }
 			tf::Vector3 point_n = transform * point;
-			temp_point.x = point_n.getX();
-			temp_point.y = point_n.getY();
-			temp_point.z = point_n.getZ();
+			temp_point.x = point_n.getX ();
+			temp_point.y = point_n.getY ();
+			temp_point.z = point_n.getZ ();
 			cloud_out->points.push_back (temp_point);
 		}
 	}
 
-  void thread_cb ( int thread_idx )
+  void merger_cb ( int thread_id )
   {
-		std::cout << "\tThread [" << thread_idx << "] is started" << std::endl;
+		std::cout << "\tThread [" << thread_id << "] is started" << std::endl;
 		while ( !is_stop )
 		{
-			if ( !thread_profile_queue[thread_idx].empty() )
+			if ( !thread_profile_queue [ thread_id ].empty () )
 			{
-				PointCloudT::Ptr in_cloud = thread_profile_queue[thread_idx].front();
-    		thread_profile_queue[thread_idx].pop();
-				ros::Time sample_time = thread_time_queue[thread_idx].front();
-				thread_time_queue[thread_idx].pop();
+				PointCloudT::Ptr in_cloud;
+				{
+					std::lock_guard<std::mutex> guard ( thread_profile_queue_mutex [ thread_id ] );
+					in_cloud = thread_profile_queue [ thread_id ].front ();
+	    		thread_profile_queue [ thread_id ].pop ();
+				}
 
 				// downsampling and transforming the input point cloud
 				PointCloudT::Ptr in_cloud_sampled	( new PointCloudT );
 				downSampling ( in_cloud, in_cloud_sampled );
 				PointCloudT::Ptr in_cloud_world	( new PointCloudT );
-				transform_point_cloud ( in_cloud_sampled, sample_time, in_cloud_world );
-				std::cout << "\tThread [" << thread_idx << "]: input point cloud after downSampling and transforming has [" << in_cloud_world->size() << "] data points" << std::endl;
+				transform_point_cloud ( in_cloud_sampled, in_cloud_world );
+				std::cout << "\tThread [" << thread_id << "]: input point cloud after downSampling and transforming has [" << in_cloud_world->size() << "] data points" << std::endl;
 				if ( in_cloud_world->size() == 0 )
 				{
 					continue;
 				}
 
 				// merging input point cloud into scene point cloud
-				std::lock_guard<std::mutex> guard ( thread_profile_queue_mutex );
+				std::lock_guard<std::mutex> guard ( scene_cloud_mutex );
 				*scene_cloud += *in_cloud_world;
 				PointCloudT::Ptr scene_cloud_temp	( new PointCloudT );
 				downSampling ( scene_cloud, scene_cloud_temp );
 				scene_cloud = scene_cloud_temp;
-				std::cout << "\tThread [" << thread_idx << "]:scene point cloud has [" << scene_cloud->size() << "] data points" << std::endl;
+				std::cout << "\tThread [" << thread_id << "]:scene point cloud has [" << scene_cloud->size() << "] data points" << std::endl;
 
 				// show the scene point cloud
 				scene_cloud->header.frame_id = reference_frame;
@@ -157,7 +161,7 @@ public:
 	bool start_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
 	{
 	  is_publish_ = true;
-		// clear the profile point cloud and publish the empty one
+		// clear the scene point cloud
 		scene_cloud->clear ();
 	  return true;
 	}
@@ -191,7 +195,7 @@ private:
   ros::Publisher cloud_pub_;
 };
 
-void laser_thread ()
+void scanner_cb ()
 {
   gint32 ret = 0;
 
@@ -205,16 +209,16 @@ void laser_thread ()
   profile_buffer.resize ( resolution * 64 );
   value_x.resize ( resolution );
   value_z.resize ( resolution );
-
   CInterfaceLLT::ResetEvent ( event );
+
   // 2. start transfer
   if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
   {
-    std::cout << "Error in profile transfer! " << ret << "" << std::endl;
+    std::cout << "Error in profile transfer! - [" << ret << "]" << std::endl;
     return;
   }
 
-  // wait for the end signal
+  // 3. loop until receive the end signal
   while ( !is_stop )
   {
     if ( CInterfaceLLT::WaitForSingleObject ( event, 2000 ) != WAIT_OBJECT_0 )
@@ -223,55 +227,53 @@ void laser_thread ()
       continue;
     }
     CInterfaceLLT::ResetEvent ( event );
+
+		// 3.1. get x and z arrays
     if ( ( ret = CInterfaceLLT::ConvertProfile2Values ( &profile_buffer [ 0 ], profile_buffer.size(), resolution, PROFILE, llt_type, 0, NULL, NULL, NULL, &value_x[0], &value_z[0], NULL, NULL ) ) != ( CONVERT_X | CONVERT_Z ) )
     {
-      std::cout << "Error while extracting profiles" << std::endl;
+      std::cout << "Error while extracting profiles! - [" << ret << "]" << std::endl;
       continue;
     }
 
-    // time information
+    // 3.2. get time information
     guint32 profile_counter = 0;
     double shutter_closed = 0, shutter_opened = 0;
     CInterfaceLLT::Timestamp2TimeAndCount ( &profile_buffer[ (resolution * 64) - 16 ], &shutter_closed, &shutter_opened, &profile_counter, NULL );
 
-    // create a new profile point cloud
-    PointCloudT::Ptr cloud_msg_	( new PointCloudT );
-    cloud_msg_->header.frame_id = scanner_frame;
+    // 3.3. create a new profile point cloud
+    PointCloudT::Ptr profile_cloud	( new PointCloudT );
+    profile_cloud->header.frame_id = scanner_frame;
     ros::Time profile_time = ros::Time::now() - ros::Duration ( ( shutter_opened + shutter_closed ) / 2.0 + lag_compensation_ );
-    pcl_conversions::toPCL ( profile_time, cloud_msg_->header.stamp );
+    pcl_conversions::toPCL ( profile_time, profile_cloud->header.stamp );
     PointT temp_point;
-    int point_counter = 0;
-    for ( int i = 0; i < value_x.size(); ++i )
+    for ( int i = 0; i < value_x.size (); ++i )
     {
       if ( value_z [ i ] > 30 )
       {
         temp_point.x = - value_x [ i ] / 1000.0;
         temp_point.y = value_z [ i ] / 1000.0;
         temp_point.z = 0.0;
-        cloud_msg_->points.push_back ( temp_point );
-        point_counter++;
+        profile_cloud->points.push_back ( temp_point );
       }
     }
-    cloud_msg_->width = point_counter;
-		cloud_msg_->height = 1;
 
-		// put the new profile point cloud into each thread_profile_queue
-		thread_profile_queue[ thread_idx ].push ( cloud_msg_ );
-		thread_idx ++;
-		thread_idx = thread_idx % num_threads;
+		// 3.4. put the new profile point cloud into each thread_profile_queue
+		{
+			std::lock_guard<std::mutex> guard ( thread_profile_queue_mutex [ current_thread_index ] );
+			thread_profile_queue [ current_thread_index ].push ( profile_cloud );
+		}
+		current_thread_index ++;
+		current_thread_index = current_thread_index % num_threads;
   }
 
-  // stop transfer
+  // 4. stop transfer
   if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, false ) ) < GENERAL_FUNCTION_OK )
   {
-    std::cout << "Error while stopping transmission!" << std::endl;
-    return;
+    std::cout << "Error while stopping transmission! - [" << ret << "]" << std::endl;
   }
 
-  // disconnect the laser scanner
+  // 5. disconnect the laser scanner
   disconnect_scanner ();
-
-  return;
 }
 
 int main ( int argc, char** argv )
@@ -281,21 +283,20 @@ int main ( int argc, char** argv )
   spinner.start ();
 	ProfileMerger pm;
 
-	// create merger thread
+	// create a scanner thread and [num_threads] merger threads
 	std::thread merger_thread [ num_threads ];
   for ( int idx = 0; idx < num_threads; ++idx )
   {
-    merger_thread[idx] = std::thread ( &ProfileMerger::thread_cb, &pm, idx );
+    merger_thread [ idx ] = std::thread ( &ProfileMerger::merger_cb, &pm, idx );
   }
-
-	// create the laser scanner thread
-	std::thread profile_thread =  std::thread ( &laser_thread );
+	std::thread scanner_thread =  std::thread ( &scanner_cb );
 
 	// wait for stop signal
   ros::waitForShutdown ();
 	is_stop = true;
+
 	//Join the threads with the main thread
-	profile_thread.join();
+	scanner_thread.join();
   for ( int idx = 0; idx < num_threads; ++idx )
   {
     merger_thread[idx].join();
