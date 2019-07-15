@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<robot name="tool" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- change the value of rivet_tool_distance_offset to adjust the distance to the target-->
+  <!-- old value = -0.0020 -->
+  <xacro:property name="rivet_tool_distance_offset" value="0.00" />
+  <!-- change the value of rivet_tool_horizontal_adjust to adjust the tool horizontally, plus for left and minus for right -->
+  <!-- old value = -0.015 (15 degree)-->
+  <xacro:property name="rivet_tool_horizontal_adjust" value="-0.0078" />
+  <!-- change the value of rivet_tool_vertical_adjust to adjust the tool vertically, plus for up and minus for down -->
+  <!-- old value = -0.007 (15 degree)-->
+  <xacro:property name="rivet_tool_vertical_adjust" value="-0.0083" />
+
+  <xacro:property name="rivet_tool_x" value="0.00370" />
+  <xacro:property name="rivet_tool_y" value="0.21127" />
+  <xacro:property name="rivet_tool_z" value="0.17890" />
+
+  <xacro:property name="laser_x" value="-0.04399" />
+  <xacro:property name="laser_y" value="-0.12500" />
+  <xacro:property name="laser_z" value="0.14095" />
+
+  <xacro:property name="camera_x" value="0.01379" />
+  <xacro:property name="camera_y" value="0.10209" />
+  <xacro:property name="camera_z" value="0.02489" />
+  <xacro:property name="camera_angle" value="125.00" />
+
+  <link name="tool_base" />
+
+  <link name="Endeffektor">
+    <visual>
+      <origin xyz="${0} ${0} ${0}" rpy="${0} ${0} ${0}"/>
+      <geometry>
+        <mesh filename="package://syn_ur10_bringup/meshes/Endeffektor.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+      <material name="aluminum"/>
+    </visual>
+    <collision>
+      <origin xyz="${0} ${0} ${0}" rpy="${0} ${0} ${0}"/>
+      <geometry>
+        <mesh filename="package://syn_ur10_bringup/meshes/Endeffektor.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.300" />
+      <origin xyz="0 0 0.05" />
+      <inertia ixx="1.0" ixy="1.0" ixz="1.0" iyy="0.0" iyz="0.0" izz="0.0" />
+    </inertial>
+  </link>
+
+  <joint name="Endeffektor_tool_base_joint" type="fixed">
+    <parent link="tool_base"/>
+    <child link="Endeffektor"/>
+    <origin xyz="${0} ${0} ${0}" rpy="${radians(0)} ${radians(0)} ${radians(180)}" />
+  </joint>
+
+  <link name="rivet_tool" />
+  <joint name="rivet_tool_tool_base_joint" type="fixed">
+    <parent link="tool_base"/>
+    <child link="rivet_tool"/>
+    <origin xyz="${rivet_tool_x} ${rivet_tool_y} ${rivet_tool_z}" rpy="${radians(0)} ${radians(0)} ${radians(-90)}" />
+  </joint>
+
+  <!-- scanCONTROL_2900-50 sensor and is connected to tool_base frame -->
+  <xacro:include filename="$(find microepsilon_scancontrol)/description/urdf/scanCONTROL_2900-50_macro.urdf.xacro" />
+  <xacro:scanCONTROL_2900-50 prefix="scanCONTROL_2900-50_" parent="tool_base">
+    <origin xyz="${laser_x} ${laser_y} ${laser_z}" rpy="${radians(0)} ${radians(0)} ${radians(0)}" />
+  </xacro:scanCONTROL_2900-50>
+
+  <link name="rs_base_link" />
+  <joint name="rs_base_link_tool_base_joint" type="fixed">
+    <parent link="tool_base"/>
+    <child link="rs_base_link"/>
+    <origin xyz="${camera_x} ${camera_y} ${camera_z}" rpy="${radians(camera_angle)} ${radians(0)} ${radians(0)}" />
+  </joint>
+
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+  <sensor_d435 parent="rs_base_link">
+    <origin xyz="0 0 0" rpy="${radians(0)} ${radians(90)} ${radians(180)}"/>
+  </sensor_d435>
+
+</robot>
