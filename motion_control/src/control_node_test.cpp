@@ -98,21 +98,15 @@ public:
     pcl::fromPCLPointCloud2 ( pcl_pc2, *scene_cloud_ );
   }
 
-  // scan_start, scan_end, screw_start
+  // camera_start, camera_end, scan_start, screw_start
   bool set_pose ( std::string pose_name )
   {
     std::map < std::string, double > value_map = move_group->getNamedTargetValues ( pose_name );
-    // std::cout << move_group->getNamedTargetValues ( "pose2" ) << std::endl;
-    // for ( const auto& value_pair : value_map )
-    // {
-    //   std::cout << "<" << value_pair.first << "> = <" << value_pair.second << ">\n";
-    // }
     move_group->setJointValueTarget ( value_map );
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
     bool success = ( move_group->plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
     if ( success )
     {
-      // std::cout << "reset the robot pose to pose 2" << std::endl;
       move_group->setMaxVelocityScalingFactor ( 0.1 );
       move_group->setMaxAccelerationScalingFactor ( 0.1 );
       move_group->move ();
@@ -155,7 +149,6 @@ public:
       set_pose ( "screw_start" );
     }
   }
-
 };
 
 int main ( int argc, char** argv )
