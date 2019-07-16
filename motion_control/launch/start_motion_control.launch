@@ -5,8 +5,8 @@
   </node>
 
   <!-- start the node "rough_localizer_b" which provides the services "start_rough_localizer" and "stop_rough_localizer" -->
-  <node name="rough_localizer_b" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
-  </node>
+  <!-- <node name="rough_localizer_b" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
+  </node> -->
 
   <!-- start the node "box_segmenter_b" which provides the services "start_box_segmenter" and "stop_box_segmenter" -->
   <node name="box_segmenter_b" pkg="object_localizer" type="box_segmenter_b" respawn="true" output="screen">

@@ -150,6 +150,12 @@ public:
 		std::cout << "Merger thread is started" << std::endl;
 		while ( !is_stop )
 		{
+			if ( scene_pc_queue.isEmpty () )
+			{
+				ros::Duration ( 0.01 * num_threads ).sleep ();
+				continue;
+			}
+
 			// get the front profile
 			PointCloudT::Ptr in_cloud ( new PointCloudT );
 			scene_pc_queue.pop ( in_cloud );
@@ -185,6 +191,11 @@ public:
 	bool stop_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
 	{
 	  is_publish_ = false;
+		while ( ! scene_pc_queue.isEmpty () )
+		{
+			ros::Duration ( 0.04 * num_threads ).sleep ();
+			continue;
+		}
 	  return true;
 	}
 
@@ -325,12 +336,13 @@ int main ( int argc, char** argv )
   ros::waitForShutdown ();
 	is_stop = true;
 
-	//Join the threads with the main thread
+	// Join the threads with the main thread
 	scanner_thread.join ();
   for ( int idx = 0; idx < num_threads; ++idx )
   {
     transform_thread [ idx ].join ();
   }
 	merger_thread.join ();
+
   return 0;
 }

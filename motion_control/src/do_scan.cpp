@@ -83,7 +83,7 @@ void set_rivet_tool_forward ( moveit::planning_interface::MoveGroupInterface& mo
   std::cout << "current wrist 3: " << wrist_3_angle << std::endl;
 
   set_joint_angle ( move_group, joint_model_group, 4, 0 );
-  set_joint_angle ( move_group, joint_model_group, 5, wrist_3_angle + 3.1415 );
+  set_joint_angle ( move_group, joint_model_group, 5, wrist_3_angle - 3.1415 );
   set_joint_angle ( move_group, joint_model_group, 4, wrist_2_angle );
 }
 
@@ -134,10 +134,10 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     pitcht = 0;
     yawt = 0;
     target_pose2.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-    // do two way of scanning
+    // do one way of scanning
     waypoints_1.push_back ( target_pose2 );
-    waypoints_1.push_back ( target_pose1 );
-    waypoints_1.push_back ( target_pose2 );
+    // waypoints_1.push_back ( target_pose1 );
+    // waypoints_1.push_back ( target_pose2 );
 
     std_srvs::Empty msg;
     double fraction = get_trajectory ( waypoints_1, move_group, my_plan, 0.035 );

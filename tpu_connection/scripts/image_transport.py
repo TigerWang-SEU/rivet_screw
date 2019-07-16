@@ -25,48 +25,51 @@ class ImageTransport:
     self.image_pub = rospy.Publisher('/object_localizer/localize_image', Image, queue_size = 100)
     self.bbox_pub =  rospy.Publisher('/object_localizer/bbox_list', BBox_list, queue_size = 100)
     self.bridge = CvBridge()
-    
+
     # create grpc channel and stub
     self.object_channel = grpc.insecure_channel("localhost:50051")
     self.stub =  image_msg_pb2_grpc.DetectorStub(self.object_channel)
-  
+
   def callback(self,data):
     try:
       # subscribe to ros_image and convert it to opencv_image
       cv_image = self.bridge.imgmsg_to_cv2(data, "rgb8")
-      
+      ( im_width, im_height, depth ) = cv_image.shape
     except CvBridgeError as e:
       print(e)
-    
+
     # convert opencv_image to grpc_msg
     _, img_jpg = cv2.imencode('.jpg', cv_image)
     grpc_msg = image_msg_pb2.Image(
       data = img_jpg.tostring()
     )
-    # send a request the server for detection results 
+    # send a request the server for detection results
     detection = self.stub.detectImage(grpc_msg)
-    
+
     #create a bbox with the response from TPU
     bbox_list = BBox_list()
     bbox_list.header.frame_id = data.header.frame_id
     bbox_list.header.stamp = data.header.stamp
-    print(detection)    
+
 
     for box in detection.objects:
-      cv2.rectangle(cv_image, (box.xmin, box.ymin), (box.xmax, box.ymax), (0, 0, 0), 1)
-      cv2.putText(cv_image, box.label, (box.xmin + 5 , box.ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, cv2.LINE_AA)
-      new_bbox = BBox_int()
-      new_bbox.y1 = int( box.ymin )
-      new_bbox.y2 = int( box.ymax )
-      new_bbox.x1 = int( box.xmin )
-      new_bbox.x2 = int( box.xmax )
-      bbox_list.BBox_list_int.append( new_bbox )
-
-    try:
-      self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "rgb8"))
-      self.bbox_pub.publish( bbox_list )
-    except CvBridgeError as e:
-      print(e)
+      #if(box.xmin>10 and im_height-box.xmax>10):
+          cv2.rectangle(cv_image, (box.xmin, box.ymin), (box.xmax, box.ymax), (0, 0, 0), 1)
+          cv2.putText(cv_image, box.label, (box.xmin + 5 , box.ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, cv2.LINE_AA)
+          new_bbox = BBox_int()
+          new_bbox.x1 = int( box.ymin )
+          new_bbox.x2 = int( box.ymax )
+          new_bbox.y1 = int( box.xmin )
+          new_bbox.y2 = int( box.xmax )
+          bbox_list.BBox_list_int.append( new_bbox )
+          try:
+              self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "rgb8"))
+              print(detection)
+              self.bbox_pub.publish( bbox_list )
+          except CvBridgeError as e:
+              print(e)
+      #else:
+        #  print("ignore bounding_box")
 
 def main(args):
   rospy.init_node('tpu_connection', anonymous=True)

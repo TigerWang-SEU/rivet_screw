@@ -72,7 +72,7 @@ public:
     pcl_conversions::toPCL( *cloud, pcl_pc2 );
     pcl::fromPCLPointCloud2( pcl_pc2, *saved_cloud );
     // save the time for saved point cloud
-    sample_time = cloud->header.stamp - ros::Duration ( 0.03 );
+    sample_time = cloud->header.stamp;
     // std::cout << "saved_cloud has [Width, Height] = ["<< saved_cloud->width << ", " << saved_cloud->height << "]"<< std::endl;
   }
 
@@ -207,6 +207,9 @@ public:
       tf::StampedTransform transform;
       try
       {
+        ros::Time bbox_time = bbox_list->header.stamp;
+
+        std::cout << "###### The time difference is " << sample_time - bbox_time << std::endl;
         tf_listener.lookupTransform ( reference_frame, camera_frame, sample_time, transform );
         tf::Vector3 point ( 0, 0, 0 );
 
