@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 import socket
 import Open_Protocol.open_protocol as open_protocol
 import time
@@ -21,16 +21,16 @@ class opProtocol:
             self.s.connect((IP,PORT))
             self.s.send(op.message('Communication_start','001',' ',' ','  '))
         except:
-            print("Something's wrong with %s:%s." % (IP, PORT))
-        print("Socket Connected")
+            print "Something's wrong with %s:%s." % (IP, PORT)
+        print "Socket Connected"
         try:
             response = self.s.recv(1024)
-            print("Communication Start: %s" % (response))
+            print "Communication Start: %s" % (response)
             x = str(response[4:8])
             if x == op.MID['Communication_start_acknowledge']:
-                print("Connected to %s:%s" % (IP,PORT))
+                print "Connected to %s:%s" % (IP,PORT)
         except:
-            print("Recieve Error %s:%s." % (IP, PORT))
+            print "Recieve Error %s:%s." % (IP, PORT)
 
     def sendMID(self, msg):
         try:
@@ -45,7 +45,7 @@ class opProtocol:
             recieve='None'
             recieve = self.s.recv(65565)
         except:
-            print("Error Recieve %s" % (recieve))
+            print "Error Recieve %s" % (recieve)
         return recieve
 
     def keepAlive(self, INTERVAL=8):
@@ -56,9 +56,9 @@ class opProtocol:
                 if response_keepalive == op.message('Keep_Alive','','','',''):
                     break
                 else:
-                    print("Keep Alive Error: %s" % (response_keepalive))
+                    print "Keep Alive Error: %s" % (response_keepalive)
             except:
-                print("Keep Alive Except Error: %s" % (response_keepalive))
+                print "Keep Alive Except Error: %s" % (response_keepalive)
 
             time.sleep(INTERVAL)
 
@@ -67,6 +67,6 @@ class opProtocol:
             self.s.send(op.message('Communication_stop','001',' ',' ','  '))
             self.s.close()
         except:
-            print("Error closing Socket: %s" )
+            print "Error closing Socket: %s" 
 
     t = threading.Thread(target=keepAlive)

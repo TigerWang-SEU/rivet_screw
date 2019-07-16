@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf8
 # find the path of the parent directory of the acutal python file
 import logging
 
@@ -28,25 +29,25 @@ def pset_param ( pset_number,loosening_speed,loosening_torque,loosening_angle,ti
       if loosening_speed>=50 and loosening_speed<=750:
           rospy.set_param ( 'loosening_speed',loosening_speed )
       else:
-          print('loosening_speed: the input is outside of the limit')
+          print 'loosening_speed: the input is outside of the limit'
       if loosening_torque>=0 and loosening_torque<=300:
           rospy.set_param('loosening_torque',loosening_torque)
       else:
-          print('loosening_torque: the input is outside of the limit')
+          print 'loosening_torque: the input is outside of the limit'
       if loosening_angle>=0 and loosening_angle<=10800:
           rospy.set_param('loosening_angle',loosening_angle)
       else:
-          print('loosening_angle: the input is outside of the limit')
+          print 'loosening_angle: the input is outside of the limit'
       if tightening_speed>=50 and tightening_speed<=100:
           rospy.set_param('tightening_speed',tightening_speed)
       else:
-          print('tightening_speed: the input is outside of the limit')
+          print 'tightening_speed: the input is outside of the limit'
       if tightening_torque>=62.5 and tightening_torque<=275:
           rospy.set_param('tightening_torque',tightening_torque)
       else:
-          print('tightening_torque: the input is out of the limit')
+          print 'tightening_torque: the input is out of the limit'
     else:
-      print('unvalid pset_number')
+      print 'unvalid pset_number'
 
 def pset_setting():
     pset_number = rospy.get_param('pset_number')

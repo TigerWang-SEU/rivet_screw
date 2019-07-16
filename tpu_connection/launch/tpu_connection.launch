@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <!-- <node name="cv_camera" pkg="cv_camera" type="cv_camera_node" respawn="true" output="screen"> </node>  -->
+  <node name="tpu_connection" pkg="tpu_connection" type="image_transport.py" respawn="true" output="screen"> </node> 
+
+</launch>

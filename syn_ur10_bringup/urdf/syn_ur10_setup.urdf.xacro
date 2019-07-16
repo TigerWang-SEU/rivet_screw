@@ -8,7 +8,7 @@
   <xacro:include filename="$(find syn_ur10_bringup)/urdf/arm.urdf.xacro" />
 
   <!-- tool -->
-  <xacro:include filename="$(find syn_ur10_bringup)/urdf/tool.urdf.xacro" />
+  <xacro:include filename="$(find syn_ur10_bringup)/urdf/tool.new.urdf.xacro" />
 
   <xacro:property name="ur10_mount_height" value="0.01" />
 

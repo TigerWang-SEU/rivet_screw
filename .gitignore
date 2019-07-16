@@ -25,7 +25,6 @@ devel_isolated/
 # Ignore generated docs
 *.dox
 *.wikidoc
-*.pdf
 .git
 
 # eclipse stuff

@@ -42,6 +42,7 @@ Installation Instructions
 ----------------------
     sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
     sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+    sudo apt-get update
     sudo apt-get install ros-kinetic-desktop-full
     sudo rosdep init
     rosdep update
@@ -55,31 +56,37 @@ Installation Instructions
     echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
     source ~/.bashrc
 
-3, Install moveit
+3, Clone rivet_screw github code to the local ros work space
+------------------------------------------------------------
+    ###add python path for object detection neural network###
+    export PYTHONPATH=$PYTHONPATH:~/ros_ws/src/object_localizer/python:~/ros_ws/src/object_localizer/python/slim
+
+4, Install moveit
 -----------------
     sudo apt-get install ros-kinetic-moveit ros-kinetic-moveit-visual-tools
 
-4, Install ScanCONTROL_2900-50 related head files and libs
+5, Install ScanCONTROL_2900-50 related head files and libs
 ----------------------------------------------------------
     sudo mkdir /usr/local/include/mescan-0.2
-    sudo cp /home/syn/ros_ws/src/me_scancontrol_b/scanCONTROL_Linux_SDK_0.2.0/include/libllt/* /usr/local/include/mescan-0.2
-    sudo cp /home/syn/ros_ws/src/me_scancontrol_b/scanCONTROL_Linux_SDK_0.2.0/include/libmescan/* /usr/local/include/mescan-0.2
-    sudo cp /home/syn/ros_ws/src/me_scancontrol_b/scanCONTROL_Linux_SDK_0.2.0/lib/x86_64/* /usr/local/lib
+    sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/include/libllt/* /usr/local/include/mescan-0.2
+    sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/include/libmescan/* /usr/local/include/mescan-0.2
+    sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/so/* /usr/local/lib
     ###install aravis 0.6 ###
         cd ~/Downloads
+        sudo apt-get install intltool
         wget http://ftp.gnome.org/pub/GNOME/sources/aravis/0.6/aravis-0.6.0.tar.xz
         tar -xf aravis-0.6.0.tar.xz
         cd aravis-0.6.0
         ./configure
         make
-        make install
-        ldconfig
+        sudo make install
+        sudo ldconfig
 
     sudo mkdir /usr/local/include/mescan-0.1
-    sudo cp /home/syn/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libllt/*.h /usr/local/include/mescan-0.1
-    sudo cp /home/syn/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.h /usr/local/include/mescan-0.1
-    sudo cp /home/syn/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libllt/*.so.1.0 /usr/local/lib
-    sudo cp /home/syn/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.so.1.0 /usr/local/lib
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libllt/*.h /usr/local/include/mescan-0.1
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.h /usr/local/include/mescan-0.1
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libllt/*.so.1.0 /usr/local/lib
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.so.1.0 /usr/local/lib
     ###install aravis 0.4 ###
         cd ~/Downloads
         wget http://ftp.gnome.org/pub/GNOME/sources/aravis/0.4/aravis-0.4.0.tar.xz
@@ -87,14 +94,15 @@ Installation Instructions
         cd aravis-0.4.0
         ./configure
         make
-        make install
-        ldconfig
+        sudo make install
+        sudo ldconfig
 
 5, Install realsense driver and related packages
 ------------------------------------------------
     sudo apt-key adv --keyserver keys.gnupg.net --recv-key C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C8B3A55A6F3EFCDE
     sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo xenial main" -u
 
+    sudo apt-get update
     sudo apt-get install librealsense2-udev-rules=2.22.0-0~realsense0.1105 librealsense2-dkms=1.3.3-0ubuntu1 librealsense2=2.22.0-0~realsense0.1105 librealsense2-utils=2.22.0-0~realsense0.1105 librealsense2-gl=2.22.0-0~realsense0.1105 librealsense2-dev=2.22.0-0~realsense0.1105 librealsense2-dbg=2.22.0-0~realsense0.1105 -y
 
     sudo apt-mark hold librealsense2-udev-rules librealsense2-dkms librealsense2 librealsense2-utils librealsense2-gl librealsense2-dev librealsense2-dbg
@@ -105,8 +113,3 @@ Installation Instructions
 ------------------------------------
     sudo apt-get install ros-kinetic-universal-robot ros-kinetic-ur-msgs
     sudo apt-get install ros-kinetic-industrial-robot-status-interface ros-kinetic-rqt-controller-manager
-
-7, Clone rivet_screw github code to the local ros work space
-------------------------------------------------------------
-    ###add python path for object detection neural network###
-    export PYTHONPATH=$PYTHONPATH:~/ros_ws/src/object_localizer/python:~/ros_ws/src/object_localizer/python/slim

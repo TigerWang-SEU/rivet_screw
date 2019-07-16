@@ -6,7 +6,7 @@
   <arg name="debug" default="false" />
 
   <!-- launch file for r2000 -->
-  <include file="$(find pepperl_fuchs_r2000)/launch/r2000.launch"/>
+  <!-- <include file="$(find pepperl_fuchs_r2000)/launch/r2000.launch"/> -->
 
   <!-- launch file for realsense2_camera -->
   <include file="$(find realsense2_camera)/launch/rs_rgbd.launch"/>

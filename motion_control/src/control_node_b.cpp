@@ -98,7 +98,7 @@ public:
     pcl::fromPCLPointCloud2 ( pcl_pc2, *scene_cloud_ );
   }
 
-  // scan_start, scan_end, screw_start
+  // camera_start, camera_end, scan_start, screw_start
   bool set_pose ( std::string pose_name )
   {
     std::map < std::string, double > value_map = move_group->getNamedTargetValues ( pose_name );
@@ -123,10 +123,10 @@ public:
 
   void execute_pipeline ()
   {
-    // step 1, set the robot pose to pose.
+    // step 1, set the robot pose to camera_start.
     std_srvs::Empty msg;
-    std::cout << "1, set the robot pose to scan_start" << std::endl;
-    if ( set_pose ( "scan_start" ) )
+    std::cout << "1, set the robot pose to camera_start" << std::endl;
+    if ( set_pose ( "camera_start" ) )
     {
       // step 2, start services rough_localizer, and box_segmenter
       std::cout << "2, start services rough_localizer, box_segmenter" << std::endl;
@@ -139,6 +139,7 @@ public:
         std::cout << "4, stop services rough_localizer, box_segmenter" << std::endl;
         if ( stop_rough_localizer_.call ( msg ) && stop_box_segmenter_.call ( msg ) )
         {
+          set_pose ( "camera_start" );
           set_pose ( "scan_start" );
           // step 5, generate scanning plans and write it to the configuration file [do_scan]
           std::cout << "5, start to generate scanning plans" << std::endl;

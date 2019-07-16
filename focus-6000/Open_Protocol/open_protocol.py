@@ -1,10 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf8
 
 
 
 class OpCon():
     def __init__(self):
-        super(OpCon, self).__init__()
+        
 
         self.MID = {
             'Communication_start': '0001',
@@ -57,7 +58,6 @@ class OpCon():
         x = self.MID[mid]
         lng = str(len("0000" + x + rev + Nof + stID + spID + seqNr + msgPrt + msgNr + data))#return the length of the message
         sd = lng.zfill(4) + x + rev + Nof + stID + spID + seqNr + msgPrt + msgNr + data + NULL #the message to be sended to controller 
-        print(sd)
         return sd.encode()  # convert the message to utf-8,for open protocol the message should be wirtten in utf-8
 
 
@@ -66,33 +66,33 @@ class OpCon():
           if loosening_speed>=50 and loosening_speed<=750:    
              self.loosening_speed_data='30100201000003020000000'+str(pset_number).zfill(3)+'3001400402101'+'0000'+str(loosening_speed).zfill(4)+'00'
           else:
-              print('loosening_speed: the input is outside of the limit')  
+              print'loosening_speed: the input is outside of the limit'  
           if loosening_torque>=0 and loosening_torque<=300:    
              loosening_torque=format(float(loosening_torque)/100,'.3f')
              self.loosening_torque_data='30100201000003020000000'+str(pset_number).zfill(3)+'3001201290090'+'0000'+'0000'+str(loosening_torque)+'e+3'+'00'
           else:
-              print('loosening_torque: the input is outside of the limit')
+              print'loosening_torque: the input is outside of the limit'
           if loosening_angle>=0 and loosening_angle<=10800:  
              loosening_angle=format(float(loosening_angle)/1000,'.3f')
              self.loosening_angle_data='30100201000003020000000'+str(pset_number).zfill(3)+'3001301290050'+'0000'+'0000'+str(loosening_angle)+'e+3'+'00'
           else:
-              print('loosening_angle: the input is outside of the limit')
+              print'loosening_angle: the input is outside of the limit'
           if tightening_speed>=50 and tightening_speed<=100:
              self.tightening_speed_data='30100301000003020000000'+str(pset_number).zfill(3)+'301000010200000013'+'3010100402101'+'0001'+str(tightening_speed).zfill(4)+'00'
           else: 
-              print('tightening_speed: the input is outside of the limit')
+              print'tightening_speed: the input is outside of the limit'
           if tightening_torque>=62.5 and tightening_torque<=275:     
              tightening_torque=format(float(tightening_torque)/100,'.3f')
              self.tightening_torque_data='30100301000003020000000'+str(pset_number).zfill(3)+'301000010200000013'+'3011201290090'+'0001'+'0000'+str(tightening_torque)+'e+3'+'00'
           else:
-              print('tightening_torque: the input is out of the limit')  
+              print'tightening_torque: the input is out of the limit'  
           #if tightening_angle>=0 and tightening_angle<=10800:      
           #   tightening_angle=format(float(tightening_angle)/1000,'.3f')
           #   self.tightening_angle_data='30100301000003020000000'+str(pset_number).zfill(3)+'301000010200000012'+'3010901290050'+'0001'+'0000'+str(tightening_angle)+'e+3'+'00'
           #else:
-          #    print('tightening_torque: the input is out of the limit')  
+          #    print'tightening_torque: the input is out of the limit')  
         else:
-          print('unvalid pset_number')           
+          print'unvalid pset_number'           
     '''
     function to decode the message that sended back by the controller in the process 'Last_tightening_result_data'
     '''

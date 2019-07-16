@@ -98,21 +98,15 @@ public:
     pcl::fromPCLPointCloud2 ( pcl_pc2, *scene_cloud_ );
   }
 
-  // scan_start, scan_end, screw_start
+  // camera_start, camera_end, scan_start, screw_start
   bool set_pose ( std::string pose_name )
   {
     std::map < std::string, double > value_map = move_group->getNamedTargetValues ( pose_name );
-    // std::cout << move_group->getNamedTargetValues ( "pose2" ) << std::endl;
-    // for ( const auto& value_pair : value_map )
-    // {
-    //   std::cout << "<" << value_pair.first << "> = <" << value_pair.second << ">\n";
-    // }
     move_group->setJointValueTarget ( value_map );
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
     bool success = ( move_group->plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
     if ( success )
     {
-      // std::cout << "reset the robot pose to pose 2" << std::endl;
       move_group->setMaxVelocityScalingFactor ( 0.1 );
       move_group->setMaxAccelerationScalingFactor ( 0.1 );
       move_group->move ();
@@ -129,19 +123,10 @@ public:
 
   void execute_pipeline ()
   {
-    // std::cout << "\tContinue with current position (y/n): ";
-    // std::string answer_str;
-    // // answer_str = "y";
-    // std::cin >> answer_str;
-    // if ( answer_str == "n" )
-    // {
-    //   return;
-    // }
-
-    // step 1, set the robot pose to pose.
+    // step 1, set the robot pose to camera_start.
     std_srvs::Empty msg;
-    std::cout << "1, set the robot pose to scan_start" << std::endl;
-    if ( set_pose ( "scan_start" ) )
+    std::cout << "1, set the robot pose to camera_start" << std::endl;
+    if ( set_pose ( "camera_start" ) )
     {
       // step 2, start services rough_localizer, and box_segmenter
       std::cout << "2, start services rough_localizer, box_segmenter" << std::endl;
@@ -154,6 +139,7 @@ public:
         std::cout << "4, stop services rough_localizer, box_segmenter" << std::endl;
         if ( stop_rough_localizer_.call ( msg ) && stop_box_segmenter_.call ( msg ) )
         {
+          set_pose ( "camera_start" );
           set_pose ( "scan_start" );
           // step 5, generate scanning plans and write it to the configuration file [do_scan]
           std::cout << "5, start to generate scanning plans" << std::endl;
@@ -162,7 +148,6 @@ public:
       }
     }
   }
-
 };
 
 int main ( int argc, char** argv )
