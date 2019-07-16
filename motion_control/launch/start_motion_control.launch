@@ -5,8 +5,8 @@
   </node>
 
   <!-- start the node "rough_localizer_b" which provides the services "start_rough_localizer" and "stop_rough_localizer" -->
-  <!-- <node name="rough_localizer_b" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
-  </node> -->
+  <node name="rough_localizer_b" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
+  </node>
 
   <!-- start the node "box_segmenter_b" which provides the services "start_box_segmenter" and "stop_box_segmenter" -->
   <node name="box_segmenter_b" pkg="object_localizer" type="box_segmenter_b" respawn="true" output="screen">
@@ -24,8 +24,8 @@
   </node>
 
   <!-- start the node "profile_merger" which provides the service "start_profile_merger" and "stop_profile_merger" -->
-  <!-- <node name="profile_merger_c_thread" pkg="object_localizer" type="profile_merger_c_thread" respawn="true" output="screen">
-  </node> -->
+  <node name="profile_merger_c_thread" pkg="object_localizer" type="profile_merger_c_thread" respawn="true" output="screen">
+  </node>
 
   <!-- start the node "rivet_localizer_c_15" which provides the service "start_rivet_localizer" -->
   <node name="rivet_localizer_c_15" pkg="object_localizer" type="rivet_localizer_c_15" respawn="true" output="screen">
