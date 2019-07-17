@@ -20,14 +20,18 @@ find_package( catkin REQUIRED COMPONENTS
   std_srvs
 )
 
-find_package( Boost REQUIRED )
-find_package( PkgConfig REQUIRED )
-pkg_check_modules( ARAVIS6 REQUIRED aravis-0.6 )
+find_package ( Boost REQUIRED )
+find_package ( PkgConfig REQUIRED )
+pkg_check_modules ( ARAVIS4 REQUIRED aravis-0.4 )
+pkg_check_modules ( ARAVIS6 REQUIRED aravis-0.6 )
 
 ### BUILD ###
-include_directories ( /usr/local/include/mescan-0.2/ ${ARAVIS6_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
-FIND_LIBRARY ( LLT_LIBRARY_2  libllt.so.0.2.0 /usr/local/lib )
-FIND_LIBRARY ( MESCAN_LIBRARY_2  libmescan.so.0.2.0 /usr/local/lib )
+include_directories ( /usr/local/include/mescan-0.1/ ${ARAVIS4_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
+FIND_LIBRARY ( LLT_LIBRARY  libllt.so.1 )
+FIND_LIBRARY ( MESCAN_LIBRARY  libmescan.so.1 )
+### include_directories ( /usr/local/include/mescan-0.2/ ${ARAVIS6_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
+### FIND_LIBRARY ( LLT_LIBRARY_2  libllt.so.0.2.0 /usr/local/lib )
+### FIND_LIBRARY ( MESCAN_LIBRARY_2  libmescan.so.0.2.0 /usr/local/lib )
 
 catkin_package(
   #  INCLUDE_DIRS include
@@ -90,11 +94,14 @@ target_link_libraries(profile_merger_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(profile_merger_c src/profile_merger_c.cpp)
 target_link_libraries(profile_merger_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(profile_merger_c_thread src/profile_merger_c_thread.cpp)
-target_link_libraries(profile_merger_c_thread ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${LLT_LIBRARY_2} ${MESCAN_LIBRARY_2} ${ARAVIS6_LIBRARIES})
+add_executable ( profile_merger_c_thread src/profile_merger_c_thread.0.1.cpp )
+target_link_libraries ( profile_merger_c_thread ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${LLT_LIBRARY} ${MESCAN_LIBRARY} ${ARAVIS4_LIBRARIES} )
 
-add_executable(GetProfilesCallback src/ProfilesCallback/GetProfilesCallback.cpp)
-target_link_libraries(GetProfilesCallback ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${LLT_LIBRARY_2} ${MESCAN_LIBRARY_2} ${ARAVIS6_LIBRARIES})
+## add_executable ( profile_merger_c_thread src/profile_merger_c_thread.cpp )
+## target_link_libraries ( profile_merger_c_thread ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${LLT_LIBRARY_2} ${MESCAN_LIBRARY_2} ${ARAVIS6_LIBRARIES} )
+
+## add_executable ( GetProfilesCallback src/ProfilesCallback/GetProfilesCallback.cpp )
+## target_link_libraries ( GetProfilesCallback ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${LLT_LIBRARY_2} ${MESCAN_LIBRARY_2} ${ARAVIS6_LIBRARIES} )
 
 add_executable(pc_writer src/pc_writer.cpp)
 target_link_libraries(pc_writer ${catkin_LIBRARIES} ${Boost_LIBRARIES})
