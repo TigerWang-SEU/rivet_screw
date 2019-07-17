@@ -31,7 +31,6 @@ typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 std::string reference_frame = "world";
 std::string scanner_frame = "scanCONTROL_2900-50_scanner_laser_link";
-double lag_compensation_ = 0.001;
 static const int num_threads = 1;
 bool is_stop = false;
 bool is_publish_ = false;
@@ -229,6 +228,43 @@ double average ( double a, double b )
 	return ( a + b ) / 100000.0 / 2.0;
 }
 
+void save_profile_pc ()
+{
+	// 1. get x and z arrays
+	ConvertProfile2Values ( &profile_buffer [ 0 ], profile_buffer.size(), & ( hLLT->appData ), resolution, 0, NULL, NULL, NULL, &value_x [ 0 ], &value_z [ 0 ], NULL, NULL );
+
+	// 2. get profile_counter and time information
+	guint32 profile_counter = 0;
+	double shutter_closed = 0, shutter_opened = 0;
+	Timestamp2TimeAndCount ( &profile_buffer[0], &shutter_opened, &shutter_closed, &profile_counter );
+	std::cout << "Profile: [" << profile_counter << "] has time [shutter_closed, shutter_opened] = [" << shutter_closed << "," << shutter_opened << "]" << std::endl;
+
+	// 3. create a new profile point cloud
+	PointCloudT::Ptr profile_cloud ( new PointCloudT );
+	profile_cloud->header.frame_id = scanner_frame;
+	ros::Time profile_time = ros::Time::now() - ros::Duration ( average ( shutter_opened, shutter_closed ) + lag_compensation );
+	pcl_conversions::toPCL ( profile_time, profile_cloud->header.stamp );
+	PointT temp_point;
+	for ( int i = 0; i < value_x.size (); ++i )
+	{
+		if ( value_z [ i ] > 30 )
+		{
+			temp_point.x = - value_x [ i ] / 1000.0;
+			temp_point.y = value_z [ i ] / 1000.0;
+			temp_point.z = 0.0;
+			profile_cloud->points.push_back ( temp_point );
+		}
+	}
+
+	if ( profile_cloud->size () != 0 )
+	{
+		// 4. put the new profile point cloud into each profile_thread_queue
+		std::cout << "Profile [" << profile_counter << "] for thread [" << current_thread_index << "]" << std::endl;
+		profile_thread_queue [ current_thread_index ].push ( profile_cloud );
+		current_thread_index = ( current_thread_index + 1 ) % num_threads;
+	}
+}
+
 void scanner_cb ()
 {
   gint32 ret = 0;
@@ -240,11 +276,9 @@ void scanner_cb ()
     return;
   }
 
-  std::vector < double > value_x, value_z;
   profile_buffer.resize ( resolution * 64 );
   value_x.resize ( resolution );
   value_z.resize ( resolution );
-  CInterfaceLLT::ResetEvent ( event );
 
   // 2. start transfer profoles
   if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
@@ -256,57 +290,7 @@ void scanner_cb ()
   // 3. loop until receive the end signal
   while ( !is_stop )
   {
-    if ( CInterfaceLLT::WaitForSingleObject ( event, 2000 ) != WAIT_OBJECT_0 )
-    {
-      continue;
-    }
-    CInterfaceLLT::ResetEvent ( event );
-
-		if ( !is_publish_ )
-		{
-			ros::Duration ( 0.01 * num_threads ).sleep ();
-			continue;
-		}
-
-		// 3.1. get x and z arrays
-    if ( ( ret = ConvertProfile2Values ( &profile_buffer [ 0 ], profile_buffer.size(), & ( hLLT->appData ), resolution, PROFILE, 0, NULL, NULL, NULL, &value_x [ 0 ], &value_z [ 0 ], NULL, NULL ) ) != ( CONVERT_X | CONVERT_Z ) )
-    {
-      std::cout << "Error while extracting profiles! - [" << ret << "]" << std::endl;
-      continue;
-    }
-
-    // 3.2. get profile_counter and time information
-    guint32 profile_counter = 0;
-    double shutter_closed = 0, shutter_opened = 0;
-    Timestamp2TimeAndCount ( &profile_buffer[0], &shutter_opened, &shutter_closed, &profile_counter );
-		std::cout << "Profile: [" << profile_counter << "] has time [shutter_closed, shutter_opened] = [" << shutter_closed << "," << shutter_opened << "]" << std::endl;
-
-    // 3.3. create a new profile point cloud
-    PointCloudT::Ptr profile_cloud ( new PointCloudT );
-    profile_cloud->header.frame_id = scanner_frame;
-    ros::Time profile_time = ros::Time::now() - ros::Duration ( average ( shutter_opened, shutter_closed ) + lag_compensation_ );
-    pcl_conversions::toPCL ( profile_time, profile_cloud->header.stamp );
-    PointT temp_point;
-    for ( int i = 0; i < value_x.size (); ++i )
-    {
-      if ( value_z [ i ] > 30 )
-      {
-        temp_point.x = - value_x [ i ] / 1000.0;
-        temp_point.y = value_z [ i ] / 1000.0;
-        temp_point.z = 0.0;
-        profile_cloud->points.push_back ( temp_point );
-      }
-    }
-
-		if ( profile_cloud->size () == 0 )
-		{
-			continue;
-		}
-
-		// 3.4. put the new profile point cloud into each profile_thread_queue
-		std::cout << "Profile [" << profile_counter << "] for thread [" << current_thread_index << "]" << std::endl;
-		profile_thread_queue [ current_thread_index ].push ( profile_cloud );
-		current_thread_index = ( current_thread_index + 1 ) % num_threads;
+		ros::Duration ( 0.01 * num_threads ).sleep ();
   }
 
   // 4. stop transfer profiles

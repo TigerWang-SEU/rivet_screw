@@ -1,51 +1,52 @@
 #ifndef PROFILESCALLBACK_H
 #define PROFILESCALLBACK_H
 
+#include <ros/package.h>
 #include <iostream>
-#include "libllt.h"
 #include <vector>
+#include "libllt.h"
 
 #define MAX_INTERFACE_COUNT 5
 #define MAX_RESOLUTION 6
+
+// laser scanner information
+std::string  serial_number = "218020023";
+const int SCANNER_RESOLUTION = 1280;
+guint32 idle_time = 800;
+guint32 shutter_time = 200;
+double lag_compensation = 0.001;
+std::string device_properties_path = ros::package::getPath ( "microepsilon_scancontrol" ) + "/scanCONTROL_Linux_SDK_0.1.0";
+LLT *hLLT;
+guint32 resolution;
+std::vector < guint8 > profile_buffer;
+std::vector < double > value_x, value_z;
+TScannerType llt_type;
 
 // define functions for connecting and disconnecting laser scanner
 void clean_up ( void );
 bool connect_scanner ( std::string serial_number_ );
 bool disconnect_scanner ( void );
 
+void save_profile_pc ();
 void NewProfile ( const void *data, size_t data_size, gpointer user_data );
 void ControlLostCallback ( gpointer user_data );
-
-// laser scanner information
-std::string  serial_number = "218020023";
-LLT *llt_;
-guint32 resolution;
-std::vector<guint8> profile_buffer;
-TScannerType llt_type;
-// event handle
-EHANDLE *event;
 
 // clean up used hLLT and event
 void clean_up ()
 {
-  delete llt_;
+  delete hLLT;
 }
 
 // connect laser scanner
 bool connect_scanner ( std::string serial_number_ )
 {
   // 1. new LLT instance
-  llt_ = new LLT ();
+  hLLT = new LLT ();
 
   gint32 ret = 0;
-
   char *interfaces [ MAX_INTERFACE_COUNT ];
   guint32 resolutions [ MAX_RESOLUTION ];
   guint32 interface_count = 0;
-
-  guint32 idle_time = 800;
-  guint32 shutter_time = 200;
-  std::string device_properties_path = "/home/syn/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0";
 
   // 1. searching for scanCONTROL devices
   if ( ( ret = GetDeviceInterfaces ( &interfaces[0], MAX_INTERFACE_COUNT ) ) == ERROR_GETDEVINTERFACE_REQUEST_COUNT )
@@ -111,6 +112,7 @@ bool connect_scanner ( std::string serial_number_ )
   }
 
   // 5. set device id
+  std::cout << "Connecting to " << interfaces[ activeDevice ] << std::endl;
   if ( ( ret = hLLT->SetDeviceInterface ( interfaces[ activeDevice ] ) ) < GENERAL_FUNCTION_OK )
   {
     std::cout << "Error while setting dev id - Error " << ret << "!" << std::endl;
@@ -171,6 +173,7 @@ bool connect_scanner ( std::string serial_number_ )
 
   // 8.1. set resolution to the max possible resolution
   resolution = resolutions [ 0 ];
+  std::cout << "Set resolution [" << resolution << "]" << std::endl;
   if ( hLLT->SetResolution ( resolution ) < GENERAL_FUNCTION_OK )
   {
     std::cout << "Error while setting resolution!" << std::endl;
@@ -247,7 +250,7 @@ void NewProfile ( const void *data, size_t data_size, gpointer user_data )
   if ( data != NULL && data_size == profile_buffer.size() )
   {
     memcpy ( &profile_buffer[0], data, data_size );
-    set_event ( event );
+    save_profile_pc ();
   }
 }
 
