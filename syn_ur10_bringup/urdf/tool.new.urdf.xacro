@@ -19,10 +19,10 @@
   <xacro:property name="laser_y" value="-0.12500" />
   <xacro:property name="laser_z" value="0.14095" />
 
-  <xacro:property name="camera_x" value="-0.01059" />
-  <xacro:property name="camera_y" value="0.10209" />
-  <xacro:property name="camera_z" value="0.02406" />
-  <xacro:property name="camera_angle" value="125.00" />
+  <xacro:property name="camera_x" value="0.01369" />
+  <xacro:property name="camera_y" value="0.06792" />
+  <xacro:property name="camera_z" value="0.01050" />
+  <xacro:property name="camera_angle" value="90.00" />
 
   <link name="tool_base" />
 
@@ -75,7 +75,7 @@
 
   <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
   <sensor_d435 parent="rs_base_link">
-    <origin xyz="0 0 0" rpy="${radians(0)} ${radians(90)} ${radians(0)}"/>
+    <origin xyz="0 0 0" rpy="${radians(0)} ${radians(90)} ${radians(180)}"/>
   </sensor_d435>
 
 </robot>
