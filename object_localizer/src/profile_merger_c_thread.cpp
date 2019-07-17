@@ -32,7 +32,7 @@ typedef pcl::PointCloud< PointT > PointCloudT;
 std::string reference_frame = "world";
 std::string scanner_frame = "scanCONTROL_2900-50_scanner_laser_link";
 double lag_compensation_ = 0.001;
-static const int num_threads = 4;
+static const int num_threads = 1;
 bool is_stop = false;
 bool is_publish_ = false;
 int current_thread_index = 0;
@@ -143,6 +143,8 @@ public:
 
 			scene_pc_queue.push ( in_cloud_transformed );
 		}
+
+		std::cout << "Transform thread [" << thread_id << "] is stopped" << std::endl;
   }
 
 	void merger_cb ()
@@ -176,6 +178,7 @@ public:
 			pcl_conversions::toPCL ( ros::Time::now(), scene_cloud->header.stamp );
 			cloud_pub_.publish ( scene_cloud );
 		}
+		std::cout << "Merger thread is stopped" << std::endl;
 	}
 
 	bool start_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
@@ -314,6 +317,8 @@ void scanner_cb ()
 
   // 5. disconnect the laser scanner
   disconnect_scanner ();
+
+	std::cout << "scanner thread is stopped!" << std::endl;
 }
 
 int main ( int argc, char** argv )
