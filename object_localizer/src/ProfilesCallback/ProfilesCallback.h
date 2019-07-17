@@ -45,8 +45,8 @@ bool connect_scanner ( std::string serial_number_ )
   guint32 resolutions [ MAX_RESOLUTION ];
   guint32 interface_count = 0;
 
-  guint32 idle_time = 9000;
-  guint32 shutter_time = 1000;
+  guint32 idle_time = 800;
+  guint32 shutter_time = 200;
 
   // 1. searching for scanCONTROL devices
   if ( ( ret = CInterfaceLLT::GetDeviceInterfaces ( &interfaces[0], MAX_INTERFACE_COUNT ) ) == ERROR_GETDEVINTERFACE_REQUEST_COUNT )
