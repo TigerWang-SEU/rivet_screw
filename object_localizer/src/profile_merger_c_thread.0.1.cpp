@@ -24,7 +24,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
 
-#include "ProfilesCallback/ProfilesCallback.0.1.h"
+#include "ProfilesCallback/microepsilon_scancontrol.h"
 #include "ProfilesCallback/ThreadSafeQueue.h"
 
 typedef pcl::PointXYZ PointT;
@@ -223,26 +223,11 @@ private:
   ros::Publisher cloud_pub_;
 };
 
-double average ( double a, double b )
-{
-	return ( a + b ) / 100000.0 / 2.0;
-}
-
 void save_profile_pc ()
 {
-	// 1. get x and z arrays
-	ConvertProfile2Values ( &profile_buffer [ 0 ], profile_buffer.size(), & ( hLLT->appData ), resolution, 0, NULL, NULL, NULL, &value_x [ 0 ], &value_z [ 0 ], NULL, NULL );
-
-	// 2. get profile_counter and time information
-	guint32 profile_counter = 0;
-	double shutter_closed = 0, shutter_opened = 0;
-	Timestamp2TimeAndCount ( &profile_buffer[0], &shutter_opened, &shutter_closed, &profile_counter );
-	std::cout << "Profile: [" << profile_counter << "] has time [shutter_closed, shutter_opened] = [" << shutter_closed << "," << shutter_opened << "]" << std::endl;
-
-	// 3. create a new profile point cloud
+	// 1. create a new profile point cloud
 	PointCloudT::Ptr profile_cloud ( new PointCloudT );
 	profile_cloud->header.frame_id = scanner_frame;
-	ros::Time profile_time = ros::Time::now() - ros::Duration ( average ( shutter_opened, shutter_closed ) + lag_compensation );
 	pcl_conversions::toPCL ( profile_time, profile_cloud->header.stamp );
 	PointT temp_point;
 	for ( int i = 0; i < value_x.size (); ++i )
@@ -258,7 +243,7 @@ void save_profile_pc ()
 
 	if ( profile_cloud->size () != 0 )
 	{
-		// 4. put the new profile point cloud into each profile_thread_queue
+		// 2. put the new profile point cloud into each profile_thread_queue
 		std::cout << "Profile [" << profile_counter << "] for thread [" << current_thread_index << "]" << std::endl;
 		profile_thread_queue [ current_thread_index ].push ( profile_cloud );
 		current_thread_index = ( current_thread_index + 1 ) % num_threads;
@@ -267,41 +252,23 @@ void save_profile_pc ()
 
 void scanner_cb ()
 {
-  gint32 ret = 0;
+	std::string serial_number = "218020023";
+  const int SCANNER_RESOLUTION = 1280;
+  guint32 idle_time = 800;
+  guint32 shutter_time = 200;
+  double lag_compensation = 0.001;
+  std::string device_properties_path = ros::package::getPath ( "microepsilon_scancontrol" ) + "/scanCONTROL_Linux_SDK_0.1.0/device_properties.dat";
 
-  // 1. connect the laser scanner
-  if ( ! connect_scanner ( serial_number ) )
-  {
-		std::cout << "Error in connecting the laser scanner!" << std::endl;
-    return;
-  }
+	Scanner laser_ (serial_number, shutter_time, idle_time, device_properties_path);
+	laser_.startScanning ();
 
-  profile_buffer.resize ( resolution * 64 );
-  value_x.resize ( resolution );
-  value_z.resize ( resolution );
-
-  // 2. start transfer profoles
-  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
-  {
-    std::cout << "Error in profile transfer! - [" << ret << "]" << std::endl;
-    return;
-  }
-
-  // 3. loop until receive the end signal
+	// loop until receive the end signal
   while ( !is_stop )
   {
 		ros::Duration ( 0.01 * num_threads ).sleep ();
   }
 
-  // 4. stop transfer profiles
-  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, false ) ) < GENERAL_FUNCTION_OK )
-  {
-    std::cout << "Error while stopping transmission! - [" << ret << "]" << std::endl;
-  }
-
-  // 5. disconnect the laser scanner
-  disconnect_scanner ();
-
+	laser_.stopScanning ();
 	std::cout << "scanner thread is stopped!" << std::endl;
 }
 

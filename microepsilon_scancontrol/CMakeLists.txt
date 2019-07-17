@@ -31,8 +31,8 @@ add_executable ( ${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp )
 add_dependencies ( ${PROJECT_NAME}_node ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} )
 target_link_libraries ( ${PROJECT_NAME}_node ${PROJECT_NAME} ${catkin_LIBRARIES} )
 
-add_executable ( test src/test.cpp )
-target_link_libraries ( test ${catkin_LIBRARIES} ${LLT_LIBRARY} ${MESCAN_LIBRARY} ${ARAVIS4_LIBRARIES} )
+add_executable ( test_2 src/test.cpp )
+target_link_libraries ( test_2 ${catkin_LIBRARIES} ${LLT_LIBRARY} ${MESCAN_LIBRARY} ${ARAVIS4_LIBRARIES} )
 
 ### INSTALL ###
 install ( TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
