@@ -7,6 +7,7 @@
 #include <vector>
 #include <ctime>
 
+#include <std_msgs/String.h>
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 #include <ros/package.h>
@@ -51,6 +52,11 @@ class ControlNode {
   ros::Subscriber cloud_sub_;
   pcl::PLYWriter writer;
 
+  int current_execution_phase;
+  bool is_pause;
+  ros::ServiceServer robot_pause, robot_restart;
+  ros::Publisher control_node_pub;
+
 public:
 
   ControlNode () : scene_cloud_ ( new pcl::PointCloud< PointT > )
@@ -78,6 +84,12 @@ public:
     std::string cloud_in_name = "/profile_merger/points";
     cloud_sub_ = nh_.subscribe ( cloud_in_name, 3, &ControlNode::cloud_cb, this );
     ROS_INFO_STREAM ( "Listening point cloud message on topic " << cloud_in_name );
+
+    current_execution_phase = 0;
+    is_pause = false;
+    robot_pause = nh_.advertiseService ( "robot_pause", &ControlNode::pause_execution, this );
+    robot_restart = nh_.advertiseService ( "robot_restart", &ControlNode::restart_execution, this );
+    control_node_pub = nh_.advertise <std_msgs::String> ( "/control_node/status", 100 );
   }
 
   ~ControlNode ()
@@ -119,6 +131,118 @@ public:
     std::string pc_file_path = ros::package::getPath ( "object_localizer" )+ "/data/pc_out_0.ply";
 		std::cout << "\tSaving point cloud to file: \n\t" << pc_file_path << std::endl;
 		writer.write ( pc_file_path, *scene_cloud_ );
+  }
+
+  void publish_msg ( std::string in_msg )
+  {
+    std::stringstream ss;
+    ss << in_msg;
+    std_msgs::String msg;
+    msg.data = ss.str();
+    control_node_pub.publish ( msg );
+  }
+
+  void execute_stage ( int stage_idx )
+  {
+    std_srvs::Empty msg;
+    switch ( stage_idx )
+    {
+      case 0:
+      {
+        publish_msg ( "mid_referencing_start" );
+        std::cout << "1, set the robot pose to camera_start" << std::endl;
+        if ( set_pose ( "camera_start" ) )
+        {
+          // step 2, start services rough_localizer, and box_segmenter
+          std::cout << "2, start services rough_localizer, box_segmenter" << std::endl;
+          if ( start_rough_localizer_.call ( msg ) && start_box_segmenter_.call ( msg ) )
+          {
+            // step 3, start service move_camera
+            std::cout << "3, start to move the camera" << std::endl;
+            start_move_camera_.call ( msg );
+            // step 4, stop services rough_localizer and box_segmenter
+            std::cout << "4, stop services rough_localizer, box_segmenter" << std::endl;
+            if ( stop_rough_localizer_.call ( msg ) && stop_box_segmenter_.call ( msg ) )
+            {
+              set_pose ( "camera_start" );
+              set_pose ( "scan_start" );
+              // step 5, generate scanning plans and write it to the configuration file [do_scan]
+              std::cout << "5, start to generate scanning plans" << std::endl;
+              start_scan_planner_.call ( msg );
+            }
+          }
+        }
+        publish_msg ( "mid_referencing_end" );
+        break;
+      }
+      case 1:
+      {
+        publish_msg ( "fine_referencing_start" );
+        // step 6, start one profile scan
+        std::cout << "6, start profile scanning" << std::endl;
+        start_do_scan_.call ( msg );
+
+        // step 7, start profile scan
+        std::cout << "7, Saving profile point cloud" << std::endl;
+        save_profile_pc ();
+        publish_msg ( "fine_referencing_end" );
+        break;
+      }
+      case 2:
+      {
+        publish_msg ( "path_planning_start" );
+        // step 8, call the service rivet_localizer
+        std::cout << "8, start rivet localizer" << std::endl;
+        start_rivet_localizer_.call ( msg );
+        publish_msg ( "path_planning_end" );
+        break;
+      }
+      case 3:
+      {
+        publish_msg ( "collar_screwing_start" );
+        // step 9, call the service point_rivet
+        std::cout << "9, start to point to rivet" << std::endl;
+        start_point_rivet_.call ( msg );
+
+        // step 10, set the robot pose back to pose screw_start
+        std::cout << "10, set the robot pose back to pose screw_start" << std::endl;
+        set_pose ( "screw_start" );
+        publish_msg ( "collar_screwing_end" );
+        break;
+      }
+    }
+  }
+
+  bool pause_execution ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    is_pause = true;
+    return true;
+  }
+
+  bool restart_execution ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    execute_pipeline_new ();
+    return true;
+  }
+
+  void execute_pipeline_new ()
+  {
+    is_pause = false;
+    for ( int idx = current_execution_phase; idx < 4; idx ++ )
+    {
+      execute_stage ( idx );
+      current_execution_phase ++;
+      if ( is_pause )
+      {
+        break;
+      }
+    }
+  }
+
+  void start_execution ()
+  {
+    current_execution_phase = 0;
+    execute_pipeline_new ();
   }
 
   void execute_pipeline ()
@@ -177,7 +301,7 @@ int main ( int argc, char** argv )
   ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
   ControlNode control_node;
-  control_node.execute_pipeline ();
+  control_node.start_execution ();
   ros::waitForShutdown ();
   return 0;
 }
