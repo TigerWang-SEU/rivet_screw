@@ -27,7 +27,7 @@ class ImageTransport:
     self.bridge = CvBridge()
 
     # create grpc channel and stub
-    self.object_channel = grpc.insecure_channel("localhost:50051")
+    self.object_channel = grpc.insecure_channel("localhost:50052")
     self.stub =  image_msg_pb2_grpc.DetectorStub(self.object_channel)
 
   def callback(self,data):
