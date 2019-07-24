@@ -116,7 +116,7 @@ public:
   void transform_cb ( int thread_id )
   {
 		std::cout << "Transform thread [" << thread_id << "] is started" << std::endl;
-		while ( !is_stop )
+		while ( !is_stop || !profile_thread_queue [ thread_id ].isEmpty () )
 		{
 			if ( !is_publish_ )
 			{
@@ -150,7 +150,7 @@ public:
 	void merger_cb ()
 	{
 		std::cout << "Merger thread is started" << std::endl;
-		while ( !is_stop )
+		while ( !is_stop || !scene_pc_queue.isEmpty () )
 		{
 			if ( scene_pc_queue.isEmpty () )
 			{
@@ -159,8 +159,31 @@ public:
 			}
 
 			// get the front profile
+			PointCloudT::Ptr in_cloud_1 ( new PointCloudT );
+			PointCloudT::Ptr in_cloud_2 ( new PointCloudT );
+			PointCloudT::Ptr in_cloud_3 ( new PointCloudT );
+			PointCloudT::Ptr in_cloud_4 ( new PointCloudT );
+			PointCloudT::Ptr in_cloud_5 ( new PointCloudT );
+			PointCloudT::Ptr in_cloud_6 ( new PointCloudT );
+			PointCloudT::Ptr in_cloud_7 ( new PointCloudT );
+			PointCloudT::Ptr in_cloud_8 ( new PointCloudT );
+			scene_pc_queue.pop ( in_cloud_1 );
+			scene_pc_queue.pop ( in_cloud_2 );
+			scene_pc_queue.pop ( in_cloud_3 );
+			scene_pc_queue.pop ( in_cloud_4 );
+			scene_pc_queue.pop ( in_cloud_5 );
+			scene_pc_queue.pop ( in_cloud_6 );
+			scene_pc_queue.pop ( in_cloud_7 );
+			scene_pc_queue.pop ( in_cloud_8 );
 			PointCloudT::Ptr in_cloud ( new PointCloudT );
-			scene_pc_queue.pop ( in_cloud );
+			*in_cloud += *in_cloud_1;
+			*in_cloud += *in_cloud_2;
+			*in_cloud += *in_cloud_3;
+			*in_cloud += *in_cloud_4;
+			*in_cloud += *in_cloud_5;
+			*in_cloud += *in_cloud_6;
+			*in_cloud += *in_cloud_7;
+			*in_cloud += *in_cloud_8;
 			if ( in_cloud->size() == 0 )
 			{
 				return;
