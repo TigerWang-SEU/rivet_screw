@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from std_srvs.srv import Empty
+
 import roslib
 import sys
 import rospy
@@ -24,8 +26,8 @@ class ImageTransport:
     #self.image_sub = rospy.Subscriber('/cv_camera/image_raw', Image, self.callback)
 
     self.is_transport = False
-    self.start_service = rospy.Service( 'start_image_transport', std_srvs.srv.Empty, self.start_callback )
-    self.stop_service = rospy.Service( 'stop_image_transport', std_srvs.srv.Empty, self.stop_callback )
+    self.start_service = rospy.Service( 'start_image_transport', Empty, self.start_callback )
+    self.stop_service = rospy.Service( 'stop_image_transport', Empty, self.stop_callback )
 
     self.image_pub = rospy.Publisher('/object_localizer/localize_image', Image, queue_size = 100)
     self.bbox_pub =  rospy.Publisher('/object_localizer/bbox_list', BBox_list, queue_size = 100)
@@ -35,18 +37,20 @@ class ImageTransport:
     self.object_channel = grpc.insecure_channel("localhost:50052")
     self.stub =  image_msg_pb2_grpc.DetectorStub(self.object_channel)
 
-  def start_callback ( req ):
-      self.is_transport = True
-      return True
+  def start_callback ( self, req ):
+    self.is_transport = True
+    return {}
 
-  def stop_callback ( req ):
-      self.is_transport = False
-      return True
+  def stop_callback ( self, req ):
+    self.is_transport = False
+    print("stop image transport")
+    return {}
 
   def callback ( self, data ):
 
     if self.is_transport == False:
-        return
+      rospy.sleep ( 0.1 )
+      return {}
 
     try:
       # subscribe to ros_image and convert it to opencv_image
