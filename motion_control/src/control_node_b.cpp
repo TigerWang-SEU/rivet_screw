@@ -129,9 +129,12 @@ public:
 
   bool save_profile_pc ()
   {
-    std::string pc_file_path = ros::package::getPath ( "object_localizer" )+ "/data/pc_out_0.ply";
-		std::cout << "\tSaving point cloud to file: \n\t" << pc_file_path << std::endl;
-		writer.write ( pc_file_path, *scene_cloud_ );
+    if ( scene_cloud_->size() > 0 )
+    {
+      std::string pc_file_path = ros::package::getPath ( "object_localizer" )+ "/data/pc_out_0.ply";
+		  std::cout << "\tSaving point cloud to file: \n\t" << pc_file_path << std::endl;
+      writer.write ( pc_file_path, *scene_cloud_ );
+    }
   }
 
   void publish_msg ( std::string in_msg )
@@ -194,6 +197,10 @@ public:
       }
       case 2:
       {
+        if ( scene_cloud_->size() == 0 )
+        {
+          return;
+        }
         publish_msg ( "path_planning_start" );
         // step 8, call the service rivet_localizer
         std::cout << "8, start rivet localizer" << std::endl;
@@ -204,10 +211,12 @@ public:
       case 3:
       {
         publish_msg ( "collar_screwing_start" );
-        // step 9, call the service point_rivet
-        std::cout << "9, start to point to rivet" << std::endl;
-        start_point_rivet_.call ( msg );
-
+        if ( scene_cloud_->size() > 0 )
+        {
+          // step 9, call the service point_rivet
+          std::cout << "9, start to point to rivet" << std::endl;
+          start_point_rivet_.call ( msg );
+        }
         // step 10, set the robot pose back to pose screw_start
         std::cout << "10, set the robot pose back to pose screw_start" << std::endl;
         set_pose ( "screw_start" );
