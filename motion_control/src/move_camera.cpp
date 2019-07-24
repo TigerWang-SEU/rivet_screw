@@ -13,6 +13,8 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
 float motion_scale = 0.03;
+ros::ServiceClient start_image_transport, stop_image_transport;
+std_srvs::Empty msg;
 
 void move_camera ()
 {
@@ -34,8 +36,9 @@ void move_camera ()
     {
       if ( motion_stage_idx  == 0 )
       {
+        start_image_transport.call ( msg );
         // set pose scan_end in radians
-        joint_group_positions [ 3 ] = 1.04;
+        joint_group_positions [ 3 ] = 0.54;
       }
       else if ( motion_stage_idx  == 1 )
       {
@@ -58,6 +61,8 @@ void move_camera ()
         {
           move_group.setMaxVelocityScalingFactor ( 0.1 );
           move_group.setMaxAccelerationScalingFactor ( 0.1 );
+          stop_image_transport.call ( msg );
+          ros::Duration ( 0.5 ).sleep();
           move_group.move ();
         }
       }
@@ -76,6 +81,8 @@ int main ( int argc, char** argv )
 {
   ros::init ( argc, argv, "move_camera" );
   ros::NodeHandle nh_;
+  start_image_transport = nh_.serviceClient < std_srvs::Empty > ( "start_image_transport" );
+  stop_image_transport = nh_.serviceClient < std_srvs::Empty > ( "stop_image_transport" );
   ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
   ros::ServiceServer start_move_camera_;
