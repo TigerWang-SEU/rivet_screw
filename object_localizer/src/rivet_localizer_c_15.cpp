@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 #include <array>
 #include <list>
 #include <set>
@@ -10,6 +11,11 @@
 #include <cmath>
 #include <limits>
 #include <boost/algorithm/string/predicate.hpp>
+#include <sstream>
+#include <math.h>
+
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
@@ -34,6 +40,9 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/common/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/filters/project_inliers.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/common/common_headers.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
@@ -50,6 +59,30 @@ bool show_viz = false;
 float out_distance = 0.012;
 float in_distance = 0.0065;
 float tool_angle = 0.0;
+
+/** Fits a circle to the points in the given 3D pointcloud
+    and saves them in the CENTER and RADIUS.
+    It assumes that the points lie on the SAME XY plane,
+    i.e. their Z-component is the same.  */
+double min_circle_radius = 0.001, max_circle_radius = 0.0025;
+void get_circle ( pcl::PointCloud< PointT >::Ptr points, Eigen::Vector3f &center, float &radius, std::vector< int > &inliers )
+{
+  boost::shared_ptr < pcl::SampleConsensusModelCircle2D < PointT > > model ( new pcl::SampleConsensusModelCircle2D < PointT > ( points ) );
+
+  float ransac_thresh = ( max_circle_radius - min_circle_radius ) / 2.0;
+  pcl::RandomSampleConsensus < PointT > sac ( model, ransac_thresh );
+	sac.setRadiusLimits ( min_circle_radius, max_circle_radius );
+  sac.setMaxIterations ( 200 );
+
+  bool result = sac.computeModel ();
+  sac.getInliers ( inliers );
+  Eigen::VectorXf xyr;
+  sac.getModelCoefficients ( xyr );
+  center(0) = xyr ( 0 );
+  center(1) = xyr ( 1 );
+  center(2) = points->points [ 0 ].z;
+  radius    = xyr ( 2 );
+}
 
 // define the union-find data structure
 class UF
@@ -376,7 +409,7 @@ void find_new_rivet_center ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_r
 	pcl::transformPointCloud( *cloud_in_transformed, *cloud_in_transformed, transform_total );
 
 	// step 2, filter out points belongs to the rivet and save them in cloud_rivet
-	pcl::PointXYZRGB minPoint, maxPoint;
+	PointT minPoint, maxPoint;
   getMinMax3D ( *cloud_rivet_cycle, minPoint, maxPoint );
 	std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
 	std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
@@ -724,7 +757,7 @@ public:
 		scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
 		pcl::transformPointCloud( *cloud_in_transformed, *cloud_in_transformed, transform_total );
 		pcl::transformPointCloud ( *planar_cloud, *planar_cloud, transform_total );
-		pcl::PointXYZRGB minPoint, maxPoint;
+		PointT minPoint, maxPoint;
 	  getMinMax3D ( *planar_cloud, minPoint, maxPoint );
 		std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
 		std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
@@ -890,7 +923,7 @@ public:
 		scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
 		pcl::transformPointCloud( *cloud_in_transformed, *cloud_in_transformed, transform_total );
 		pcl::transformPointCloud ( *planar_cloud, *planar_cloud, transform_total );
-		pcl::PointXYZRGB minPoint, maxPoint;
+		PointT minPoint, maxPoint;
 	  getMinMax3D ( *planar_cloud, minPoint, maxPoint );
 		std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
 		std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
