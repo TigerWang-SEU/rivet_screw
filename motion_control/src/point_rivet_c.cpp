@@ -150,8 +150,10 @@ void targetFileReader ( std::queue< Target >& target_queue )
 
     float pitch_degree = pitch / 3.141592 * 180.0;
     float pitch_diff = pitch_degree - 40.0;
-    float h_angle_adjust = -0.0000250 * pitch_diff;
-    float v_angle_adjust = -0.0000400 * pitch_diff;
+    // float h_angle_adjust = -0.0000250 * pitch_diff;
+    // float v_angle_adjust = -0.0000400 * pitch_diff;
+    float h_angle_adjust = 0.0 * pitch_diff;
+    float v_angle_adjust = 0.0 * pitch_diff;
     h_v_adjust << 1, 0, 0, tool_distance,
       				    0, 1, 0, h_adjust + h_angle_adjust,
       				    0, 0, 1, -v_adjust - v_angle_adjust,
