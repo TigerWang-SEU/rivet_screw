@@ -136,7 +136,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     target_pose2.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
     // do one way of scanning
     waypoints_1.push_back ( target_pose2 );
-    // waypoints_1.push_back ( target_pose1 );
+    waypoints_1.push_back ( target_pose1 );
     // waypoints_1.push_back ( target_pose2 );
 
     std_srvs::Empty msg;
@@ -158,7 +158,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     pitcht = 0;
     yawt = 0;
     final_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-    waypoints_2.push_back ( target_pose2 );
+    waypoints_2.push_back ( target_pose1 );
     waypoints_2.push_back ( final_pose );
 
     fraction = get_trajectory ( waypoints_2, move_group, my_plan, 0.5 );
