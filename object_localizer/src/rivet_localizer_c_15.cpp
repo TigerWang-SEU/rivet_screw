@@ -59,7 +59,6 @@ bool show_viz = false;
 float out_distance = 0.012;
 float in_distance = 0.0065;
 float tool_angle = 0.0;
-Eigen::Matrix4f transform_inverse ( Eigen::Matrix4f::Identity() );
 uint8_t r = 0, g = 255, b = 0;
 uint32_t rgb = 0;
 
@@ -68,12 +67,11 @@ uint32_t rgb = 0;
     It assumes that the points lie on the SAME XY plane,
     i.e. their Z-component is the same.  */
 // double min_circle_radius = 0.001, max_circle_radius = 0.0025;
-void get_circle ( pcl::PointCloud< PointT >::Ptr cloud_in_, double min_circle_radius, double max_circle_radius, Eigen::Vector3f &center, float &radius, std::vector< int > &inliers )
+void get_circle ( pcl::PointCloud< PointT >::Ptr cloud_in_, double min_circle_radius, double max_circle_radius, float ransac_thresh, Eigen::Vector3f &center, float &radius, std::vector< int > &inliers )
 {
   boost::shared_ptr < pcl::SampleConsensusModelCircle2D < PointT > > model ( new pcl::SampleConsensusModelCircle2D < PointT > ( cloud_in_ ) );
 	model->setRadiusLimits ( min_circle_radius, max_circle_radius );
 
-  float ransac_thresh = ( max_circle_radius - min_circle_radius ) / 2.0;
   pcl::RandomSampleConsensus < PointT > sac ( model, ransac_thresh );
   sac.setMaxIterations ( 200 );
 
@@ -84,8 +82,8 @@ void get_circle ( pcl::PointCloud< PointT >::Ptr cloud_in_, double min_circle_ra
   sac.getModelCoefficients ( xyr );
   center ( 0 ) = xyr ( 0 );
   center ( 1 ) = xyr ( 1 );
-  center ( 2 ) = cloud_in_->cloud_in_ [ 0 ].z;
-  radius    = xyr ( 2 );
+  center ( 2 ) = cloud_in_->points [ 0 ].z;
+  radius = xyr ( 2 );
 }
 
 void get_plane ( pcl::PointCloud< PointT >::Ptr cloud_in_, Eigen::Vector3f &surface_normal, float &d, float ransac_thresh, std::vector< int > &inliers )
@@ -94,7 +92,7 @@ void get_plane ( pcl::PointCloud< PointT >::Ptr cloud_in_, Eigen::Vector3f &surf
 
   pcl::RandomSampleConsensus < PointT > ransac ( model_p );
   ransac.setDistanceThreshold ( ransac_thresh );
-  sac.setMaxIterations ( 200 );
+  ransac.setMaxIterations ( 200 );
 
   // compute the model and get parameters
   bool result = ransac.computeModel();
@@ -462,7 +460,8 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   if ( inliers.size () == 0 )
   {
     PCL_ERROR ( "Could not find a planar model for the given point cloud." );
-		return;
+    rivet_point_new_final ( 0 ) = NAN;
+    return;
   }
   std::cout << "Planar coefficients: [" << surface_normal [0] << ", " << surface_normal [1] << ", " << surface_normal [2] << "], d_coef = " << d_coef << std::endl;
 
@@ -539,7 +538,6 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	// step 7, transform the rivet_support_planar and cloud_in
 	Eigen::Matrix4f transform_1_inverse ( Eigen::Matrix4f::Identity () );
 	getInverseMatrix ( transform_1, transform_1_inverse );
-	transform_inverse = transform_1_inverse;
 	pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud, transform_1_inverse );
   PointCloudT::Ptr rivet_support_plane_cloud_transformed ( new PointCloudT );
 	pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud_transformed, transform_total );
@@ -602,17 +600,20 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	}
 
 	// step 9, calculate the new central point by fitting a circle to the point cloud
-  double min_circle_radius = 0.001, max_circle_radius = 0.0025;
+  double min_circle_radius = 0.0014, max_circle_radius = 0.0020;
+  ransac_thresh = 0.002;
   Eigen::Vector3f center;
   float radius;
   inliers.clear ();
-  get_circle ( cloud_rivet_xy, min_circle_radius, max_circle_radius, center, radius, inliers );
+  get_circle ( cloud_rivet_xy, min_circle_radius, max_circle_radius, ransac_thresh, center, radius, inliers );
   if ( inliers.size () == 0 )
   {
     PCL_ERROR ( "Could not find a circle model from the given point cloud." );
-		return;
+    rivet_point_new_final ( 0 ) = NAN;
+    return;
   }
   std::cout << "circle coefficients: [" << center [0] << ", " << center [1] << ", " << center [2] << "], radius = " << radius << std::endl;
+  std::cout << "%%%%%%%%%%%%%inliers.size() = " << inliers.size() << "; cloud_rivet_xy->points.size() = " << cloud_rivet_xy->points.size() << std::endl;
 
   r = 255, g = 0, b = 0;
 	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
@@ -630,9 +631,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	rivet_center_point << rivet_height_2 + out_distance, center [0], center [1], 1.0;
 
 	// step 10, save the point cloud of the rivet for visualization
-	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
-	getInverseMatrix ( transform_total, transform_total_inverse );
-	pcl::transformPointCloud ( *rivet_cloud, *rivet_cloud, transform_total_inverse );
+  pcl::transformPointCloud ( *rivet_cloud, *rivet_cloud, transform_total_inverse );
 
 	// step 11, transform the central point and in point back the world frame
 	rivet_point_new_final = transform_total_inverse * rivet_center_point;
