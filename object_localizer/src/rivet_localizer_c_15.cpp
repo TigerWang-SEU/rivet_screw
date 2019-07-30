@@ -59,29 +59,79 @@ bool show_viz = false;
 float out_distance = 0.012;
 float in_distance = 0.0065;
 float tool_angle = 0.0;
+Eigen::Matrix4f transform_inverse ( Eigen::Matrix4f::Identity() );
+uint8_t r = 0, g = 255, b = 0;
+uint32_t rgb = 0;
 
 /** Fits a circle to the points in the given 3D pointcloud
     and saves them in the CENTER and RADIUS.
     It assumes that the points lie on the SAME XY plane,
     i.e. their Z-component is the same.  */
-double min_circle_radius = 0.001, max_circle_radius = 0.0025;
-void get_circle ( pcl::PointCloud< PointT >::Ptr points, Eigen::Vector3f &center, float &radius, std::vector< int > &inliers )
+// double min_circle_radius = 0.001, max_circle_radius = 0.0025;
+void get_circle ( pcl::PointCloud< PointT >::Ptr cloud_in_, double min_circle_radius, double max_circle_radius, Eigen::Vector3f &center, float &radius, std::vector< int > &inliers )
 {
-  boost::shared_ptr < pcl::SampleConsensusModelCircle2D < PointT > > model ( new pcl::SampleConsensusModelCircle2D < PointT > ( points ) );
+  boost::shared_ptr < pcl::SampleConsensusModelCircle2D < PointT > > model ( new pcl::SampleConsensusModelCircle2D < PointT > ( cloud_in_ ) );
 	model->setRadiusLimits ( min_circle_radius, max_circle_radius );
 
   float ransac_thresh = ( max_circle_radius - min_circle_radius ) / 2.0;
   pcl::RandomSampleConsensus < PointT > sac ( model, ransac_thresh );
   sac.setMaxIterations ( 200 );
 
+  // compute the model and get parameters
   bool result = sac.computeModel ();
   sac.getInliers ( inliers );
   Eigen::VectorXf xyr;
   sac.getModelCoefficients ( xyr );
-  center(0) = xyr ( 0 );
-  center(1) = xyr ( 1 );
-  center(2) = points->points [ 0 ].z;
+  center ( 0 ) = xyr ( 0 );
+  center ( 1 ) = xyr ( 1 );
+  center ( 2 ) = cloud_in_->cloud_in_ [ 0 ].z;
   radius    = xyr ( 2 );
+}
+
+void get_plane ( pcl::PointCloud< PointT >::Ptr cloud_in_, Eigen::Vector3f &surface_normal, float &d, float ransac_thresh, std::vector< int > &inliers )
+{
+  pcl::SampleConsensusModelPlane < PointT >::Ptr model_p ( new pcl::SampleConsensusModelPlane < PointT > ( cloud_in_ ) );
+
+  pcl::RandomSampleConsensus < PointT > ransac ( model_p );
+  ransac.setDistanceThreshold ( ransac_thresh );
+  sac.setMaxIterations ( 200 );
+
+  // compute the model and get parameters
+  bool result = ransac.computeModel();
+  ransac.getInliers(inliers);
+  Eigen::VectorXf xyzd;
+  ransac.getModelCoefficients ( xyzd );
+  surface_normal ( 0 ) = xyzd ( 0 );
+  surface_normal ( 1 ) = xyzd ( 1 );
+  surface_normal ( 2 ) = xyzd ( 2 );
+  d = xyzd ( 3 );
+}
+
+// find the points within the search_radius around the search point
+void find_near_point ( PointCloudT::Ptr cloud_in_, PointCloudT::Ptr cloud_out_, PointT &searchPoint, float search_radius = 0.006 )
+{
+	pcl::KdTreeFLANN < PointT > kdtree;
+  kdtree.setInputCloud ( cloud_in_ );
+	std::vector < int > pointIdx;
+	std::vector < float > pointRadius;
+
+	uint8_t r = 0, g = 255, b = 0;
+	uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+
+	if ( kdtree.radiusSearch ( searchPoint, search_radius, pointIdx, pointRadius ) > 0 )
+	{
+		for ( size_t j = 0; j < pointIdx.size (); ++j )
+		{
+			PointT new_point;
+			new_point.x = cloud_in_->points [ pointIdx [ j ] ].x;
+			new_point.y = cloud_in_->points [ pointIdx [ j ] ].y;
+			new_point.z = cloud_in_->points [ pointIdx [ j ] ].z;
+			new_point.rgb = *reinterpret_cast<float*> ( &rgb );
+			cloud_in_->points [ pointIdx [ j ] ].rgb = *reinterpret_cast < float* > ( &rgb );
+			cloud_out_->points.push_back ( new_point );
+		}
+		cloud_out_->header.frame_id = reference_frame;
+	}
 }
 
 // define the union-find data structure
@@ -178,8 +228,6 @@ public:
 
 };
 
-Eigen::Matrix4f transform_inverse ( Eigen::Matrix4f::Identity() );
-
 // downsampling an input point cloud
 void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
@@ -224,7 +272,6 @@ void calculate_transform ( PointCloudT::Ptr cloud_in,  Eigen::Matrix4f& projecti
 void scale_and_color_point_cloud ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_out )
 {
 	cloud_out->points.clear();
-	int cloud_out_counter = 0;
 	uint8_t r = 255, g = 255, b = 255;
 	uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
 
@@ -239,23 +286,20 @@ void scale_and_color_point_cloud ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr c
     new_point.z = z;
     new_point.rgb = *reinterpret_cast<float*> ( &rgb );
     cloud_out->points.push_back( new_point );
-    cloud_out_counter++;
   }
-  cloud_out->width = cloud_out_counter;
-  cloud_out->height = 1;
   cloud_out->header.frame_id = reference_frame;
 }
 
-void getMinMax3D (const pcl::PointCloud<PointT> &cloud, PointT &min_pt, PointT &max_pt)
+void getMinMax3D ( const pcl::PointCloud<PointT> &cloud, PointT &min_pt, PointT &max_pt )
 {
   Eigen::Array4f min_p, max_p;
-  min_p.setConstant (FLT_MAX);
-  max_p.setConstant (-FLT_MAX);
+  min_p.setConstant ( FLT_MAX );
+  max_p.setConstant ( -FLT_MAX );
 
   // If the data is dense, we don't need to check for NaN
-  if (cloud.is_dense)
+  if ( cloud.is_dense )
   {
-    for (size_t i = 0; i < cloud.points.size (); ++i)
+    for ( size_t i = 0; i < cloud.points.size (); ++i )
     {
       pcl::Array4fMapConst pt = cloud.points[i].getArray4fMap ();
       min_p = min_p.min (pt);
@@ -265,12 +309,12 @@ void getMinMax3D (const pcl::PointCloud<PointT> &cloud, PointT &min_pt, PointT &
   // NaN or Inf values could exist => check for them
   else
   {
-    for (size_t i = 0; i < cloud.points.size (); ++i)
+    for ( size_t i = 0; i < cloud.points.size (); ++i )
     {
       // Check if the point is invalid
-      if (!pcl_isfinite (cloud.points[i].x) ||
-          !pcl_isfinite (cloud.points[i].y) ||
-          !pcl_isfinite (cloud.points[i].z))
+      if ( !pcl_isfinite (cloud.points[i].x) ||
+           !pcl_isfinite (cloud.points[i].y) ||
+           !pcl_isfinite (cloud.points[i].z) )
           continue;
       pcl::Array4fMapConst pt = cloud.points[i].getArray4fMap ();
       min_p = min_p.min (pt);
@@ -292,7 +336,7 @@ void show_frame ( std::string frame_name, double x, double y, double z, double r
   static tf2_ros::StaticTransformBroadcaster br;
 	geometry_msgs::TransformStamped transformStamped;
 	// create a frame for each object
-  transformStamped.header.stamp = ros::Time::now();
+  transformStamped.header.stamp = ros::Time::now ();
   transformStamped.header.frame_id = reference_frame;
   transformStamped.child_frame_id = frame_name;
   transformStamped.transform.translation.x = x;
@@ -300,17 +344,17 @@ void show_frame ( std::string frame_name, double x, double y, double z, double r
   transformStamped.transform.translation.z = z;
   tf2::Quaternion q;
   q.setRPY(roll, pitch, yaw);
-  transformStamped.transform.rotation.x = q.x();
-  transformStamped.transform.rotation.y = q.y();
-  transformStamped.transform.rotation.z = q.z();
-  transformStamped.transform.rotation.w = q.w();
-  ros::Rate loop_rate(10);
-  for ( int i = 0; i < 10; i++ )
+  transformStamped.transform.rotation.x = q.x ();
+  transformStamped.transform.rotation.y = q.y ();
+  transformStamped.transform.rotation.z = q.z ();
+  transformStamped.transform.rotation.w = q.w ();
+  ros::Rate loop_rate ( 100 );
+  for ( int i = 0; i < 3; i++ )
 	{
-      br.sendTransform(transformStamped);
-      loop_rate.sleep();
+      br.sendTransform ( transformStamped );
+      loop_rate.sleep ();
   }
-  std::cout << "\tFrame " << frame_name << " is added\n";
+  std::cout << "\tFrame " << frame_name << " is added" << std::endl;
 }
 
 void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double& pitch, double& yaw )
@@ -319,12 +363,7 @@ void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double
   object_m.getRPY ( roll, pitch, yaw );
 }
 
-//##############################################################################################################################################################
-
-template < typename T > int sgn ( T val )
-{
-    return ( T ( 0 ) < val ) - ( val < T ( 0 ) );
-}
+//#############################################################################
 
 float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 {
@@ -371,7 +410,7 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 	eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
 	eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
 	eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
-	std::cout << "****** eigen value 1 = [" << eigenvaluesPCA (0) << "] ******\n\t eigen vector 0: [" << eigenVectorsPCA (0, 0) << ", " << eigenVectorsPCA (1, 0) << ", " << eigenVectorsPCA (2, 0) << "] \n\t max_idx = " << max_idx_1_r << std::endl;
+	std::cout << "****** eigen value 1 = [" << eigenvaluesPCA (0) << "] ******\n\t eigen vector 0: [" << eigenVectorsPCA ( 0, 0 ) << ", " << eigenVectorsPCA ( 1, 0 ) << ", " << eigenVectorsPCA ( 2, 0 ) << "] \n\t max_idx = " << max_idx_1_r << std::endl;
   std::cout << "****** eigen value 2 = [" << eigenvaluesPCA (1) << "] ******\n\t eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "] \n\t max_idx = " << max_idx_2_r << std::endl;
   std::cout << "****** eigen value 3 = [" << eigenvaluesPCA (2) << "] ******\n\t eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "] \n\t max_idx = " << max_idx_3_r << std::endl;
 
@@ -397,186 +436,54 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 
 }
 
-//##############################################################################################################################################################
-PointCloudT::Ptr rivet_cloud_new	( new PointCloudT );
-
-// find new center of a rivet by find a new rivet point cloud
-void find_new_rivet_center ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_rivet_cycle, Eigen::Matrix4f transform_total, Eigen::Matrix4f transform_1, Eigen::Vector4f& rivet_point_new )
-{
-	// step 1, prepare the transformed whole point cloud
-	PointCloudT::Ptr cloud_in_transformed	( new PointCloudT );
-	scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
-	pcl::transformPointCloud( *cloud_in_transformed, *cloud_in_transformed, transform_total );
-
-	// step 2, filter out points belongs to the rivet and save them in cloud_rivet
-	PointT minPoint, maxPoint;
-  getMinMax3D ( *cloud_rivet_cycle, minPoint, maxPoint );
-	std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
-	std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
-	uint8_t r = 255, g = 0, b = 0;
-	uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
-	PointCloudT::Ptr cloud_rivet_p ( new PointCloudT );
-	int cloud_rivet_p_counter = 0;
-	PointCloudT::Ptr cloud_rivet_m ( new PointCloudT );
-	int cloud_rivet_m_counter = 0;
-	for ( PointT temp_point: cloud_in_transformed->points )
-	{
-		float x = temp_point.x;
-		float x_compare = std::abs ( std::abs ( x ) - rivet_height_2 );
-		float y = temp_point.y;
-		float z = temp_point.z;
-		if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0005 )
-		{
-	    PointT new_point;
-	    new_point.x = x;
-	    new_point.y = y;
-	    new_point.z = z;
-	    new_point.rgb = *reinterpret_cast<float*> ( &rgb );
-			if ( x > 0 )
-			{
-				cloud_rivet_p->points.push_back ( new_point );
-		    cloud_rivet_p_counter ++;
-			}
-			else
-			{
-				cloud_rivet_m->points.push_back ( new_point );
-		    cloud_rivet_m_counter ++;
-			}
-		}
-	}
-	cloud_rivet_p->width = cloud_rivet_p_counter;
-  cloud_rivet_p->height = 1;
-  cloud_rivet_p->header.frame_id = reference_frame;
-	cloud_rivet_m->width = cloud_rivet_m_counter;
-  cloud_rivet_m->height = 1;
-  cloud_rivet_m->header.frame_id = reference_frame;
-
-	PointCloudT::Ptr cloud_rivet;
-	if ( cloud_rivet_p_counter > cloud_rivet_m_counter )
-	{
-		cloud_rivet = cloud_rivet_p;
-	}
-	else
-	{
-		cloud_rivet = cloud_rivet_m;
-	}
-
-	// step 3, calculate the new central point
-	double x_sum = 0;
-	double y_sum = 0;
-	double z_sum = 0;
-	int point_counter = 0;
-	for ( PointT temp_point: cloud_rivet->points )
-	{
-		x_sum += temp_point.x;
-		y_sum += temp_point.y;
-		z_sum += temp_point.z;
-		point_counter++;
-	}
-	double x_avg = x_sum / point_counter;
-	double y_avg = y_sum / point_counter;
-	double z_avg = z_sum / point_counter;
-	rivet_point_new << x_avg + out_distance, y_avg, z_avg, 1.0;
-
-	// step 4, save the point cloud of the rivet for visualization
-	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
-	getInverseMatrix ( transform_total, transform_total_inverse );
-	pcl::transformPointCloud ( *cloud_rivet, *cloud_rivet, transform_total_inverse );
-	pcl::transformPointCloud ( *cloud_rivet, *cloud_rivet, transform_1 );
-	*rivet_cloud_new = *rivet_cloud_new + *cloud_rivet;
-}
-
-// find the points near the search point
-void find_near_point ( PointCloudT::Ptr cloud_in_, PointCloudT::Ptr cloud_out_, PointT &searchPoint )
-{
-	pcl::KdTreeFLANN < PointT > kdtree;
-  kdtree.setInputCloud ( cloud_in_ );
-	float search_radius = 0.006;
-	std::vector<int> pointIdx;
-	std::vector<float> pointRadius;
-
-	int cloud_out__counter = 0;
-	uint8_t r = 0, g = 255, b = 0;
-	uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
-
-	if ( kdtree.radiusSearch ( searchPoint, search_radius, pointIdx, pointRadius ) > 0 )
-	{
-		for ( size_t j = 0; j < pointIdx.size (); ++j )
-		{
-			PointT new_point;
-			new_point.x = cloud_in_->points[ pointIdx[j] ].x;
-			new_point.y = cloud_in_->points[ pointIdx[j] ].y;
-			new_point.z = cloud_in_->points[ pointIdx[j] ].z;
-			new_point.rgb = *reinterpret_cast<float*> ( &rgb );
-			cloud_in_->points[ pointIdx[j] ].rgb = *reinterpret_cast<float*> ( &rgb );
-			cloud_out_->points.push_back ( new_point );
-			cloud_out__counter ++;
-		}
-		cloud_out_->header.frame_id = reference_frame;
-	}
-}
-
-PointCloudT::Ptr cycle_planar_cloud	( new PointCloudT );
-
-// the start function for find orientation and new central point of a rivet
-void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_in_transformed, PointT &searchPoint, Eigen::Matrix4f transform_1, double& roll, double& pitch, double& yaw, Eigen::Vector4f& rivet_point_new_final, Eigen::Vector4f& rivet_point_in_final )
+//##############################################################################
+// find orientation and central point for each rivet
+void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr search_cloud_, PointT &searchPoint, Eigen::Matrix4f transform_1, PointCloudT::Ptr& rivet_support_plane_cloud, PointCloudT::Ptr& rivet_cloud, double& roll, double& pitch, double& yaw, Eigen::Vector4f& rivet_point_new_final, Eigen::Vector4f& rivet_point_in_final )
 {
 	// step 1, search for points near the original rivet center ( searchPoint )
-	PointCloudT::Ptr cloud_rivet_cycle ( new PointCloudT );
+	PointCloudT::Ptr search_result_cloud ( new PointCloudT );
 	PointT search_point_1;
 	search_point_1.x = 0.0;
 	search_point_1.y = searchPoint.y;
 	search_point_1.z = searchPoint.z - 0.003;
-	find_near_point ( cloud_in_transformed, cloud_rivet_cycle, search_point_1 );
+	find_near_point ( search_cloud_, search_result_cloud, search_point_1 );
 	PointT search_point_2;
 	search_point_2.x = 0.0;
 	search_point_2.y = searchPoint.y;
 	search_point_2.z = searchPoint.z + 0.003;
-	find_near_point ( cloud_in_transformed, cloud_rivet_cycle, search_point_2 );
+	find_near_point ( search_cloud_, search_result_cloud, search_point_2 );
 
-	//step 2, fit a plane with the point cloud cloud_rivet_cycle
-	uint8_t r = 0, g = 255, b = 0;
-	uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
-	pcl::ModelCoefficients::Ptr coefficients ( new pcl::ModelCoefficients );
-  pcl::PointIndices::Ptr inliers ( new pcl::PointIndices );
-  pcl::SACSegmentation < PointT > seg;
-  seg.setOptimizeCoefficients ( true );
-  seg.setModelType ( pcl::SACMODEL_PLANE );
-  seg.setMethodType ( pcl::SAC_RANSAC );
-  seg.setDistanceThreshold ( 0.0002 );
-  seg.setInputCloud ( cloud_rivet_cycle );
-  seg.segment ( *inliers, *coefficients );
-  if ( inliers->indices.size () == 0 )
+	//step 2, fit a plane with the point cloud search_result_cloud
+  Eigen::Vector3f surface_normal;
+  float d_coef;
+  float ransac_thresh = 0.0002;
+  std::vector < int > inliers;
+  get_plane ( search_result_cloud, surface_normal, d_coef, ransac_thresh, inliers );
+  if ( inliers.size () == 0 )
   {
-    PCL_ERROR ( "Could not estimate a planar model for the given dataset." );
+    PCL_ERROR ( "Could not find a planar model for the given point cloud." );
 		return;
   }
-	float planar_coef [3] = { coefficients->values [0], coefficients->values [1], coefficients->values [2] };
-	float d_coef = coefficients->values[3];
-  std::cerr << "Planar coefficients: [" << planar_coef [0] << ", " << planar_coef [1] << ", " << planar_coef [2] << "], d_coef = " << d_coef << std::endl;
-  std::cerr << "Planar inliers: " << inliers->indices.size () << std::endl;
+  std::cout << "Planar coefficients: [" << surface_normal [0] << ", " << surface_normal [1] << ", " << surface_normal [2] << "], d_coef = " << d_coef << std::endl;
 
-	// step 3 show the cycle cloud fit the plane
-	PointCloudT::Ptr rivet_support_planar_cloud	( new PointCloudT );
-	rivet_support_planar_cloud->header.frame_id = reference_frame;
-	r = 255, g = 255, b = 0;
+	// step 3 show the search_result_cloud fit the plane using color yellow
+  r = 255, g = 255, b = 0;
 	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
-  for ( size_t i = 0; i < inliers->indices.size (); ++i )
+  for ( int const& idx: inliers )
 	{
 		PointT new_point;
-    new_point.x = cloud_rivet_cycle->points[ inliers->indices[ i ] ].x;
-    new_point.y = cloud_rivet_cycle->points[ inliers->indices[ i ] ].y;
-    new_point.z = cloud_rivet_cycle->points[ inliers->indices[ i ] ].z;
-    new_point.rgb = *reinterpret_cast<float*>( &rgb );
-    cycle_planar_cloud->points.push_back( new_point );
-		rivet_support_planar_cloud->points.push_back( new_point );
+    new_point.x = search_result_cloud->points [ idx ].x;
+    new_point.y = search_result_cloud->points [ idx ].y;
+    new_point.z = search_result_cloud->points [ idx ].z;
+    new_point.rgb = *reinterpret_cast < float* > ( &rgb );
+		rivet_support_plane_cloud->points.push_back ( new_point );
   }
 
-	// step 4, calculate the new orientation from the rivet_support_planar_cloud
+	// step 4, calculate the new orientation from the rivet_support_plane_cloud
 	Eigen::Matrix4f transform_2 ( Eigen::Matrix4f::Identity() );
-	calculate_transform ( rivet_support_planar_cloud, transform_2 );
+	calculate_transform ( rivet_support_plane_cloud, transform_2 );
 
-	// step 5, calculate the new transform_total transformation
+	// step 5, calculate the transform_total transformation
 	Eigen::Matrix4f r_x_180, r_z_180;
 	r_x_180 <<  1,  0,  0, 0,
 							0, -1,  0, 0,
@@ -597,7 +504,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 		transform_total = r_x_180 * transform_total;
 	}
 
-	// step 6, calculate roll, pitch, yaw from the new transformation
+	// step 6, calculate roll, pitch, yaw from the transform_total
 	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
 	getInverseMatrix ( transform_total, transform_total_inverse );
 	get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
@@ -620,31 +527,121 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	float theta_x = 3.14159265359 - roll;
 	Eigen::Matrix4f r_x_theta, r_x_15;
 	r_x_theta << 1,   0,  0, 0,
-					     0, cos(theta_x), -sin(theta_x), 0,
-					     0, sin(theta_x), cos(theta_x), 0,
+					     0, cos ( theta_x ), -sin ( theta_x ), 0,
+					     0, sin ( theta_x ),  cos ( theta_x ), 0,
 						   0,  0,  0, 1;
 	transform_total = r_x_theta * transform_total;
 	getInverseMatrix ( transform_total, transform_total_inverse );
-	get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
+	get_rpy_from_matrix ( transform_total_inverse.block < 3, 3 > ( 0, 0 ), roll, pitch, yaw );
 	roll = 3.14159265359 + theta_x;
 	std::cout << "\troll, pitch, yaw = " << roll << ", " << pitch << ", " << yaw << std::endl;
 
-	// step 7, calculate the new central point
-	Eigen::Vector4f rivet_point_new;
-	Eigen::Matrix4f transform_1_inverse ( Eigen::Matrix4f::Identity() );
+	// step 7, transform the rivet_support_planar and cloud_in
+	Eigen::Matrix4f transform_1_inverse ( Eigen::Matrix4f::Identity () );
 	getInverseMatrix ( transform_1, transform_1_inverse );
 	transform_inverse = transform_1_inverse;
-	pcl::transformPointCloud ( *cloud_rivet_cycle, *cloud_rivet_cycle, transform_1_inverse );
-	pcl::transformPointCloud ( *cloud_rivet_cycle, *cloud_rivet_cycle, transform_total );
-	find_new_rivet_center ( cloud_in, cloud_rivet_cycle, transform_total, transform_1, rivet_point_new );
+	pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud, transform_1_inverse );
+  PointCloudT::Ptr rivet_support_plane_cloud_transformed ( new PointCloudT );
+	pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud_transformed, transform_total );
+	PointCloudT::Ptr cloud_in_transformed	( new PointCloudT );
+	scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
+	pcl::transformPointCloud( *cloud_in_transformed, *cloud_in_transformed, transform_total );
 
-	// step 4, transform the central point and in point back the world frame
-	rivet_point_new_final = transform_total_inverse * rivet_point_new;
+	// step 8, filter out points belongs to the rivet and save them in cloud_rivet
+	PointT minPoint, maxPoint;
+  getMinMax3D ( *rivet_support_plane_cloud_transformed, minPoint, maxPoint );
+	std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
+	std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
+  r = 255, g = 0, b = 0;
+	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+	PointCloudT::Ptr cloud_rivet_above ( new PointCloudT );
+	PointCloudT::Ptr cloud_rivet_below ( new PointCloudT );
+	for ( PointT temp_point: cloud_in_transformed->points )
+	{
+		float x = temp_point.x;
+		float x_compare = std::abs ( std::abs ( x ) - rivet_height_2 );
+		float y = temp_point.y;
+		float z = temp_point.z;
+		if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0005 )
+		{
+	    PointT new_point;
+	    new_point.x = x;
+	    new_point.y = y;
+	    new_point.z = z;
+	    new_point.rgb = *reinterpret_cast<float*> ( &rgb );
+			if ( x > 0 )
+			{
+				cloud_rivet_above->points.push_back ( new_point );
+			}
+			else
+			{
+				cloud_rivet_below->points.push_back ( new_point );
+			}
+		}
+	}
+	PointCloudT::Ptr cloud_rivet;
+	if ( cloud_rivet_above->points.size() > cloud_rivet_below->points.size() )
+	{
+		cloud_rivet = cloud_rivet_above;
+	}
+	else
+	{
+		cloud_rivet = cloud_rivet_below;
+	}
+  PointCloudT::Ptr cloud_rivet_xy ( new PointCloudT );
+  for ( PointT temp_point: cloud_rivet->points )
+	{
+		float x = temp_point.x;
+		float y = temp_point.y;
+		float z = temp_point.z;
+		PointT new_point;
+	  new_point.x = y;
+	  new_point.y = z;
+	  new_point.z = 0.0;
+	  cloud_rivet_xy->points.push_back ( new_point );
+	}
+
+	// step 9, calculate the new central point by fitting a circle to the point cloud
+  double min_circle_radius = 0.001, max_circle_radius = 0.0025;
+  Eigen::Vector3f center;
+  float radius;
+  inliers.clear ();
+  get_circle ( cloud_rivet_xy, min_circle_radius, max_circle_radius, center, radius, inliers );
+  if ( inliers.size () == 0 )
+  {
+    PCL_ERROR ( "Could not find a circle model from the given point cloud." );
+		return;
+  }
+  std::cout << "circle coefficients: [" << center [0] << ", " << center [1] << ", " << center [2] << "], radius = " << radius << std::endl;
+
+  r = 255, g = 0, b = 0;
+	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+  for ( int const& idx: inliers )
+	{
+		PointT new_point;
+    new_point.x = cloud_rivet->points [ idx ].x;
+    new_point.y = cloud_rivet->points [ idx ].y;
+    new_point.z = cloud_rivet->points [ idx ].z;
+    new_point.rgb = *reinterpret_cast < float* > ( &rgb );
+		rivet_cloud->points.push_back ( new_point );
+  }
+
+  Eigen::Vector4f rivet_center_point;
+	rivet_center_point << rivet_height_2 + out_distance, center [0], center [1], 1.0;
+
+	// step 10, save the point cloud of the rivet for visualization
+	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
+	getInverseMatrix ( transform_total, transform_total_inverse );
+	pcl::transformPointCloud ( *rivet_cloud, *rivet_cloud, transform_total_inverse );
+
+	// step 11, transform the central point and in point back the world frame
+	rivet_point_new_final = transform_total_inverse * rivet_center_point;
 	Eigen::Vector4f rivet_point_in;
-	rivet_point_in << -in_distance, rivet_point_new ( 1 ), rivet_point_new ( 2 ), 1.0;
+	rivet_point_in << -in_distance, rivet_center_point ( 1 ), rivet_center_point ( 2 ), 1.0;
 	rivet_point_in_final = transform_total_inverse * rivet_point_in;
 }
-//##############################################################################################################################################################
+
+//#############################################################################
 class RivetLocalizer
 {
 public:
@@ -661,7 +658,7 @@ public:
 		PointCloudT::Ptr segment_cloud_transformed ( new PointCloudT );
 		Eigen::Matrix4f transform_1 ( Eigen::Matrix4f::Identity() );
 		calculate_transform ( segment_cloud, transform_1 );
-		pcl::transformPointCloud( *segment_cloud, *segment_cloud_transformed, transform_1 );
+		pcl::transformPointCloud ( *segment_cloud, *segment_cloud_transformed, transform_1 );
 
 		// step 3, find the planar
 		pcl::ModelCoefficients::Ptr coefficients ( new pcl::ModelCoefficients );
@@ -815,7 +812,7 @@ public:
 	{
 		if ( rotate_45 )
 		{
-			pcl::transformPointCloud( *cloud_in, *cloud_in, r_x_45 );
+			pcl::transformPointCloud ( *cloud_in, *cloud_in, r_x_45 );
 		}
 
 		// step 1, filter, downsampling, and scaling the input point cloud and change the color of each point
@@ -1083,24 +1080,27 @@ public:
 
 		// step 10, generate motion control points
 		ofstream point_rivet_fs;
-	  std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg";
-	  point_rivet_fs.open ( cfgFileName );
+	  point_rivet_fs.open ( ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg" );
 		rivet_counter = 0;
-		std::vector< Eigen::Vector4f > rivet_vector_final;
+    PointCloudT::Ptr scene_cloud_total ( new PointCloudT );
 		for ( Eigen::Vector4f rivet_point : rivet_vector )
 		{
-			PointT searchPoint_new;
-			searchPoint_new.x = 0.0;
-			searchPoint_new.y = rivet_point ( 1 );
-			searchPoint_new.z = rivet_point ( 2 );
+			PointT search_point;
+			search_point.x = 0.0;
+			search_point.y = rivet_point ( 1 );
+			search_point.z = rivet_point ( 2 );
 
 			Eigen::Vector4f rivet_point_new_final, rivet_point_in_final;
-			get_rivet_center_orientation ( cloud_in, cloud_in_transformed, searchPoint_new, transform_total, roll, pitch, yaw, rivet_point_new_final, rivet_point_in_final );
+      PointCloudT::Ptr rivet_support_plane_cloud ( new PointCloudT ), rivet_cloud ( new PointCloudT );
+      get_rivet_center_orientation ( cloud_in, cloud_in_transformed, search_point, transform_total, rivet_support_plane_cloud, rivet_cloud, roll, pitch, yaw, rivet_point_new_final, rivet_point_in_final );
 
-			if ( std::isnan( rivet_point_new_final ( 0 ) ) )
+			if ( std::isnan ( rivet_point_new_final ( 0 ) ) )
 			{
 				continue;
 			}
+
+      *scene_cloud_total += *rivet_support_plane_cloud;
+      *scene_cloud_total += *rivet_cloud;
 
 			tf::Matrix3x3 old_rotation;
 		  old_rotation.setRPY ( roll, pitch, yaw );
@@ -1122,49 +1122,35 @@ public:
 			}
 
 			std::cout << "*** [" << rivet_counter << "] : " << rivet_point_new_final.head< 3 >().transpose() << std::endl;
-
 			show_frame ( "rivet_" + std::to_string ( rivet_counter ) + "_start", rivet_point_new_final ( 0 ), rivet_point_new_final ( 1 ), rivet_point_new_final ( 2 ), roll, pitch, yaw );
 			show_frame ( "rivet_" + std::to_string ( rivet_counter ) + "_end", rivet_point_in_final ( 0 ), rivet_point_in_final ( 1 ), rivet_point_in_final ( 2 ), roll, pitch, yaw );
-
 			point_rivet_fs << rivet_counter << " " << rivet_point_new_final ( 0 ) << " " << rivet_point_new_final ( 1 ) << " " << rivet_point_new_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
-
 			point_rivet_fs << rivet_counter << " " << rivet_point_in_final ( 0 ) << " " << rivet_point_in_final ( 1 ) << " " << rivet_point_in_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
-
 			point_rivet_fs << rivet_counter << " " << rivet_point_new_final ( 0 ) << " " << rivet_point_new_final ( 1 ) << " " << rivet_point_new_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
 
 			rivet_counter ++;
 		}
 		point_rivet_fs.close();
 
+    if ( rotate_45 )
+		{
+			pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, r_x_45_inv );
+		}
 		// step 11, show the point cloud
 		if ( show_viz )
 		{
-			Visualize ( cloud_in_transformed, cycle_planar_cloud, rivet_cloud_new );
+			Visualize ( scene_cloud_total );
 		}
 	}
 
 	// show the point cloud in rviz
-	void Visualize ( PointCloudT::Ptr cloud_in_transformed, PointCloudT::Ptr planar_cloud, PointCloudT::Ptr cloud_rivet )
+	void Visualize ( PointCloudT::Ptr scene_cloud_total )
 	{
-		PointCloudT::Ptr scene_cloud_total	( new PointCloudT );
-
-		*scene_cloud_total += *cloud_in_transformed;
-		*scene_cloud_total += *planar_cloud;
-		*scene_cloud_total += *cloud_rivet;
-		pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, transform_inverse );
-		if ( rotate_45 )
-		{
-			pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, r_x_45_inv );
-		}
-		scene_cloud_total->header.frame_id = reference_frame;
-		scene_cloud_total->width = cloud_in_transformed->size() + planar_cloud->size() + cloud_rivet->size();
-		scene_cloud_total->height = 1;
 		std::cout << "scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
-
-		if ( scene_cloud_total->width * scene_cloud_total->height > 0  )
+		if ( scene_cloud_total->width * scene_cloud_total->height > 0 )
 		{
 			int counter = 0;
-			while ( counter < 10 )
+			while ( counter < 5 )
 			{
 				scene_cloud_total->header.frame_id = reference_frame;
 				pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
