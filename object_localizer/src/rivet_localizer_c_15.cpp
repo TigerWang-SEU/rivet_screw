@@ -47,6 +47,7 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 
+#define PI 3.14159265
 std::string reference_frame = "world";
 std::string SceneFileName;
 int filter_mean_k = 40;
@@ -61,12 +62,12 @@ float in_distance = 0.0065;
 float tool_angle = 0.0;
 uint8_t r = 0, g = 255, b = 0;
 uint32_t rgb = 0;
+int degree_num_threshold = 45;
 
 /** Fits a circle to the points in the given 3D pointcloud
     and saves them in the CENTER and RADIUS.
     It assumes that the points lie on the SAME XY plane,
     i.e. their Z-component is the same.  */
-// double min_circle_radius = 0.001, max_circle_radius = 0.0025;
 void get_circle ( pcl::PointCloud< PointT >::Ptr cloud_in_, double min_circle_radius, double max_circle_radius, float ransac_thresh, Eigen::Vector3f &center, float &radius, std::vector< int > &inliers )
 {
   boost::shared_ptr < pcl::SampleConsensusModelCircle2D < PointT > > model ( new pcl::SampleConsensusModelCircle2D < PointT > ( cloud_in_ ) );
@@ -84,6 +85,25 @@ void get_circle ( pcl::PointCloud< PointT >::Ptr cloud_in_, double min_circle_ra
   center ( 1 ) = xyr ( 1 );
   center ( 2 ) = cloud_in_->points [ 0 ].z;
   radius = xyr ( 2 );
+}
+
+bool check_circle ( pcl::PointCloud < PointT >::Ptr cloud_in_ )
+{
+  std::set < double > degree_set;
+  for ( PointT temp_point: cloud_in_->points )
+	{
+		float x = temp_point.x;
+		float y = temp_point.y;
+		float z = temp_point.z;
+    double degree = atan2 ( y, z ) * 180 / PI;
+    degree_set.insert ( floor ( degree / 5.0 ) );
+	}
+  std::cout << "\t### degree_set.size () = " << degree_set.size () << std::endl;
+  if ( degree_set.size () < degree_num_threshold )
+  {
+    return false;
+  }
+  return true;
 }
 
 void get_plane ( pcl::PointCloud< PointT >::Ptr cloud_in_, Eigen::Vector3f &surface_normal, float &d, float ransac_thresh, std::vector< int > &inliers )
@@ -600,12 +620,13 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	}
 
 	// step 9, calculate the new central point by fitting a circle to the point cloud
-  double min_circle_radius = 0.0014, max_circle_radius = 0.0020;
-  ransac_thresh = 0.002;
+  double min_circle_radius = 0.0014, max_circle_radius = 0.0016;
+  ransac_thresh = 0.0003;
   Eigen::Vector3f center;
   float radius;
   inliers.clear ();
   get_circle ( cloud_rivet_xy, min_circle_radius, max_circle_radius, ransac_thresh, center, radius, inliers );
+
   if ( inliers.size () == 0 )
   {
     PCL_ERROR ( "Could not find a circle model from the given point cloud." );
@@ -625,6 +646,12 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
     new_point.z = cloud_rivet->points [ idx ].z;
     new_point.rgb = *reinterpret_cast < float* > ( &rgb );
 		rivet_cloud->points.push_back ( new_point );
+  }
+
+  if ( check_circle ( rivet_cloud )  == false )
+  {
+    rivet_point_new_final ( 0 ) = NAN;
+    return;
   }
 
   Eigen::Vector4f rivet_center_point;
@@ -1082,6 +1109,7 @@ public:
 	  point_rivet_fs.open ( ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg" );
 		rivet_counter = 0;
     PointCloudT::Ptr scene_cloud_total ( new PointCloudT );
+    *scene_cloud_total += *cloud_in;
 		for ( Eigen::Vector4f rivet_point : rivet_vector )
 		{
 			PointT search_point;
@@ -1216,6 +1244,13 @@ public:
       return;
     }
     std::cout << "Loaded " << scene_cloud_->width * scene_cloud_->height << " data points from " << SceneFilePath << std::endl;
+
+    r = 255, g = 255, b = 255;
+    rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+    for ( int point_idx; point_idx < scene_cloud_->points.size(); point_idx++ )
+    {
+      scene_cloud_->points [ point_idx ].rgb = *reinterpret_cast < float* > ( &rgb );
+    }
 
 		// process the saved scene point cloud
 		check_theta ( scene_cloud_ );
