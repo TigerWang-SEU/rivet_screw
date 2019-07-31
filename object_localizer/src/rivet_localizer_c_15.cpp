@@ -1109,7 +1109,7 @@ public:
 	  point_rivet_fs.open ( ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg" );
 		rivet_counter = 0;
     PointCloudT::Ptr scene_cloud_total ( new PointCloudT );
-    *scene_cloud_total += *cloud_in;
+    // *scene_cloud_total += *cloud_in;
 		for ( Eigen::Vector4f rivet_point : rivet_vector )
 		{
 			PointT search_point;
@@ -1245,12 +1245,12 @@ public:
     }
     std::cout << "Loaded " << scene_cloud_->width * scene_cloud_->height << " data points from " << SceneFilePath << std::endl;
 
-    r = 255, g = 255, b = 255;
-    rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-    for ( int point_idx; point_idx < scene_cloud_->points.size(); point_idx++ )
-    {
-      scene_cloud_->points [ point_idx ].rgb = *reinterpret_cast < float* > ( &rgb );
-    }
+    // r = 255, g = 255, b = 255;
+    // rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+    // for ( int point_idx; point_idx < scene_cloud_->points.size(); point_idx++ )
+    // {
+    //   scene_cloud_->points [ point_idx ].rgb = *reinterpret_cast < float* > ( &rgb );
+    // }
 
 		// process the saved scene point cloud
 		check_theta ( scene_cloud_ );
