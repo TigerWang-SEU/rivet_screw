@@ -126,7 +126,7 @@ void get_plane ( pcl::PointCloud< PointT >::Ptr cloud_in_, Eigen::Vector3f &surf
 }
 
 // find the points within the search_radius around the search point
-void find_near_point ( PointCloudT::Ptr cloud_in_, PointCloudT::Ptr cloud_out_, PointT &searchPoint, float search_radius = 0.006 )
+void find_near_point ( PointCloudT::Ptr cloud_in_, PointCloudT::Ptr cloud_out_, PointT &searchPoint, float search_radius = 0.007 )
 {
 	pcl::KdTreeFLANN < PointT > kdtree;
   kdtree.setInputCloud ( cloud_in_ );
@@ -463,12 +463,12 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	PointT search_point_1;
 	search_point_1.x = 0.0;
 	search_point_1.y = searchPoint.y;
-	search_point_1.z = searchPoint.z - 0.003;
+	search_point_1.z = searchPoint.z - 0.0035;
 	find_near_point ( search_cloud_, search_result_cloud, search_point_1 );
 	PointT search_point_2;
 	search_point_2.x = 0.0;
 	search_point_2.y = searchPoint.y;
-	search_point_2.z = searchPoint.z + 0.003;
+	search_point_2.z = searchPoint.z + 0.0035;
 	find_near_point ( search_cloud_, search_result_cloud, search_point_2 );
 
 	//step 2, fit a plane with the point cloud search_result_cloud
@@ -620,7 +620,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	}
 
 	// step 9, calculate the new central point by fitting a circle to the point cloud
-  double min_circle_radius = 0.0014, max_circle_radius = 0.0016;
+  double min_circle_radius = 0.00145, max_circle_radius = 0.00155;
   ransac_thresh = 0.0003;
   Eigen::Vector3f center;
   float radius;
