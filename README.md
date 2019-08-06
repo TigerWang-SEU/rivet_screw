@@ -82,6 +82,21 @@ Installation Instructions
         sudo make install
         sudo ldconfig
 
+    sudo mkdir /usr/local/include/mescan-0.1
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libllt/*.h /usr/local/include/mescan-0.1
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.h /usr/local/include/mescan-0.1
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libllt/*.so.1.0 /usr/local/lib
+    sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.so.1.0 /usr/local/lib
+    ###install aravis 0.4 ###
+        cd ~/Downloads
+        wget http://ftp.gnome.org/pub/GNOME/sources/aravis/0.4/aravis-0.4.0.tar.xz
+        tar -xf aravis-0.4.0.tar.xz
+        cd aravis-0.4.0
+        ./configure
+        make
+        sudo make install
+        sudo ldconfig
+
 5, Install realsense driver and related packages
 ------------------------------------------------
     sudo apt-key adv --keyserver keys.gnupg.net --recv-key C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C8B3A55A6F3EFCDE
@@ -98,3 +113,8 @@ Installation Instructions
 ------------------------------------
     sudo apt-get install ros-kinetic-universal-robot ros-kinetic-ur-msgs
     sudo apt-get install ros-kinetic-industrial-robot-status-interface ros-kinetic-rqt-controller-manager
+
+7, Install pip, grpcio, and protobuf
+------------------------------------
+    sudo apt install python-pip
+    pip install grpcio protobuf
