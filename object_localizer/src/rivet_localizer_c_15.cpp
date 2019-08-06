@@ -62,7 +62,7 @@ float in_distance = 0.0065;
 float tool_angle = 0.0;
 uint8_t r = 0, g = 255, b = 0;
 uint32_t rgb = 0;
-int degree_num_threshold = 45;
+int degree_num_threshold = 30;
 
 /** Fits a circle to the points in the given 3D pointcloud
     and saves them in the CENTER and RADIUS.
