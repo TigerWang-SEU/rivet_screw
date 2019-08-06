@@ -48,17 +48,22 @@ Installation Instructions
     rosdep update
     echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
     source ~/.bashrc
-
-    ### create catkin workspace ###
+    
+    ### build local ros workspace ###
     mkdir -p ~/ros_ws/src
     cd ~/ros_ws
     catkin_make
     echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
     source ~/.bashrc
-
-3, Clone rivet_screw github code to the local ros work space
+    
+3, Clone rivet_screw github code to the local ros workspace
 ------------------------------------------------------------
-    ###add python path for object detection neural network###
+    ### clone local ros workspace ###
+    cd ~/ros_ws/src
+    rm -rf *
+    git clone git-url .
+    
+    ### add python path for object detection neural network ###
     export PYTHONPATH=$PYTHONPATH:~/ros_ws/src/object_localizer/python:~/ros_ws/src/object_localizer/python/slim
 
 4, Install moveit
@@ -114,7 +119,7 @@ Installation Instructions
     sudo apt-get install ros-kinetic-universal-robot ros-kinetic-ur-msgs
     sudo apt-get install ros-kinetic-industrial-robot-status-interface ros-kinetic-rqt-controller-manager
 
-7, Install pip, grpcio, and protobuf
+7, Install TPU related PYTHON modules
 ------------------------------------
     sudo apt install python-pip
     pip install grpcio protobuf
