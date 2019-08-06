@@ -22,7 +22,7 @@ find_package( catkin REQUIRED COMPONENTS
 
 find_package ( Boost REQUIRED )
 find_package ( PkgConfig REQUIRED )
-pkg_check_modules ( ARAVIS4 REQUIRED aravis-0.4 )
+# pkg_check_modules ( ARAVIS4 REQUIRED aravis-0.4 )
 pkg_check_modules ( ARAVIS6 REQUIRED aravis-0.6 )
 
 ### BUILD ###
