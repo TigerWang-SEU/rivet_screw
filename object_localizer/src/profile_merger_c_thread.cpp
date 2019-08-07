@@ -27,8 +27,11 @@
 #include "ProfilesCallback/ProfilesCallback.h"
 #include "ProfilesCallback/ThreadSafeQueue.h"
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
+uint8_t r = 255, g = 255, b = 255;
+uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+
 std::string reference_frame = "world";
 std::string scanner_frame = "scanCONTROL_2900-50_scanner_laser_link";
 double lag_compensation_ = 0.001;
@@ -109,6 +112,7 @@ public:
 			temp_point.x = point_n.getX ();
 			temp_point.y = point_n.getY ();
 			temp_point.z = point_n.getZ ();
+      temp_point.rgb = *reinterpret_cast<float*> ( &rgb );
 			cloud_out->points.push_back ( temp_point );
 		}
 	}
@@ -317,6 +321,7 @@ void scanner_cb ()
         temp_point.x = - value_x [ i ] / 1000.0;
         temp_point.y = value_z [ i ] / 1000.0;
         temp_point.z = 0.0;
+        temp_point.rgb = *reinterpret_cast<float*> ( &rgb );
         profile_cloud->points.push_back ( temp_point );
       }
     }
