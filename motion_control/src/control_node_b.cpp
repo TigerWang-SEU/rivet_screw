@@ -165,11 +165,9 @@ public:
             // step 3, start service move_camera
             std::cout << "3, start to move the camera" << std::endl;
             start_move_camera_.call ( msg );
-            // step 4, stop services rough_localizer and box_segmenter
-            std::cout << "call stop_image_transport_" << std::endl;
-            stop_image_transport_.call ( msg );
-            std::cout << "4, stop services rough_localizer, box_segmenter" << std::endl;
-            if ( stop_rough_localizer_.call ( msg ) && stop_box_segmenter_.call ( msg ) )
+            // step 4, stop services rough_localizer, box_segmenter, and image_transport
+            std::cout << "4, stop services rough_localizer, box_segmenter, and image_transport" << std::endl;
+            if ( stop_image_transport_.call ( msg ) && stop_rough_localizer_.call ( msg ) && stop_box_segmenter_.call ( msg ) )
             {
               set_pose ( "camera_start" );
               set_pose ( "scan_start" );
