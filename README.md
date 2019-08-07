@@ -48,21 +48,21 @@ Installation Instructions
     rosdep update
     echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
     source ~/.bashrc
-    
+
     ### build local ros workspace ###
     mkdir -p ~/ros_ws/src
     cd ~/ros_ws
     catkin_make
     echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
     source ~/.bashrc
-    
+
 3, Clone rivet_screw github code to the local ros workspace
 ------------------------------------------------------------
     ### clone local ros workspace ###
     cd ~/ros_ws/src
     rm -rf *
     git clone git-url .
-    
+
     ### add python path for object detection neural network ###
     export PYTHONPATH=$PYTHONPATH:~/ros_ws/src/object_localizer/python:~/ros_ws/src/object_localizer/python/slim
 
@@ -76,7 +76,7 @@ Installation Instructions
     sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/include/libllt/* /usr/local/include/mescan-0.2
     sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/include/libmescan/* /usr/local/include/mescan-0.2
     sudo cp ~/ros_ws/src/object_localizer/SDK_0.2.0/so/* /usr/local/lib
-    ###install aravis 0.6 ###
+    ### install aravis 0.6 ###
         cd ~/Downloads
         sudo apt-get install intltool
         wget http://ftp.gnome.org/pub/GNOME/sources/aravis/0.6/aravis-0.6.0.tar.xz
@@ -92,7 +92,7 @@ Installation Instructions
     sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.h /usr/local/include/mescan-0.1
     sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libllt/*.so.1.0 /usr/local/lib
     sudo cp ~/ros_ws/src/microepsilon_scancontrol/scanCONTROL_Linux_SDK_0.1.0/libmescan/*.so.1.0 /usr/local/lib
-    ###install aravis 0.4 ###
+    ### install aravis 0.4 ###
         cd ~/Downloads
         wget http://ftp.gnome.org/pub/GNOME/sources/aravis/0.4/aravis-0.4.0.tar.xz
         tar -xf aravis-0.4.0.tar.xz
