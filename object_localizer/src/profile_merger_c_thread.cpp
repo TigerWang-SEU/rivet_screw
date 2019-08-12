@@ -120,14 +120,8 @@ public:
   void transform_cb ( int thread_id )
   {
 		std::cout << "Transform thread [" << thread_id << "] is started" << std::endl;
-		while ( !is_stop || !profile_thread_queue [ thread_id ].isEmpty () )
+		while ( !is_stop )
 		{
-			if ( !is_publish_ )
-			{
-				ros::Duration ( 0.01 * num_threads ).sleep ();
-				continue;
-			}
-
 			// get the front profile
 			PointCloudT::Ptr in_cloud ( new PointCloudT );
 			profile_thread_queue [ thread_id ].pop ( in_cloud );
@@ -139,7 +133,7 @@ public:
 			// transforming the input point cloud
 			PointCloudT::Ptr in_cloud_transformed	( new PointCloudT );
 			transform_point_cloud ( in_cloud, in_cloud_transformed );
-			std::cout << "Transform thread [" << thread_id << "]: input point cloud after transforming has [" << in_cloud_transformed->size() << "] data points" << std::endl;
+			// std::cout << "Transform thread [" << thread_id << "]: input point cloud after transforming has [" << in_cloud_transformed->size() << "] data points" << std::endl;
 			if ( in_cloud_transformed->size() == 0 )
 			{
 				continue;
@@ -154,9 +148,9 @@ public:
 	void merger_cb ()
 	{
 		std::cout << "Merger thread is started" << std::endl;
-		while ( !is_stop || !scene_pc_queue.isEmpty () )
+		while ( !is_stop )
 		{
-			if ( scene_pc_queue.isEmpty () )
+			if ( scene_pc_queue.length () <= 8 )
 			{
 				ros::Duration ( 0.01 * num_threads ).sleep ();
 				continue;
@@ -221,11 +215,7 @@ public:
 	bool stop_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
 	{
 	  is_publish_ = false;
-		while ( ! scene_pc_queue.isEmpty () )
-		{
-			ros::Duration ( 0.04 * num_threads ).sleep ();
-			continue;
-		}
+		ros::Duration ( 0.04 * num_threads ).sleep ();
 	  return true;
 	}
 
@@ -306,7 +296,7 @@ void scanner_cb ()
     guint32 profile_counter = 0;
     double shutter_closed = 0, shutter_opened = 0;
     CInterfaceLLT::Timestamp2TimeAndCount ( &profile_buffer[ ( resolution * 64 ) - 16 ], &shutter_closed, &shutter_opened, &profile_counter, NULL );
-		std::cout << "Profile: [" << profile_counter << "] has time [shutter_closed, shutter_opened] = [" << shutter_closed << "," << shutter_opened << "]" << std::endl;
+		// std::cout << "Profile: [" << profile_counter << "] has time [shutter_closed, shutter_opened] = [" << shutter_closed << "," << shutter_opened << "]" << std::endl;
 
     // 3.3. create a new profile point cloud
     PointCloudT::Ptr profile_cloud ( new PointCloudT );
@@ -332,7 +322,7 @@ void scanner_cb ()
 		}
 
 		// 3.4. put the new profile point cloud into each profile_thread_queue
-		std::cout << "Profile [" << profile_counter << "] for thread [" << current_thread_index << "]" << std::endl;
+		// std::cout << "Profile [" << profile_counter << "] for thread [" << current_thread_index << "]" << std::endl;
 		profile_thread_queue [ current_thread_index ].push ( profile_cloud );
 		current_thread_index = ( current_thread_index + 1 ) % num_threads;
   }
