@@ -13,6 +13,11 @@
   <node name="web_video_server" pkg="web_video_server" type="web_video_server" respawn="true" output="screen">
   </node>
 
+  <node name="tf2_web_republisher" pkg="tf2_web_republisher" type="tf2_web_republisher" respawn="true" output="screen">
+  </node>
+
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+
   <!-- <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
   </node> -->
   <node name="object_detector" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
