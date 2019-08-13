@@ -10,14 +10,13 @@
   <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
   </node>
 
-  <!-- <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
-  </node> -->
-
-  <node name="object_detector" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
+  <node name="web_video_server" pkg="web_video_server" type="web_video_server" respawn="true" output="screen">
   </node>
 
-  <!-- <node name="tpu_container" pkg="object_localizer" type="tpu_startup.sh" respawn="true" output="screen">
+  <!-- <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
   </node> -->
+  <node name="object_detector" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
+  </node>
 
   <!-- <include file="$(find microepsilon_scancontrol)/launch/scanner.launch"/> -->
 
