@@ -13,6 +13,12 @@
   <!-- <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
   </node> -->
 
+  <node name="object_detector" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
+  </node>
+
+  <!-- <node name="tpu_container" pkg="object_localizer" type="tpu_startup.sh" respawn="true" output="screen">
+  </node> -->
+
   <!-- <include file="$(find microepsilon_scancontrol)/launch/scanner.launch"/> -->
 
   <!-- using old motion control launch file [start_motion_control] -->
