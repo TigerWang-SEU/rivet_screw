@@ -74,10 +74,10 @@ class ImageTransport:
 
 
     for box in detection.objects:
-      border_left = 420
+      border_left = 10
       if(box.xmin>border_left and im_height-box.xmax>10):
-          cv2.line(cv_image,(border_left,0),(border_left,im_height),(255,0,0),5)
-          cv2.rectangle(cv_image, (box.xmin, box.ymin), (box.xmax, box.ymax), (0, 0, 0), 1)
+          #cv2.line(cv_image,(border_left,0),(border_left,im_height),(0,0,0),5)
+          cv2.rectangle(cv_image, (box.xmin, box.ymin), (box.xmax, box.ymax), (0, 255, 0), 3)
           cv2.putText(cv_image, box.label, (box.xmin + 5 , box.ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, cv2.LINE_AA)
           new_bbox = BBox_int()
           new_bbox.x1 = int( box.ymin )
@@ -85,14 +85,15 @@ class ImageTransport:
           new_bbox.y1 = int( box.xmin )
           new_bbox.y2 = int( box.xmax )
           bbox_list.BBox_list_int.append( new_bbox )
-          try:
-              self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "rgb8"))
-              print(detection)
-              self.bbox_pub.publish( bbox_list )
-          except CvBridgeError as e:
-              print(e)
       else:
           print("ignore bounding_box")
+
+    try:
+        self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "rgb8"))
+        print(detection)
+        self.bbox_pub.publish( bbox_list )
+    except CvBridgeError as e:
+        print(e)
 
 def main(args):
   rospy.init_node('tpu_connection', anonymous=True)
