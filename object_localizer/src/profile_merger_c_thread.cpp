@@ -214,22 +214,22 @@ public:
 		std::cout << "Merger thread is stopped" << std::endl;
 	}
 
-	bool start_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
-	{
-		// clear the scene point cloud
-		is_publish_ = false;
-		ros::Duration ( 0.01 * ( num_threads + 1 ) ).sleep ();
-		scene_cloud->clear ();
-		is_publish_ = true;
-	  return true;
-	}
+  bool start_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    // clear the scene point cloud
+    is_publish_ = false;
+    ros::Duration ( 0.01 * ( num_threads + 1 ) ).sleep ();
+    scene_cloud->clear ();
+    is_publish_ = true;
+    return true;
+  }
 
-	bool stop_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
-	{
-	  is_publish_ = false;
-		ros::Duration ( 0.04 * num_threads ).sleep ();
-	  return true;
-	}
+  bool stop_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    ros::Duration ( 3 ).sleep ();
+    is_publish_ = false;
+    return true;
+  }
 
   ProfileMerger () : scene_cloud ( new pcl::PointCloud< PointT > )
   {
