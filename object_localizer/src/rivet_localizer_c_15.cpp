@@ -383,6 +383,8 @@ void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double
 
 //#############################################################################
 // function for calculating rotation around the x axis
+float u_10_base_y = -0.212;
+
 float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 {
   // step 1, get min_x and max_x
@@ -396,6 +398,7 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 
   // step 2, filter the segment point cloud
   PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
+  float y_avg = 0;
   for ( PointT temp_point: cloudSegmented->points )
   {
     float x = temp_point.x;
@@ -408,9 +411,11 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
     PointT new_point;
     new_point.x = x;
     new_point.y = y;
+    y_avg += y;
     new_point.z = z;
     filtered_segment_cloud->points.push_back( new_point );
   }
+  y_avg = y_avg / filtered_segment_cloud->points.size();
 
   // step 3, compute principal directions
   Eigen::Vector4f pcaCentroid;
@@ -451,6 +456,20 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
   //############# need to be test with more experiments #######################
   //############# I think the method used right now is wrong ##################
   float theta = atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
+  if ( y_avg - u_10_base_y  < 0.2 )
+  {
+    if ( theta < 90.0 )
+    {
+      theta = theta + 180.0;
+    }
+  }
+  if ( y_avg - u_10_base_y  > 0.3 )
+  {
+    if ( theta > 90.0 )
+    {
+      theta = theta - 180.0;
+    }
+  }
   return theta;
 
 }
