@@ -385,33 +385,32 @@ void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double
 // function for calculating rotation around the x axis
 float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 {
-	// step 1, get min_x and max_x
-	float min_x, max_x;
-	PointT minPt, maxPt;
-	getMinMax3D ( *cloudSegmented, minPt, maxPt );
-	min_x = minPt.x;
-	std::cout << "\tmin_x = " << min_x << std::endl;
-	max_x = maxPt.x;
-	std::cout << "\tmax_x = " << max_x << std::endl;
+  // step 1, get min_x and max_x
+  float min_x, max_x;
+  PointT minPt, maxPt;
+  getMinMax3D ( *cloudSegmented, minPt, maxPt );
+  min_x = minPt.x;
+  std::cout << "\tmin_x = " << min_x << std::endl;
+  max_x = maxPt.x;
+  std::cout << "\tmax_x = " << max_x << std::endl;
 
-	// step 2, filter the segment point cloud
-	PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
-	for ( PointT temp_point: cloudSegmented->points )
-	{
-		float x = temp_point.x;
-		float y = temp_point.y;
-		float z = temp_point.z;
-		if ( ( x - min_x ) / ( max_x - min_x ) < 0.2 )
-		{
-			continue;
-		}
-		PointT new_point;
-		new_point.x = x;
-		new_point.y = y;
-		new_point.z = z;
-		filtered_segment_cloud->points.push_back( new_point );
-	}
-	filtered_segment_cloud;
+  // step 2, filter the segment point cloud
+  PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
+  for ( PointT temp_point: cloudSegmented->points )
+  {
+    float x = temp_point.x;
+    float y = temp_point.y;
+    float z = temp_point.z;
+    if ( ( x - min_x ) / ( max_x - min_x ) < 0.2 )
+    {
+      continue;
+    }
+    PointT new_point;
+    new_point.x = x;
+    new_point.y = y;
+    new_point.z = z;
+    filtered_segment_cloud->points.push_back( new_point );
+  }
 
   // step 3, compute principal directions
   Eigen::Vector4f pcaCentroid;
@@ -421,36 +420,38 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
   pcl::computeCovarianceMatrixNormalized ( *filtered_segment_cloud, pcaCentroid, covariance );
 
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
-	Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
+  Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
   Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
 
-	int max_idx_1_r, max_idx_2_r, max_idx_3_r, max_idx_1_c, max_idx_2_c, max_idx_3_c;
-	eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
-	eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
-	eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
-	std::cout << "****** eigen value 1 = [" << eigenvaluesPCA (0) << "] ******\n\t eigen vector 0: [" << eigenVectorsPCA ( 0, 0 ) << ", " << eigenVectorsPCA ( 1, 0 ) << ", " << eigenVectorsPCA ( 2, 0 ) << "] \n\t max_idx = " << max_idx_1_r << std::endl;
-  std::cout << "****** eigen value 2 = [" << eigenvaluesPCA (1) << "] ******\n\t eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "] \n\t max_idx = " << max_idx_2_r << std::endl;
-  std::cout << "****** eigen value 3 = [" << eigenvaluesPCA (2) << "] ******\n\t eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "] \n\t max_idx = " << max_idx_3_r << std::endl;
+  int max_idx_1_r, max_idx_2_r, max_idx_3_r, max_idx_1_c, max_idx_2_c, max_idx_3_c;
+  eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
+  eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
+  eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
+  std::cout << "****** eigen value 1 = [" << eigenvaluesPCA (0) << "] ******\n\t eigen vector 1: [" << eigenVectorsPCA ( 0, 0 ) << ", " << eigenVectorsPCA ( 1, 0 ) << ", " << eigenVectorsPCA ( 2, 0 ) << "] \n\t max_idx = " << max_idx_1_r << std::endl;
+  std::cout << "****** eigen value 2 = [" << eigenvaluesPCA (1) << "] ******\n\t eigen vector 2: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "] \n\t max_idx = " << max_idx_2_r << std::endl;
+  std::cout << "****** eigen value 3 = [" << eigenvaluesPCA (2) << "] ******\n\t eigen vector 3: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "] \n\t max_idx = " << max_idx_3_r << std::endl;
 
-	float y_tmp, z_tmp;
-	if ( max_idx_3_r != 0 )
-	{
-		y_tmp = eigenVectorsPCA ( 1, 2 );
-	  z_tmp = eigenVectorsPCA ( 2, 2 );
-	}
-	else
-	{
-		y_tmp = eigenVectorsPCA ( 1, 1 );
-	  z_tmp = eigenVectorsPCA ( 2, 1 );
-	}
+  float y_tmp, z_tmp;
+  if ( max_idx_3_r != 0 )
+  {
+    y_tmp = eigenVectorsPCA ( 1, 2 );
+    z_tmp = eigenVectorsPCA ( 2, 2 );
+  }
+  else
+  {
+    y_tmp = eigenVectorsPCA ( 1, 1 );
+    z_tmp = eigenVectorsPCA ( 2, 1 );
+  }
   if ( y_tmp < 0.0 )
   {
     y_tmp = - y_tmp;
     z_tmp = - z_tmp;
   }
   std::cout << "\t[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]\n";
-	float theta = atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
-	return theta;
+  //############# need to be test with more experiments #######################
+  //############# I think the method used right now is wrong ##################
+  float theta = atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
+  return theta;
 
 }
 
