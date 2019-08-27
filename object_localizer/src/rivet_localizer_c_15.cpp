@@ -1024,38 +1024,39 @@ public:
   }
 
   RivetLocalizer () : scene_cloud_ ( new pcl::PointCloud< PointT > )
-	{
-		r_x_45 << 1,   0,  0, 0,
-		          0, cos(theta_x_45), -sin(theta_x_45), 0,
-		          0, sin(theta_x_45),  cos(theta_x_45), 0,
-		          0,  0,  0, 1;
-		getInverseMatrix ( r_x_45, r_x_45_inv );
+  {
+    start_rivet_localizer_ = nh_.advertiseService ( "start_rivet_localizer", &RivetLocalizer::start_rivet_localizer, this );
 
-		start_rivet_localizer_ = nh_.advertiseService ( "start_rivet_localizer", &RivetLocalizer::start_rivet_localizer, this );
-
-		std::string cloud_out_name = "/rivet_localizer/points";
+    std::string cloud_out_name = "/rivet_localizer/points";
     cloud_pub_ = nh_.advertise < PointCloudT > ( cloud_out_name, 30 );
     ROS_INFO_STREAM ( "Publishing point cloud message on topic " << cloud_out_name );
-	}
+
+    r_x_45 << 1,  0,  0,  0,
+              0, cos(theta_x_45), -sin(theta_x_45), 0,
+              0, sin(theta_x_45),  cos(theta_x_45), 0,
+              0,  0,  0,  1;
+    getInverseMatrix ( r_x_45, r_x_45_inv );
+  }
 
   ~RivetLocalizer () { }
 
 private:
   ros::NodeHandle nh_;
   pcl::PointCloud<PointT>::Ptr scene_cloud_;
-	ros::ServiceServer start_rivet_localizer_;
-	ros::Publisher cloud_pub_;
-	bool rotate_45 = false;
-	float theta_x_45 = 45.0 / 180.0 * PI;
-	Eigen::Matrix4f r_x_45, r_x_45_inv;
+  ros::ServiceServer start_rivet_localizer_;
+  ros::Publisher cloud_pub_;
+
+  bool rotate_45 = false;
+  float theta_x_45 = 45.0 / 180.0 * PI;
+  Eigen::Matrix4f r_x_45, r_x_45_inv;
 };
 
 int main ( int argc, char** argv )
 {
-	ros::init ( argc, argv, "rivet_localizer_c_15" );
-	ros::AsyncSpinner spinner ( 2 );
+  ros::init ( argc, argv, "rivet_localizer_c_15" );
+  ros::AsyncSpinner spinner ( 2 );
   spinner.start ();
-	RivetLocalizer rl;
-	ros::waitForShutdown ();
+  RivetLocalizer rl;
+  ros::waitForShutdown ();
   return 0;
 }
