@@ -275,9 +275,12 @@ void calculate_transform ( PointCloudT::Ptr cloud_in,  Eigen::Matrix4f& projecti
   pcl::computeCovarianceMatrixNormalized ( *cloud_in, pcaCentroid, covariance );
 
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
+  Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
   Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
   eigenVectorsPCA.col ( 2 ) = eigenVectorsPCA.col ( 0 ).cross ( eigenVectorsPCA.col ( 1 ) );
 
+
+  std::cout << "eigen value = [" << eigenvaluesPCA.transpose() << "]" << std::endl;
   std::cout << "eigen vector 0: [" << eigenVectorsPCA(0, 0) << ", " << eigenVectorsPCA(1, 0) << ", " << eigenVectorsPCA(2, 0) << "]" << std::endl;
   std::cout << "eigen vector 1: [" << eigenVectorsPCA(0, 1) << ", " << eigenVectorsPCA(1, 1) << ", " << eigenVectorsPCA(2, 1) << "]" << std::endl;
   std::cout << "eigen vector 2: [" << eigenVectorsPCA(0, 2) << ", " << eigenVectorsPCA(1, 2) << ", " << eigenVectorsPCA(2, 2) << "]" << std::endl;
@@ -456,7 +459,7 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
   //############# need to be test with more experiments #######################
   //############# I think the method used right now is wrong ##################
   float theta = atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
-  if ( y_avg - u_10_base_y  < 0.2 )
+  if ( y_avg - u_10_base_y  < -0.2 )
   {
     if ( theta < 90.0 )
     {
@@ -533,7 +536,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 							0,  0,  0, 1;
 	Eigen::Matrix4f transform_total = transform_2 * transform_1;
 	float min_v = std::min ( std::min ( std::abs ( transform_total (0, 0) ), std::abs ( transform_total (0, 1) ) ), std::abs ( transform_total (0, 2) ) );
-	if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 and transform_total (0, 2) > 0 )
+	if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 && transform_total (0, 2) > 0 )
 	{
     transform_total = r_z_180 * transform_total;
 	}
@@ -709,7 +712,7 @@ public:
       pcl::transformPointCloud ( *cloud_in, *cloud_in, r_x_45 );
     }
 
-    // step 1, filter, downsampling, and scaling the input point cloud and change the color of each point
+    // step 1, scaling the input point cloud
     PointCloudT::Ptr segment_cloud ( new PointCloudT );
     scale_and_color_point_cloud ( cloud_in, segment_cloud );
 
@@ -764,7 +767,7 @@ public:
     Eigen::Matrix4f transform_total = transform_2 * transform_1;
 
     float min_v = std::min ( std::min ( std::abs ( transform_total (0, 0) ), std::abs ( transform_total (0, 1) ) ), std::abs ( transform_total (0, 2) ) );
-    if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 and transform_total (0, 2) > 0 )
+    if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 && transform_total (0, 2) > 0 )
     {
       transform_total = r_z_180 * transform_total;
     }
