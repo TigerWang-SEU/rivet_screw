@@ -425,14 +425,21 @@ public:
         Eigen::Vector3f central_point;
         // step 3, find the central point of the segment point cloud
         // float theta = get_central_point ( segment_cloud, central_point );
+        float u_10_base_y = -0.212;
         float theta = calculate_theta ( segment_cloud, central_point );
-        if ( central_point ( 1 ) < -0.212 && theta < 30 )
+        if ( central_point ( 1 ) - u_10_base_y  < -0.2 )
         {
-          theta += 180;
+          if ( theta < 90.0 )
+          {
+            theta = theta + 180.0;
+          }
         }
-        if ( central_point ( 1 ) > -0.212 && theta > 150 )
+        if ( central_point ( 1 ) - u_10_base_y  > 0.3 )
         {
-          theta -= 180;
+          if ( theta > 90.0 )
+          {
+            theta = theta - 180.0;
+          }
         }
         std::cout << std::endl << "[***] Rotation around x is [" << theta << "] degrees" << std::endl;
         float x_0 = central_point ( 0 );
