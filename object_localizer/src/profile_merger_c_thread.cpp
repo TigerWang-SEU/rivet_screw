@@ -122,6 +122,12 @@ public:
 		std::cout << "Transform thread [" << thread_id << "] is started" << std::endl;
 		while ( !is_stop )
 		{
+      if ( !is_publish_ )
+      {
+        ros::Duration ( 0.01 * num_threads ).sleep ();
+        continue;
+      }
+
 			// get the front profile
 			PointCloudT::Ptr in_cloud ( new PointCloudT );
 			profile_thread_queue [ thread_id ].pop ( in_cloud );
@@ -150,6 +156,12 @@ public:
 		std::cout << "Merger thread is started" << std::endl;
 		while ( !is_stop )
 		{
+      if ( !is_publish_ )
+      {
+        ros::Duration ( 0.01 * num_threads ).sleep ();
+        continue;
+      }
+
 			if ( scene_pc_queue.length () <= 8 )
 			{
 				ros::Duration ( 0.01 * num_threads ).sleep ();
