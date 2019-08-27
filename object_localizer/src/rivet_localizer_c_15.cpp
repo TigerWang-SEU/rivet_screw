@@ -520,30 +520,32 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 		rivet_support_plane_cloud->points.push_back ( new_point );
   }
 
-	// step 4, calculate the new orientation from the rivet_support_plane_cloud
-	Eigen::Matrix4f transform_2 ( Eigen::Matrix4f::Identity() );
-	calculate_transform ( rivet_support_plane_cloud, transform_2 );
+  // step 4, calculate the new orientation from the rivet_support_plane_cloud
+  Eigen::Matrix4f transform_1_inverse ( Eigen::Matrix4f::Identity () );
+  getInverseMatrix ( transform_1, transform_1_inverse );
+  pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud, transform_1_inverse );
+  Eigen::Matrix4f transform_2 ( Eigen::Matrix4f::Identity() );
+  calculate_transform ( rivet_support_plane_cloud, transform_2 );
 
-	// step 5, calculate the transform_total transformation
-	Eigen::Matrix4f r_x_180, r_z_180;
-	r_x_180 <<  1,  0,  0, 0,
-							0, -1,  0, 0,
-							0,  0, -1, 0,
-							0,  0,  0, 1;
-	r_z_180 << -1,  0,  0, 0,
-							0, -1,  0, 0,
-							0,  0,  1, 0,
-							0,  0,  0, 1;
-	Eigen::Matrix4f transform_total = transform_2 * transform_1;
-	float min_v = std::min ( std::min ( std::abs ( transform_total (0, 0) ), std::abs ( transform_total (0, 1) ) ), std::abs ( transform_total (0, 2) ) );
-	if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 && transform_total (0, 2) > 0 )
-	{
+  // step 5, calculate the transform_total transformation
+  Eigen::Matrix4f r_x_180, r_z_180;
+  r_x_180 <<  1,  0,  0, 0,
+              0, -1,  0, 0,
+              0,  0, -1, 0,
+              0,  0,  0, 1;
+  r_z_180 << -1,  0,  0, 0,
+              0, -1,  0, 0,
+              0,  0,  1, 0,
+              0,  0,  0, 1;
+  Eigen::Matrix4f transform_total = transform_2;
+  if ( transform_total (0, 1) < 0 )
+  {
     transform_total = r_z_180 * transform_total;
-	}
-	if ( transform_total (1, 0) < 0 )
-	{
+  }
+  if ( transform_total (1, 0) < 0 )
+  {
     transform_total = r_x_180 * transform_total;
-	}
+  }
 
 	// step 6, calculate roll, pitch, yaw from the transform_total
 	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
@@ -578,9 +580,6 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	std::cout << "\troll, pitch, yaw = " << roll << ", " << pitch << ", " << yaw << std::endl;
 
 	// step 7, transform the rivet_support_planar and cloud_in
-	Eigen::Matrix4f transform_1_inverse ( Eigen::Matrix4f::Identity () );
-	getInverseMatrix ( transform_1, transform_1_inverse );
-	pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud, transform_1_inverse );
   PointCloudT::Ptr rivet_support_plane_cloud_transformed ( new PointCloudT );
 	pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud_transformed, transform_total );
 	PointCloudT::Ptr cloud_in_transformed	( new PointCloudT );
@@ -765,9 +764,7 @@ public:
                 0,  0,  1, 0,
                 0,  0,  0, 1;
     Eigen::Matrix4f transform_total = transform_2 * transform_1;
-
-    float min_v = std::min ( std::min ( std::abs ( transform_total (0, 0) ), std::abs ( transform_total (0, 1) ) ), std::abs ( transform_total (0, 2) ) );
-    if ( std::abs ( transform_total (0, 0) ) == min_v && transform_total (0, 1) < 0 && transform_total (0, 2) > 0 )
+    if ( transform_total (0, 1) < 0 )
     {
       transform_total = r_z_180 * transform_total;
     }
