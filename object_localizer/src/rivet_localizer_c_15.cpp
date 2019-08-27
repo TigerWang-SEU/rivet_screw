@@ -956,70 +956,66 @@ public:
     }
   }
 
-	void CfgFileReader ()
-	{
-	  std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/rivet_localizer.cfg";
-	  std::cout << "***The path of the rivet_localizer configuration file is: [" << cfgFileName << "]" << std::endl;
-
-	  std::ifstream input ( cfgFileName );
-	  std::string line;
-	  if ( std::getline ( input, line ) )
-	  {
-	    std::istringstream iss ( line );
-	    iss >> SceneFileName;
-	    std::cout << "***Profile file name = [" << SceneFileName << "]" << std::endl;
-	  }
-		if ( std::getline ( input, line ) )
-	  {
-	    std::istringstream iss ( line );
-	    iss >> filter_mean_k >> filter_stddev;
-	    std::cout << "***filter_mean_k = [" << filter_mean_k << "] filter_stddev = [" << filter_stddev << "]" << std::endl;
-	  }
-		if ( std::getline ( input, line ) )
-	  {
-			std::istringstream iss ( line );
-	    iss >> rivet_height >> rivet_radius;
-	    std::cout << "***rivet_height = [" << rivet_height << "] rivet_radius = [" << rivet_radius << "]" << std::endl;
-	  }
-		if ( std::getline ( input, line ) )
-	  {
-			if ( boost::starts_with ( line, "Yes" ) )
-			{
-				show_viz = true;
-			}
-			std::cout << "***Show Visualization = [" << show_viz << "]" << std::endl;
-	  }
-		if ( std::getline ( input, line ) )
-	  {
-			std::istringstream iss ( line );
-			iss >> tool_angle;
-			std::cout << "***tool_angle = [" << tool_angle << "]" << std::endl;
-	  }
-	  input.close();
-	}
-
-  void handle_scene_point_cloud ( )
+  void CfgFileReader ()
   {
-		// read the configuration file
-		CfgFileReader ();
+    std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/rivet_localizer.cfg";
+    std::cout << "***The path of the rivet_localizer configuration file is: [" << cfgFileName << "]" << std::endl;
 
-    // load saved scene point cloud
+    std::ifstream input ( cfgFileName );
+    std::string line;
+    if ( std::getline ( input, line ) )
+    {
+      std::istringstream iss ( line );
+      iss >> SceneFileName;
+      std::cout << "***Profile file name = [" << SceneFileName << "]" << std::endl;
+    }
+    if ( std::getline ( input, line ) )
+    {
+      std::istringstream iss ( line );
+      iss >> filter_mean_k >> filter_stddev;
+      std::cout << "***filter_mean_k = [" << filter_mean_k << "] filter_stddev = [" << filter_stddev << "]" << std::endl;
+    }
+    if ( std::getline ( input, line ) )
+    {
+      std::istringstream iss ( line );
+      iss >> rivet_height >> rivet_radius;
+      std::cout << "***rivet_height = [" << rivet_height << "] rivet_radius = [" << rivet_radius << "]" << std::endl;
+    }
+    if ( std::getline ( input, line ) )
+    {
+      if ( boost::starts_with ( line, "Yes" ) )
+      {
+        show_viz = true;
+      }
+      std::cout << "***Show Visualization = [" << show_viz << "]" << std::endl;
+    }
+    if ( std::getline ( input, line ) )
+    {
+      std::istringstream iss ( line );
+      iss >> tool_angle;
+      std::cout << "***tool_angle = [" << tool_angle << "]" << std::endl;
+    }
+    input.close();
+  }
+
+  bool start_rivet_localizer ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    // read the configuration file
+    CfgFileReader ();
+
+    // load the saved scene point cloud
     std::string SceneFilePath = ros::package::getPath ( "object_localizer" ) + "/data/" + SceneFileName;
     if ( pcl::io::loadPLYFile ( SceneFilePath, *scene_cloud_ ) == -1 )
     {
-      ROS_ERROR_STREAM ( "Couldn't read file: " << SceneFilePath << std::endl );
-      return;
+      ROS_ERROR_STREAM ( "Couldn't read the file: " << SceneFilePath << std::endl );
+      return false;
     }
     std::cout << "Loaded " << scene_cloud_->width * scene_cloud_->height << " data points from " << SceneFilePath << std::endl;
 
-		// process the saved scene point cloud
-		check_theta ( scene_cloud_ );
+    // process the saved scene point cloud
+    check_theta ( scene_cloud_ );
     find_rivet ( scene_cloud_ );
-  }
 
-	bool start_rivet_localizer ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
-  {
-    handle_scene_point_cloud ();
     return true;
   }
 
