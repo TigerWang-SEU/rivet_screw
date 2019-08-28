@@ -480,20 +480,20 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 // find orientation and central point for each rivet
 void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr search_cloud_, PointT &searchPoint, Eigen::Matrix4f transform_1, PointCloudT::Ptr& rivet_support_plane_cloud, PointCloudT::Ptr& rivet_cloud, double& roll, double& pitch, double& yaw, Eigen::Vector4f& rivet_point_new_final, Eigen::Vector4f& rivet_point_in_final )
 {
-	// step 1, search for points near the original rivet center ( searchPoint )
-	PointCloudT::Ptr search_result_cloud ( new PointCloudT );
-	PointT search_point_1;
-	search_point_1.x = 0.0;
-	search_point_1.y = searchPoint.y;
-	search_point_1.z = searchPoint.z - 0.0035;
-	find_near_point ( search_cloud_, search_result_cloud, search_point_1 );
-	PointT search_point_2;
-	search_point_2.x = 0.0;
-	search_point_2.y = searchPoint.y;
-	search_point_2.z = searchPoint.z + 0.0035;
-	find_near_point ( search_cloud_, search_result_cloud, search_point_2 );
+  // step 1, search for points near the original rivet center ( searchPoint )
+  PointCloudT::Ptr search_result_cloud ( new PointCloudT );
+  PointT search_point_1;
+  search_point_1.x = 0.0;
+  search_point_1.y = searchPoint.y;
+  search_point_1.z = searchPoint.z - 0.0035;
+  find_near_point ( search_cloud_, search_result_cloud, search_point_1 );
+  PointT search_point_2;
+  search_point_2.x = 0.0;
+  search_point_2.y = searchPoint.y;
+  search_point_2.z = searchPoint.z + 0.0035;
+  find_near_point ( search_cloud_, search_result_cloud, search_point_2 );
 
-	//step 2, fit a plane with the point cloud search_result_cloud
+  //step 2, fit a plane with the point cloud search_result_cloud
   Eigen::Vector3f surface_normal;
   float d_coef;
   float ransac_thresh = 0.0002;
@@ -507,17 +507,17 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   }
   // std::cout << "surface_normal : [" << surface_normal.transpose() << "], d_coef = " << d_coef << std::endl;
 
-	// step 3 show the search_result_cloud fit the plane using color yellow
+  // step 3 show the search_result_cloud fit the plane using color yellow
   r = 255, g = 255, b = 0;
-	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+  rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
   for ( int const& idx: inliers )
-	{
-		PointT new_point;
+  {
+    PointT new_point;
     new_point.x = search_result_cloud->points [ idx ].x;
     new_point.y = search_result_cloud->points [ idx ].y;
     new_point.z = search_result_cloud->points [ idx ].z;
     new_point.rgb = *reinterpret_cast < float* > ( &rgb );
-		rivet_support_plane_cloud->points.push_back ( new_point );
+    rivet_support_plane_cloud->points.push_back ( new_point );
   }
 
   // step 4, calculate the new orientation from the rivet_support_plane_cloud
@@ -527,10 +527,14 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   Eigen::Matrix4f transform_2 ( Eigen::Matrix4f::Identity() );
   calculate_transform ( rivet_support_plane_cloud, transform_2 );
 
-  // step 5, calculate the transform_total transformation
-  Eigen::Matrix4f r_x_180, r_z_180;
+  // step 5, check the transform_total to make sure the x axis is along the direction of the rivet
+  Eigen::Matrix4f r_x_180, r_y_180, r_z_180;
   r_x_180 <<  1,  0,  0, 0,
               0, -1,  0, 0,
+              0,  0, -1, 0,
+              0,  0,  0, 1;
+  r_y_180 << -1,  0,  0, 0,
+              0,  1,  0, 0,
               0,  0, -1, 0,
               0,  0,  0, 1;
   r_z_180 << -1,  0,  0, 0,
@@ -538,11 +542,15 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
               0,  0,  1, 0,
               0,  0,  0, 1;
   Eigen::Matrix4f transform_total = transform_2;
-  if ( transform_total (0, 1) < 0 )
+  if ( transform_total ( 0, 1 ) < 0 && transform_total ( 1, 0 ) < 0 )
   {
     transform_total = r_z_180 * transform_total;
   }
-  if ( transform_total (1, 0) < 0 )
+  else if ( transform_total ( 1, 0 ) < 0 && transform_total ( 1, 0 ) > 0 )
+  {
+    transform_total = r_y_180 * transform_total;
+  }
+  else if ( transform_total ( 1, 0 ) > 0 && transform_total ( 1, 0 ) < 0 )
   {
     transform_total = r_x_180 * transform_total;
   }
@@ -551,40 +559,14 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
 	getInverseMatrix ( transform_total, transform_total_inverse );
 	get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
-	while ( roll < 0.0 )
-	{
-		roll = PI + roll;
-	}
-	if ( roll > 0 && roll <= PI/2 )
-	{
-		roll = roll + PI;
-	}
-	if ( roll > PI/2.0 && roll <= PI/4.0*3.0 )
-	{
-		roll = roll + PI/2;
-	}
-	if ( roll > PI + 0.2 && roll <= PI + PI/2 + 0.5 )
-	{
-		roll = roll - PI/2;
-	}
-	float theta_x = PI - roll;
-	Eigen::Matrix4f r_x_theta;
-	r_x_theta << 1,   0,  0, 0,
-					     0, cos ( theta_x ), -sin ( theta_x ), 0,
-					     0, sin ( theta_x ),  cos ( theta_x ), 0,
-						   0,  0,  0, 1;
-	transform_total = r_x_theta * transform_total;
-	getInverseMatrix ( transform_total, transform_total_inverse );
-	get_rpy_from_matrix ( transform_total_inverse.block < 3, 3 > ( 0, 0 ), roll, pitch, yaw );
-	roll = PI + theta_x;
-	std::cout << "\troll, pitch, yaw = " << roll << ", " << pitch << ", " << yaw << std::endl;
+	std::cout << "\tRoll, Pitch, Yaw = [" << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
 
-	// step 7, transform the rivet_support_planar and cloud_in
+	// step 7, transform the rivet_support_plane and cloud_in
   PointCloudT::Ptr rivet_support_plane_cloud_transformed ( new PointCloudT );
 	pcl::transformPointCloud ( *rivet_support_plane_cloud, *rivet_support_plane_cloud_transformed, transform_total );
 	PointCloudT::Ptr cloud_in_transformed	( new PointCloudT );
 	scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
-	pcl::transformPointCloud( *cloud_in_transformed, *cloud_in_transformed, transform_total );
+	pcl::transformPointCloud ( *cloud_in_transformed, *cloud_in_transformed, transform_total );
 
 	// step 8, filter out points belongs to the rivet and save them in cloud_rivet
 	PointT minPoint, maxPoint;
@@ -627,6 +609,8 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 	{
 		cloud_rivet = cloud_rivet_below;
 	}
+
+  // step 8.1, map points in cloud_rivet on the y, z plane
   PointCloudT::Ptr cloud_rivet_xy ( new PointCloudT );
   for ( PointT temp_point: cloud_rivet->points )
 	{
@@ -654,8 +638,8 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
     rivet_point_new_final ( 0 ) = NAN;
     return;
   }
-  std::cout << "circle coefficients: [" << center [0] << ", " << center [1] << ", " << center [2] << "], radius = " << radius << std::endl;
-  std::cout << "%%% inliers.size() = " << inliers.size() << "; cloud_rivet_xy->points.size() = " << cloud_rivet_xy->points.size() << std::endl;
+  std::cout << "circle coefficients: [" << center.transpose() << "], radius = " << radius << std::endl;
+  std::cout << "%%% inliers.size = " << inliers.size() << "; cloud_rivet_xy.size = " << cloud_rivet_xy->points.size() << std::endl;
 
   r = 255, g = 0, b = 0;
 	rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
@@ -669,7 +653,8 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 		rivet_cloud->points.push_back ( new_point );
   }
 
-  if ( check_circle ( rivet_cloud )  == false )
+  // step 9.1, check the shape of the fitted circle
+  if ( check_circle ( rivet_cloud ) == false )
   {
     rivet_point_new_final ( 0 ) = NAN;
     return;
@@ -893,7 +878,6 @@ public:
     point_rivet_fs.open ( ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg" );
     rivet_counter = 0;
     PointCloudT::Ptr scene_cloud_total ( new PointCloudT );
-    // *scene_cloud_total += *cloud_in;
     for ( Eigen::Vector4f rivet_point : rivet_vector )
     {
       std::cout << std::endl << std::endl;
