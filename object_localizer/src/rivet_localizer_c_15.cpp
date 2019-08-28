@@ -542,18 +542,23 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
               0,  0,  1, 0,
               0,  0,  0, 1;
   Eigen::Matrix4f transform_total = transform_2;
+  std::cout << "\t transform_total = \n" << transform_total << std::endl;
   if ( transform_total ( 0, 1 ) < 0 && transform_total ( 1, 0 ) < 0 )
   {
+    std::cout << "\t r_z_180 " << std::endl;
     transform_total = r_z_180 * transform_total;
   }
-  else if ( transform_total ( 1, 0 ) < 0 && transform_total ( 1, 0 ) > 0 )
+  else if ( transform_total ( 0, 1 ) < 0 && transform_total ( 1, 0 ) > 0 )
   {
+    std::cout << "\t r_y_180 " << std::endl;
     transform_total = r_y_180 * transform_total;
   }
-  else if ( transform_total ( 1, 0 ) > 0 && transform_total ( 1, 0 ) < 0 )
+  else if ( transform_total ( 0, 1 ) > 0 && transform_total ( 1, 0 ) < 0 )
   {
+    std::cout << "\t r_x_180 " << std::endl;
     transform_total = r_x_180 * transform_total;
   }
+  std::cout << "\t transform_total = \n" << transform_total << std::endl;
 
 	// step 6, calculate roll, pitch, yaw from the transform_total
 	Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
@@ -735,37 +740,63 @@ public:
     plane_cloud->header.frame_id = reference_frame;
 
     // step 4, do refined transformation to show the point cloud
+    Eigen::Matrix4f transform_1_inverse ( Eigen::Matrix4f::Identity () );
+    getInverseMatrix ( transform_1, transform_1_inverse );
+    pcl::transformPointCloud ( *plane_cloud, *plane_cloud, transform_1_inverse );
     Eigen::Matrix4f transform_2 ( Eigen::Matrix4f::Identity() );
     calculate_transform ( plane_cloud, transform_2 );
 
-    // step 5, get the total transformation
-    Eigen::Matrix4f r_x_180, r_z_180;
+    // step 5, check the transform_total to make sure the x axis is along the direction of the rivet
+    Eigen::Matrix4f r_x_180, r_y_180, r_z_180;
     r_x_180 <<  1,  0,  0, 0,
                 0, -1,  0, 0,
+                0,  0, -1, 0,
+                0,  0,  0, 1;
+    r_y_180 << -1,  0,  0, 0,
+                0,  1,  0, 0,
                 0,  0, -1, 0,
                 0,  0,  0, 1;
     r_z_180 << -1,  0,  0, 0,
                 0, -1,  0, 0,
                 0,  0,  1, 0,
                 0,  0,  0, 1;
-    Eigen::Matrix4f transform_total = transform_2 * transform_1;
-    if ( transform_total (0, 1) < 0 )
+    Eigen::Matrix4f transform_total = transform_2;
+    std::cout << "\t transform_total = \n" << transform_total << std::endl;
+    int max_idx_2_r, max_idx_2_c;
+    transform_total.block ( 1, 0, 1, 3 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
+    std::cout << "max_idx_2_r, max_idx_2_c = " << max_idx_2_r << " " << max_idx_2_c << std::endl;
+    if ( max_idx_2_c != 0 )
     {
+      std::cout << "\t r_x_90" << std::endl;
+      // rotate around x for 90 degrees
+      Eigen::Matrix4f r_x_90;
+      float theta_90 = 90.0 / 180.0 * PI;
+      r_x_90 << 1,             0,              0, 0,
+                0, cos(theta_90), -sin(theta_90), 0,
+                0, sin(theta_90),  cos(theta_90), 0,
+                0,             0,              0, 1;
+      transform_total = r_x_90 * transform_total;
+    }
+    if ( transform_total ( 0, 1 ) < 0 && transform_total ( 1, 0 ) < 0 )
+    {
+      std::cout << "\t r_z_180 " << std::endl;
       transform_total = r_z_180 * transform_total;
     }
-    if ( transform_total (1, 0) < 0 )
+    else if ( transform_total ( 0, 1 ) < 0 && transform_total ( 1, 0 ) > 0 )
     {
+      std::cout << "\t r_y_180 " << std::endl;
+      transform_total = r_y_180 * transform_total;
+    }
+    else if ( transform_total ( 0, 1 ) > 0 && transform_total ( 1, 0 ) < 0 )
+    {
+      std::cout << "\t r_x_180 " << std::endl;
       transform_total = r_x_180 * transform_total;
     }
-    std::cout << "transform_total = \n" << transform_total << std::endl;
+    std::cout << "\t transform_total = \n" << transform_total << std::endl;
 
     PointCloudT::Ptr cloud_in_transformed	( new PointCloudT );
     scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
     pcl::transformPointCloud ( *cloud_in_transformed, *cloud_in_transformed, transform_total );
-
-    Eigen::Matrix4f transform_1_inv_ ( Eigen::Matrix4f::Identity() );
-    getInverseMatrix ( transform_1, transform_1_inv_ );
-    pcl::transformPointCloud ( *plane_cloud, *plane_cloud, transform_1_inv_ );
     pcl::transformPointCloud ( *plane_cloud, *plane_cloud, transform_total );
 
     // step 6 get max and min points
@@ -781,7 +812,7 @@ public:
     for ( PointT temp_point: cloud_in_transformed->points )
     {
       float x = temp_point.x;
-      float x_compare = std::abs ( std::abs ( x ) - rivet_height );
+      float x_compare = std::abs ( x - rivet_height );
       float y = temp_point.y;
       float z = temp_point.z;
       if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0015 )
