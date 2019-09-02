@@ -27,7 +27,7 @@ void move_camera ()
   current_state->copyJointGroupPositions ( joint_model_group, joint_group_positions );
   std::cout << "current wrist 1: " << joint_group_positions [ 3 ] << std::endl;
   // if the start robot pose is scan_start pose, start move the camera
-  if ( std::abs ( joint_group_positions [ 3 ] + 1.8434 ) <= 0.01 && std::abs ( joint_group_positions [ 5 ] - 3.1415 ) <= 0.01 )
+  if ( std::abs ( joint_group_positions [ 3 ] + 1.8434 ) <= 0.01 && std::abs ( joint_group_positions [ 5 ] - 0 ) <= 0.01 )
   {
     int motion_stage_idx = 0;
     while ( motion_stage_idx != 1 )
@@ -36,7 +36,8 @@ void move_camera ()
       {
         // set pose scan_end in radians
         joint_group_positions [ 3 ] = -1.6034;
-      } else if ( motion_stage_idx  == 1 )
+      }
+      else if ( motion_stage_idx  == 1 )
       {
         // set pose scan_start in radians
         joint_group_positions [ 3 ] = -1.8434;
