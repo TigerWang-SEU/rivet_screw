@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node name="led_connector" pkg="led_connector" type="led_server.py" respawn="true" output="screen">
+  </node>
+
+  <node name="led_grpc_server" pkg="led_connector" type="led_grpc_server.py" respawn="true" output="screen">
+  </node>
+
+</launch>
