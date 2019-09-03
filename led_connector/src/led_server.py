@@ -30,7 +30,7 @@ def led_callback(req):
         frequency = 0
         data = True
     elif req.state == "betriebsbereit":
-        color = "#00ff37"
+        color = "#1aff00"
         frequency = 0
         data = True
     elif req.state == "arbeitet":
