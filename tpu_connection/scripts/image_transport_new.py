@@ -25,7 +25,7 @@ class ImageTransport:
     self.image_sub = rospy.Subscriber('/camera/color/image_raw', Image, self.callback)
     #self.image_sub = rospy.Subscriber('/cv_camera/image_raw', Image, self.callback)
 
-    self.is_transport = False
+    self.is_transport = True
     self.start_service = rospy.Service( 'start_image_transport', Empty, self.start_callback )
     self.stop_service = rospy.Service( 'stop_image_transport', Empty, self.stop_callback )
 
