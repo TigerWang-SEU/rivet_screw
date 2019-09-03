@@ -41,7 +41,7 @@ static const std::string PLANNING_GROUP = "camera";
 
 class ControlNode {
 
-  ros::ServiceClient start_pcl_merger_, stop_pcl_merger_, start_rough_localizer_, stop_rough_localizer_, start_box_segmenter_, stop_box_segmenter_, start_scan_planner_, stop_scan_planner_, start_move_camera_, start_do_scan_, start_rivet_localizer_, start_point_rivet_, stop_image_transport_;
+  ros::ServiceClient start_pcl_merger_, stop_pcl_merger_, start_rough_localizer_, stop_rough_localizer_, start_box_segmenter_, stop_box_segmenter_, start_scan_planner_, stop_scan_planner_, start_move_camera_, start_do_scan_, start_rivet_localizer_, start_point_rivet_, start_image_transport_, stop_image_transport_;
 
   boost::shared_ptr< moveit::planning_interface::MoveGroupInterface > move_group;
   boost::shared_ptr< moveit::planning_interface::PlanningSceneInterface > planning_scene_interface;
@@ -74,6 +74,7 @@ public:
     start_do_scan_ = nh_.serviceClient < std_srvs::Empty > ( "start_do_scan" );
     start_rivet_localizer_ = nh_.serviceClient < std_srvs::Empty > ( "start_rivet_localizer" );
     start_point_rivet_ = nh_.serviceClient < std_srvs::Empty > ( "start_point_rivet" );
+    start_image_transport_ = nh_.serviceClient < std_srvs::Empty > ( "start_image_transport" );
     stop_image_transport_ = nh_.serviceClient < std_srvs::Empty > ( "stop_image_transport" );
 
     move_group.reset ( new moveit::planning_interface::MoveGroupInterface ( PLANNING_GROUP ) );
@@ -154,6 +155,10 @@ public:
       case 0:
       {
         publish_msg ( "mid_referencing_start" );
+        ros::Duration ( 0.5 ).sleep ();
+        start_image_transport_.call ( msg );
+        ros::Duration ( 0.5 ).sleep ();
+        start_image_transport_.call ( msg );
         std::cout << "1, set the robot pose to camera_start" << std::endl;
         if ( set_pose ( "camera_start" ) )
         {
