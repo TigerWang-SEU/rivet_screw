@@ -10,7 +10,7 @@
   <!-- tool -->
   <xacro:include filename="$(find syn_ur10_bringup)/urdf/tool.new.urdf.xacro" />
 
-  <xacro:property name="ur10_mount_height" value="0.01" />
+  <xacro:property name="ur10_mount_height" value="0.055" />
 
   <link name="world" />
 
@@ -31,7 +31,7 @@
   <joint name="table_ur10_joint" type="fixed">
     <parent link="ur10_mount" />
     <child link = "ur10_base_link" />
-    <origin xyz="0.0 0.0 ${ur10_mount_height}" rpy="0.0 0.0 ${radians(90)}" />
+    <origin xyz="0.0 0.0 ${ur10_mount_height}" rpy="0.0 0.0 ${radians(-90)}" />
   </joint>
 
   <joint name="ur10_tool_joint" type="fixed">

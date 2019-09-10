@@ -11,17 +11,17 @@
   <!-- old value = -0.007 (15 degree)-->
   <xacro:property name="rivet_tool_vertical_adjust" value="-0.0083" />
 
-  <xacro:property name="rivet_tool_x" value="0.00370" />
-  <xacro:property name="rivet_tool_y" value="0.21127" />
-  <xacro:property name="rivet_tool_z" value="0.17890" />
+  <xacro:property name="rivet_tool_x" value="0.00381" />
+  <xacro:property name="rivet_tool_y" value="0.217767" />
+  <xacro:property name="rivet_tool_z" value="0.1809" />
 
-  <xacro:property name="laser_x" value="-0.04399" />
-  <xacro:property name="laser_y" value="-0.12500" />
-  <xacro:property name="laser_z" value="0.14095" />
+  <xacro:property name="laser_x" value="-0.047604" />
+  <xacro:property name="laser_y" value="-0.118435" />
+  <xacro:property name="laser_z" value="0.147048" />
 
-  <xacro:property name="camera_x" value="0.01369" />
-  <xacro:property name="camera_y" value="0.06792" />
-  <xacro:property name="camera_z" value="0.01050" />
+  <xacro:property name="camera_x" value="0.013848" />
+  <xacro:property name="camera_y" value="0.07692" />
+  <xacro:property name="camera_z" value="0.0085" />
   <xacro:property name="camera_angle" value="90.00" />
 
   <link name="tool_base" />
@@ -30,14 +30,14 @@
     <visual>
       <origin xyz="${0} ${0} ${0}" rpy="${0} ${0} ${0}"/>
       <geometry>
-        <mesh filename="package://syn_ur10_bringup/meshes/Endeffektor.stl" scale="0.01 0.01 0.01"/>
+        <mesh filename="package://syn_ur10_bringup/meshes/Endeffektor.stl" scale="1 1 1"/>
       </geometry>
       <material name="aluminum"/>
     </visual>
     <collision>
       <origin xyz="${0} ${0} ${0}" rpy="${0} ${0} ${0}"/>
       <geometry>
-        <mesh filename="package://syn_ur10_bringup/meshes/Endeffektor.stl" scale="0.01 0.01 0.01"/>
+        <mesh filename="package://syn_ur10_bringup/meshes/Endeffektor.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <inertial>

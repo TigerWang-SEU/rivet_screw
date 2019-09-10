@@ -4,13 +4,16 @@
   <xacro:arg name="floating_table" default="false" />
 
   <xacro:property name="roomheight" value="3.0" />
-  <xacro:property name="tableheight" value="0.83" />
-  <xacro:property name="tablewidth" value="0.83" />
-  <xacro:property name="tabledepth" value="0.9" />
-  <xacro:property name="ur10_mount_offset_y" value="-0.212" />
-  <xacro:property name="scan_offset_x" value="0.00" />
+
+  <xacro:property name="tableheight" value="0.855" />
+  <xacro:property name="tablewidth" value="0.60" />
+  <xacro:property name="tabledepth" value="0.905" />
+
+  <xacro:property name="ur10_mount_offset_y" value="-0.2585" />
+
+  <!-- <xacro:property name="scan_offset_x" value="0.00" />
   <xacro:property name="scan_offset_y" value="-0.40" />
-  <xacro:property name="scan_offset_z" value="0.06" />
+  <xacro:property name="scan_offset_z" value="0.06" /> -->
 
   <material name="white">
     <color rgba="1 1 1 1"/>
@@ -85,9 +88,28 @@
 
   <link name="table_top"/>
 
-  <link name="ur10_mount"/>
+  <link name="ur10_mount">
+    <visual>
+      <origin xyz="${0} ${0} ${0}" rpy="${0} ${0} ${0}"/>
+      <geometry>
+        <mesh filename="package://syn_ur10_bringup/meshes/ur10_mount.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="aluminum"/>
+    </visual>
+    <collision>
+      <origin xyz="${0} ${0} ${0}" rpy="${0} ${0} ${0}"/>
+      <geometry>
+        <mesh filename="package://syn_ur10_bringup/meshes/ur10_mount.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.300" />
+      <origin xyz="0 0 0.05" />
+      <inertia ixx="1.0" ixy="1.0" ixz="1.0" iyy="0.0" iyz="0.0" izz="0.0" />
+    </inertial>
+  </link>
 
-  <link name="scan">
+  <!-- <link name="scan">
     <inertial>
       <origin xyz="0.0 0.0 0.0" />
       <mass value="200" />
@@ -106,7 +128,7 @@
         <box size="0.10 0.10 0.12" />
       </geometry>
     </collision>
-  </link>
+  </link> -->
 
   <joint name="table_floor_joint" type="floating">
     <parent link="floor"/>
@@ -126,10 +148,10 @@
 	  <origin xyz="0 ${ur10_mount_offset_y} 0" rpy="0 0 0" />
   </joint>
 
-  <joint name="scan_table_top_joint" type="fixed">
+  <!-- <joint name="scan_table_top_joint" type="fixed">
     <parent link="table_top"/>
     <child link="scan"/>
 	  <origin xyz="${scan_offset_x} ${scan_offset_y} ${scan_offset_z}" rpy="0 0 0" />
-  </joint>
+  </joint> -->
 
 </robot>

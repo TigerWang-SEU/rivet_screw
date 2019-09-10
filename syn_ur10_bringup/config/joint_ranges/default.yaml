@@ -9,8 +9,8 @@
 # To prevent that we substract a safety tolerance of 0.002.
 #
 ur10_shoulder_pan_joint:
-    lower: -3.7698
-    upper: 0.6283
+    lower: 2.4433
+    upper: 3.8396
 ur10_shoulder_lift_joint:
     lower: -3.141592
     upper: 3.141592
