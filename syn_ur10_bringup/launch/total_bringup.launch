@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<!-- <?xml version="1.0"?> -->
 <launch>
 
   <include file="$(find syn_ur10_bringup)/launch/syn_ur10_bringup.launch"/>
@@ -23,12 +23,10 @@
   <node name="object_detector" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
   </node>
 
-  <node name="camera_start" pkg="tpu_connection" type="camera_start.sh" respawn="true" output="screen">
-  </node>
-
   <!-- <include file="$(find microepsilon_scancontrol)/launch/scanner.launch"/> -->
 
   <!-- using old motion control launch file [start_motion_control] -->
+  <!-- start_motion_control_b for the horizontal test part -->
   <include file="$(find motion_control)/launch/start_motion_control.launch"/>
 
 </launch>
