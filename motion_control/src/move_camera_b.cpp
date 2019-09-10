@@ -38,12 +38,22 @@ void move_camera ()
       {
         start_image_transport.call ( msg );
         // set pose scan_end in radians
-        joint_group_positions [ 3 ] = -1.6034;
+        // 3.1442, -0.8294, -2.0604, -1.5809, 1.5696, -0.0035
+        joint_group_positions [ 0 ] =  3.1442;
+        joint_group_positions [ 1 ] = -0.8294;
+        joint_group_positions [ 2 ] = -2.0604;
+        joint_group_positions [ 3 ] = -1.5809;
+        joint_group_positions [ 4 ] =  1.5696;
+        joint_group_positions [ 5 ] = -0.0035;
       }
       else if ( motion_stage_idx  == 1 )
       {
         // set pose scan_start in radians
         joint_group_positions [ 3 ] = -1.8434;
+        ros::Duration ( 0.5 ).sleep ();
+        stop_image_transport.call ( msg );
+        ros::Duration ( 0.5 ).sleep ();
+        stop_image_transport.call ( msg );
       }
       move_group.setJointValueTarget ( joint_group_positions );
       moveit::planning_interface::MoveGroupInterface::Plan my_plan;
