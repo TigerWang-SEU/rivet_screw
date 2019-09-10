@@ -157,7 +157,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     geometry_msgs::Pose final_pose = target_pose1;
     final_pose.position.x = final_point [ 0 ] + 0.02;
     final_pose.position.y = final_point [ 1 ];
-    final_pose.position.z = final_point [ 2 ];
+    final_pose.position.z = final_point [ 2 ] - 0.05;
     rollt = rotation_deg * M_PI / 180.0;
     pitcht = 0;
     yawt = 0;
@@ -187,10 +187,10 @@ public:
     this->x_s = x_s;
     this->y_s = y_s;
     // this->z_s = 1.455;
-    this->z_s = 1.625;
+    this->z_s = 1.64;
     this->x_e = x_e;
     this->y_e = y_e;
-    this->z_e = 1.710;
+    this->z_e = 1.720;
     // this->z_e = 1.53;
     this->x_final = x_final;
     this->y_final = y_final;
