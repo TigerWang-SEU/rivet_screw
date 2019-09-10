@@ -97,25 +97,25 @@ public:
 		  }
 		}
 
-		tf::Vector3 point ( 0, 0, 0 );
-		tf::Vector3 point_n ( 0, 0, 0 );
-		for ( PointT temp_point : cloud->points )
-		{
-			point.setX ( temp_point.x );
-			point.setY ( temp_point.y );
-			point.setZ ( temp_point.z );
-			if ( temp_point.y < 0.085 )
+    tf::Vector3 point ( 0, 0, 0 );
+    tf::Vector3 point_n ( 0, 0, 0 );
+    for ( PointT temp_point : cloud->points )
+    {
+      point.setX ( temp_point.x );
+      point.setY ( temp_point.y );
+      point.setZ ( temp_point.z );
+      if ( temp_point.y < 0.085 )
       {
         continue;
       }
-			tf::Vector3 point_n = transform * point;
-			temp_point.x = point_n.getX ();
-			temp_point.y = point_n.getY ();
-			temp_point.z = point_n.getZ ();
+      tf::Vector3 point_n = transform * point;
+      temp_point.x = point_n.getX ();
+      temp_point.y = point_n.getY ();
+      temp_point.z = point_n.getZ ();
       temp_point.rgb = *reinterpret_cast<float*> ( &rgb );
-			cloud_out->points.push_back ( temp_point );
-		}
-	}
+      cloud_out->points.push_back ( temp_point );
+    }
+  }
 
   void transform_cb ( int thread_id )
   {
@@ -220,6 +220,7 @@ public:
     is_publish_ = false;
     ros::Duration ( 0.01 * ( num_threads + 1 ) ).sleep ();
     scene_cloud->clear ();
+    power_on ();
     is_publish_ = true;
     return true;
   }
@@ -228,6 +229,7 @@ public:
   {
     ros::Duration ( 3 ).sleep ();
     is_publish_ = false;
+    power_off ();
     return true;
   }
 
@@ -281,6 +283,9 @@ void scanner_cb ()
     std::cout << "Error in profile transfer! - [" << ret << "]" << std::endl;
     return;
   }
+
+  // power off the laser scanner
+  power_off ();
 
   // 3. loop until receive the end signal
   while ( !is_stop )

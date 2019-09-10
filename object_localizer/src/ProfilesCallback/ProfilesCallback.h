@@ -222,6 +222,42 @@ bool connect_scanner ( std::string serial_number_ )
   return true;
 }
 
+bool power_off ()
+{
+  unsigned int value;
+  // if ( hLLT->GetFeature ( INQUIRY_FUNCTION_LASERPOWER, &value ) )
+  // {
+  //   std::cout << "Error while setting INQUIRY_FUNCTION_LASERPOWER!" << std::endl;
+  //   return false;
+  // }
+  // std::cout << "power state is " << value << std::endl;
+  value = 0;
+  if ( hLLT->SetFeature ( FEATURE_FUNCTION_LASERPOWER, value ) < GENERAL_FUNCTION_OK )
+  {
+    std::cout << "Error while setting FEATURE_FUNCTION_LASERPOWER!" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+bool power_on ()
+{
+  unsigned int value;
+  // if ( hLLT->GetFeature ( INQUIRY_FUNCTION_LASERPOWER, &value ) )
+  // {
+  //   std::cout << "Error while setting INQUIRY_FUNCTION_LASERPOWER!" << std::endl;
+  //   return false;
+  // }
+  // std::cout << "power state is " << value << std::endl;
+  value = 2;
+  if ( hLLT->SetFeature ( FEATURE_FUNCTION_LASERPOWER, value ) < GENERAL_FUNCTION_OK )
+  {
+    std::cout << "Error while setting FEATURE_FUNCTION_LASERPOWER!" << std::endl;
+    return false;
+  }
+  return true;
+}
+
 // disconnect laser scanner
 bool disconnect_scanner ()
 {
