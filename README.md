@@ -124,6 +124,8 @@ Installation Instructions
     sudo apt install python-pip
     pip install grpcio protobuf
 
-8, Install ros-kinetic-web-video-server
+8, Install ros-kinetic-web-video-server and etc
 ------------------------------------
-    sudo apt install ros-kinetic-web-video-server
+    sudo apt-get install ros-kinetic-rosbridge-server
+    sudo apt-get install ros-kinetic-web-video-server
+    sudo apt-get install ros-kinetic-tf2-web-republisher
