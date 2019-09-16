@@ -18,6 +18,8 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
+#include "do_scan.h"
+
 ros::ServiceClient start_profile_merger_, start_point_cloud_writer_, stop_profile_merger_;
 
 double get_trajectory ( std::vector < geometry_msgs::Pose>& waypoints, moveit::planning_interface::MoveGroupInterface& move_group, moveit::planning_interface::MoveGroupInterface::Plan& my_plan, double scale_factor )
@@ -170,91 +172,16 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
   }
 }
 
-class ScanPlan
-{
-public:
-
-  float rotation_deg, x_s, y_s, z_s, x_e, y_e, z_e, x_final, y_final, z_final;
-
-  ScanPlan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, float y_e, float z_e, float x_final, float y_final, float z_final )
-  {
-    this->rotation_deg = rotation_deg;
-    this->x_s = x_s;
-    this->y_s = y_s;
-    this->z_s = z_s;
-    this->x_e = x_e;
-    this->y_e = y_e;
-    this->z_e = z_e;
-    this->x_final = x_final;
-    this->y_final = y_final;
-    this->z_final = z_final;
-  }
-
-};
-
-bool scanPlanComp ( ScanPlan i,ScanPlan j )
-{
-  return ( i.rotation_deg > j.rotation_deg );
-}
-
-void CfgFileReader ( std::vector< ScanPlan >& scan_plan_vector )
-{
-  ros::NodeHandle nh_p_ ( "~" );
-  std::string scanFileName;
-  nh_p_.getParam ( "scan_plan_file", scanFileName );
-  std::string cfgFileName = ros::package::getPath ( "motion_control" ) + "/config/" + scanFileName;
-  std::cout << "***The path of the do_scan configuration file is: [" << cfgFileName << "]" << std::endl;
-
-  double rotation_deg, x_s, y_s, z_s, x_e, y_e, z_e, x_final, y_final, z_final;
-  std::ifstream input ( cfgFileName );
-  std::string line;
-  int scan_plan_idx = 0;
-  while ( std::getline ( input, line ) )
-  {
-    std::istringstream iss ( line );
-    iss >> rotation_deg >> x_s >> y_s >> z_s >> x_e >> y_e >> z_e >> x_final >> y_final >> z_final;
-    ScanPlan scan_plan ( rotation_deg, x_s, y_s, z_s, x_e, y_e, z_e, x_final, y_final, z_final );
-    scan_plan_vector.push_back ( scan_plan );
-    scan_plan_idx ++;
-  }
-  input.close();
-}
-
-int read_idx ( )
-{
-  std::string scan_idx_file_name = "scan_idx.cfg";
-  std::string scan_idx_file = ros::package::getPath ( "motion_control" ) + "/config/" + scan_idx_file_name;
-  std::cout << "***The path of the scan_idx file is: [" << scan_idx_file << "]" << std::endl;
-
-  std::ifstream input ( scan_idx_file );
-  std::string line;
-  int scan_idx = 1;
-  if ( std::getline ( input, line ) )
-  {
-    std::istringstream iss ( line );
-    iss >> scan_idx;
-  }
-  input.close();
-
-  return scan_idx;
-}
-
 bool start_do_scan ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
 {
   // read the configuration file
-  std::vector< ScanPlan > scan_plan_vector;
-  CfgFileReader ( scan_plan_vector );
-  int scan_plan_idx = read_idx ( );
-  std::sort ( scan_plan_vector.begin(), scan_plan_vector.end(), scanPlanComp );
-  for ( int i = 0; i < scan_plan_vector.size(); i++ )
-  {
-    ScanPlan scan_plan = scan_plan_vector [ i ];
-    std::cout << "*** scan_plan_idx = [" << i << "] : [rotation_deg, x_s, y_s, z_s, x_e, y_e, z_e, x_final, y_final, z_final ] = [" << scan_plan.rotation_deg << ", " << scan_plan.x_s << ", " << scan_plan.y_s << ", " << scan_plan.z_s << ", " << scan_plan.x_e << ", " << scan_plan.y_e << ", " << scan_plan.z_e << ", " << scan_plan.x_final << ", " << scan_plan.y_final << ", " << scan_plan.z_final << "]" << std::endl;
-  }
-  // check whether there are enough scan plans
+  std::vector < ScanPlan > scan_plan_vector;
+  int scan_plan_idx;
+  scan_plan_reader ( scan_plan_vector );
+  read_idx ( scan_plan_idx );
   if ( scan_plan_idx <= scan_plan_vector.size() )
   {
-    ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx - 1 ];
+    ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx ];
     do_scan ( scan_plan.rotation_deg, scan_plan.x_s, scan_plan.y_s, scan_plan.z_s, scan_plan.x_e, scan_plan.y_e, scan_plan.z_e, scan_plan.x_final, scan_plan.y_final, scan_plan.z_final );
   }
   return true;
