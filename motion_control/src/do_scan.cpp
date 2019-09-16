@@ -179,7 +179,7 @@ bool start_do_scan ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& r
   scan_plan_reader ( scan_plan_vector );
   int scan_plan_idx;
   read_idx ( scan_plan_idx );
-  if ( scan_plan_idx <= scan_plan_vector.size() )
+  if ( scan_plan_idx < scan_plan_vector.size() )
   {
     ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx ];
     do_scan ( scan_plan.rotation_deg, scan_plan.x_s, scan_plan.y_s, scan_plan.z_s, scan_plan.x_e, scan_plan.y_e, scan_plan.z_e, scan_plan.x_final, scan_plan.y_final, scan_plan.z_final );
