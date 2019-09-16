@@ -122,7 +122,8 @@ if __name__ == "__main__":
     rospy.init_node ( 'rivet_tool_server' )
 
     sock = networking.opProtocol ()
-    sock.IP = "10.4.1.64"
+    sock.IP = "192.168.2.33"
+    # sock.IP = "10.4.1.64"
     sock.PORT = 4545
     sock.BUFFER = 1024
     sock.connect ( sock.IP, sock.PORT )
