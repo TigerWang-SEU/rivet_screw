@@ -176,8 +176,8 @@ bool start_do_scan ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& r
 {
   // read the configuration file
   std::vector < ScanPlan > scan_plan_vector;
-  int scan_plan_idx;
   scan_plan_reader ( scan_plan_vector );
+  int scan_plan_idx;
   read_idx ( scan_plan_idx );
   if ( scan_plan_idx <= scan_plan_vector.size() )
   {
