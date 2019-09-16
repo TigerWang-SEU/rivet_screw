@@ -381,7 +381,7 @@ public:
         pcl_conversions::toPCL ( segment_list->Segment_list [ bbox_idx ], pcl_pc2 );
         PointCloudT::Ptr segment_cloud ( new PointCloudT );
         pcl::fromPCLPointCloud2 ( pcl_pc2, *segment_cloud );
-        uint8_t color_r = 0, color_g = 0, color_b = 0;
+        int color_r = 0, color_g = 0, color_b = 0;
         color_r = bbox_idx % 5 * 50;
         color_g = bbox_idx % 3 * 80;
         color_b = bbox_idx % 7 * 30;
