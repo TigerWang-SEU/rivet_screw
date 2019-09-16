@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <ctime>
+#include <boost/algorithm/string.hpp>
 
 #include <std_msgs/String.h>
 #include <ros/ros.h>
@@ -35,6 +36,8 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
 
+#include "do_scan.h"
+
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 static const std::string PLANNING_GROUP = "camera";
@@ -56,6 +59,11 @@ class ControlNode {
   bool is_pause;
   ros::ServiceServer robot_pause, robot_restart;
   ros::Publisher control_node_pub;
+  ros::Publisher rivet_area_list_pub;
+
+  ros::Subscriber rivet_area_order_sub;
+  bool got_rivet_area_order;
+  std::vector < int > rivet_area_order;
 
 public:
 
@@ -92,6 +100,10 @@ public:
     robot_pause = nh_.advertiseService ( "robot_pause", &ControlNode::pause_execution, this );
     robot_restart = nh_.advertiseService ( "robot_restart", &ControlNode::restart_execution, this );
     control_node_pub = nh_.advertise <std_msgs::String> ( "/control_node/status", 100 );
+    rivet_area_list_pub = nh_.advertise <std_msgs::String> ( "/rivet_area/list", 100 );
+
+    rivet_area_order_sub = nh_.subscribe ( "/rivet_area/order", 10, &ControlNode::rivet_area_order_cb, this );
+    got_rivet_area_order = false;
   }
 
   ~ControlNode ()
@@ -147,6 +159,18 @@ public:
     control_node_pub.publish ( msg );
   }
 
+  void rivet_area_order_cb ( const std_msgs::String::ConstPtr& msg )
+  {
+    ROS_INFO ( "rivet_area_order_cb: [%s]", msg->data.c_str () );
+    std::vector < std::string > rivet_area_order_str;
+    boost::split ( rivet_area_order_str, msg->data, boost::is_any_of ( ";" ) );
+    for ( std::string rivet_area_id_str : rivet_area_order_str )
+    {
+      rivet_area_order.push_back ( std::stoi ( rivet_area_id_str ) );
+    }
+    got_rivet_area_order = true;
+  }
+
   void execute_stage ( int stage_idx )
   {
     std_srvs::Empty msg;
@@ -155,13 +179,12 @@ public:
       case 0:
       {
         publish_msg ( "mid_referencing_start" );
-        ros::Duration ( 0.5 ).sleep ();
-        start_image_transport_.call ( msg );
-        ros::Duration ( 0.5 ).sleep ();
-        start_image_transport_.call ( msg );
         std::cout << "1, set the robot pose to camera_start" << std::endl;
         if ( set_pose ( "camera_start" ) )
         {
+          start_image_transport_.call ( msg );
+          rivet_area_order.clear ();
+
           // step 2, start services rough_localizer, and box_segmenter
           publish_msg ( "mid_referencing_start" );
           std::cout << "2, start services rough_localizer, box_segmenter" << std::endl;
@@ -179,6 +202,22 @@ public:
               // step 5, generate scanning plans and write it to the configuration file [do_scan]
               std::cout << "5, start to generate scanning plans" << std::endl;
               start_scan_planner_.call ( msg );
+
+              // send topic /rivet_area/list
+              std::vector < ScanPlan > scan_plan_vector;
+              scan_plan_reader ( scan_plan_vector );
+              std::stringstream ss;
+              int scan_plan_idx = 0;
+              while ( scan_plan_idx <= scan_plan_vector.size() )
+              {
+                ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx ];
+                ss << scan_plan_idx << ":" << scan_plan.color_r  << "," << scan_plan.color_g << "," << scan_plan.color_b << ";";
+                scan_plan_idx ++;
+              }
+              std_msgs::String msg;
+              msg.data = ss.str();
+              rivet_area_list_pub.publish ( msg );
+              got_rivet_area_order = false;
             }
           }
         }
@@ -188,6 +227,7 @@ public:
       case 1:
       {
         publish_msg ( "fine_referencing_start" );
+
         // step 6, start one profile scan
         std::cout << "6, start profile scanning" << std::endl;
         start_do_scan_.call ( msg );
@@ -237,28 +277,40 @@ public:
 
   bool restart_execution ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
-    execute_pipeline_new ();
+    is_pause = false;
     return true;
+  }
+
+  void check_pause ()
+  {
+    while ( is_pause )
+    {
+      ros::Duration ( 0.1 ).sleep ();
+    }
   }
 
   void execute_pipeline_new ()
   {
-    is_pause = false;
-    for ( int idx = current_execution_phase; idx < 4; idx ++ )
-    {
-      execute_stage ( idx );
-      current_execution_phase ++;
-      if ( is_pause )
-      {
-        break;
-      }
-    }
-  }
-
-  void start_execution ()
-  {
     current_execution_phase = 0;
-    execute_pipeline_new ();
+    execute_stage ( current_execution_phase );
+    current_execution_phase ++;
+    check_pause ();
+    while ( got_rivet_area_order )
+    {
+      ros::Duration ( 0.1 ).sleep ();
+    }
+    while ( !rivet_area_order.empty () )
+    {
+      read_idx_writer ( rivet_area_order.front() );
+      rivet_area_order.erase ( rivet_area_order.begin () );
+      while ( current_execution_phase < 4 )
+      {
+        execute_stage ( current_execution_phase );
+        current_execution_phase ++;
+        check_pause ();
+      }
+      current_execution_phase = 1;
+    }
   }
 
   void execute_pipeline ()
@@ -317,7 +369,7 @@ int main ( int argc, char** argv )
   ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
   ControlNode control_node;
-  control_node.start_execution ();
+  control_node.execute_pipeline_new ();
   ros::waitForShutdown ();
   return 0;
 }
