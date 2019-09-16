@@ -70,7 +70,7 @@ void scan_plan_reader ( std::vector< ScanPlan >& scan_plan_vector )
 bool scan_plan_writer ( std::string write_string )
 {
   std::cout << "*** write scan_plan file: [" << scan_plan_file << "]" << std::endl;
-  ofstream scan_plan_fs;
+  std::ofstream scan_plan_fs;
   scan_plan_fs.open ( scan_plan_file );
   scan_plan_fs << write_string << std::endl;
   scan_plan_fs.close();
@@ -81,7 +81,7 @@ void read_idx ( int& scan_idx )
   std::cout << "** Read scan_idx file: [" << scan_idx_file << "]" << std::endl;
   std::ifstream input ( scan_idx_file );
   std::string line;
-  int scan_idx = 1;
+  scan_idx = 1;
   if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
@@ -93,7 +93,7 @@ void read_idx ( int& scan_idx )
 bool read_idx_writer ( int scan_plan_idx )
 {
   std::cout << "*** write read_idx file: [" << scan_idx_file << "]" << std::endl;
-  ofstream scan_idx_fs;
+  std::ofstream scan_idx_fs;
   scan_idx_fs.open ( scan_idx_file );
   scan_idx_fs << scan_plan_idx << std::endl;
   scan_idx_fs.close();
