@@ -381,6 +381,16 @@ public:
         pcl_conversions::toPCL ( segment_list->Segment_list [ bbox_idx ], pcl_pc2 );
         PointCloudT::Ptr segment_cloud ( new PointCloudT );
         pcl::fromPCLPointCloud2 ( pcl_pc2, *segment_cloud );
+        uint8_t color_r = 0, color_g = 0, color_b = 0;
+        color_r = bbox_idx % 5 * 50;
+        color_g = bbox_idx % 3 * 80;
+        color_b = bbox_idx % 7 * 30;
+        if ( bbox_idx == 0 )
+        {
+          color_r = 255;
+          color_g = 255;
+          color_b = 255;
+        }
         bbox_idx ++;
         // show_segment_cloud( segment_cloud );
         // calculate_bounding_box( segment_cloud );
@@ -467,7 +477,7 @@ public:
         float z_final = z_0 - ( scan_distance + back_distance ) * std::cos ( theta_tmp );
 
         // step 5, write scanning plannings into the scanning plan file.
-        do_scan_fs << theta << " " << x_s << " " << y_s << " " << z_s << " " << x_e << " " << y_e << " " << z_e << " " << x_final << " " << y_final << " " << z_final << std::endl;
+        do_scan_fs << theta << " " << x_s << " " << y_s << " " << z_s << " " << x_e << " " << y_e << " " << z_e << " " << x_final << " " << y_final << " " << z_final << " " << color_r << " " << color_g << " " << color_b << std::endl;
       }
     	do_scan_fs.close();
     }
