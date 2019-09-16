@@ -208,7 +208,7 @@ public:
               scan_plan_reader ( scan_plan_vector );
               std::stringstream ss;
               int scan_plan_idx = 0;
-              while ( scan_plan_idx <= scan_plan_vector.size() )
+              while ( scan_plan_idx < scan_plan_vector.size() )
               {
                 ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx ];
                 ss << scan_plan_idx << ":" << scan_plan.color_r  << "," << scan_plan.color_g << "," << scan_plan.color_b << ";";
