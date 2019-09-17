@@ -161,10 +161,10 @@ public:
 
   void rivet_area_order_cb ( const std_msgs::String::ConstPtr& msg )
   {
-    ROS_INFO ( "rivet_area_order_cb: [%s]", msg->data.c_str () );
-    std::vector < std::string > rivet_area_order_str;
-    boost::split ( rivet_area_order_str, msg->data, boost::is_any_of ( ";" ) );
-    for ( std::string rivet_area_id_str : rivet_area_order_str )
+    ROS_INFO ( "rivet_area_order: [%s]", msg->data.c_str () );
+    std::vector < std::string > rivet_area_id_vector;
+    boost::split ( rivet_area_id_vector, msg->data, boost::is_any_of ( ";" ) );
+    for ( std::string rivet_area_id_str : rivet_area_id_vector )
     {
       rivet_area_order.push_back ( std::stoi ( rivet_area_id_str ) );
     }
