@@ -23,6 +23,8 @@ ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
 float h_adjust = 0.0;
 float v_adjust = 0.0;
 float tool_distance = 0.0;
+float h_angle_adjust_v;
+float v_angle_adjust_v;
 
 double read_tool_angle ( )
 {
@@ -37,6 +39,11 @@ double read_tool_angle ( )
   {
     std::istringstream iss ( line );
     iss >> tool_angle >> h_adjust >> v_adjust >> tool_distance;
+  }
+  if ( std::getline ( input, line ) )
+  {
+    std::istringstream iss ( line );
+    iss >> h_angle_adjust_v >> v_angle_adjust_v;
   }
   input.close();
 
@@ -150,14 +157,14 @@ void targetFileReader ( std::queue< Target >& target_queue )
 
     float pitch_degree = pitch / 3.141592 * 180.0;
     float pitch_diff = pitch_degree - 40.0;
-    // float h_angle_adjust = -0.0000250 * pitch_diff;
-    // float v_angle_adjust = -0.0000400 * pitch_diff;
-    float h_angle_adjust = 0.0 * pitch_diff;
-    float v_angle_adjust = 0.0 * pitch_diff;
+    std::cout << "$$$ pitch_diff = " << pitch_diff << std::endl;
+    float h_angle_adjust = h_angle_adjust_v * pitch_diff;
+    float v_angle_adjust = v_angle_adjust_v * pitch_diff;
+    std::cout << "$$$ new [h_adjust, v_adjust] = [" << h_adjust + h_angle_adjust << ", " << v_adjust + v_angle_adjust << "]" << std::endl;
     h_v_adjust << 1, 0, 0, tool_distance,
-      				    0, 1, 0, h_adjust + h_angle_adjust,
-      				    0, 0, 1, -v_adjust - v_angle_adjust,
-      					  0, 0, 0, 1;
+                  0, 1, 0, h_adjust + h_angle_adjust,
+                  0, 0, 1, - ( v_adjust + v_angle_adjust ),
+                  0, 0, 0, 1;
 
     if ( tool_angle != 0 )
     {
