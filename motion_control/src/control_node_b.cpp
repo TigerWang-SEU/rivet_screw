@@ -263,6 +263,7 @@ public:
         // step 10, set the robot pose back to pose screw_start
         std::cout << "10, set the robot pose back to pose screw_start" << std::endl;
         set_pose ( "screw_start" );
+        set_pose ( "scan_start" );
         publish_msg ( "collar_screwing_end" );
         break;
       }
@@ -295,7 +296,7 @@ public:
     execute_stage ( current_execution_phase );
     current_execution_phase ++;
     check_pause ();
-    while ( got_rivet_area_order )
+    while ( !got_rivet_area_order )
     {
       ros::Duration ( 0.1 ).sleep ();
     }
@@ -310,6 +311,7 @@ public:
         check_pause ();
       }
       current_execution_phase = 1;
+      ros::Duration ( 1 ).sleep ();
     }
   }
 
