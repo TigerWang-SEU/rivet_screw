@@ -219,6 +219,11 @@ public:
     // clear the scene point cloud
     is_publish_ = false;
     ros::Duration ( 0.01 * ( num_threads + 1 ) ).sleep ();
+    for ( int idx = 0; idx < num_threads; ++idx )
+    {
+      profile_thread_queue [ idx ].clear ();
+    }
+    scene_pc_queue.clear ();
     scene_cloud->clear ();
     power_on ();
     is_publish_ = true;
