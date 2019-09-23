@@ -42,6 +42,8 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 static const std::string PLANNING_GROUP = "camera";
 
+int filtered_scan_plan_idx = -1;
+
 class ControlNode {
 
   ros::ServiceClient start_pcl_merger_, stop_pcl_merger_, start_rough_localizer_, stop_rough_localizer_, start_box_segmenter_, stop_box_segmenter_, start_scan_planner_, stop_scan_planner_, start_move_camera_, start_do_scan_, start_rivet_localizer_, start_point_rivet_, start_image_transport_, stop_image_transport_;
@@ -182,6 +184,7 @@ public:
         std::cout << "1, set the robot pose to camera_start" << std::endl;
         if ( set_pose ( "camera_start" ) )
         {
+          ros::Duration ( 2 ).sleep ();
           start_image_transport_.call ( msg );
           rivet_area_order.clear ();
 
@@ -212,6 +215,11 @@ public:
               {
                 ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx ];
                 ss << scan_plan_idx << ":" << scan_plan.color_r  << "," << scan_plan.color_g << "," << scan_plan.color_b << ";";
+                // check the height of collar plate to filter out the one we need.
+                if ( scan_plan.z_s < 1.90 && scan_plan.z_e > 1.90 )
+                {
+                  filtered_scan_plan_idx = scan_plan_idx;
+                }
                 scan_plan_idx ++;
               }
               std_msgs::String msg;
@@ -296,14 +304,17 @@ public:
     execute_stage ( current_execution_phase );
     current_execution_phase ++;
     check_pause ();
-    while ( !got_rivet_area_order )
+    // while ( !got_rivet_area_order )
+    // {
+    //   ros::Duration ( 0.1 ).sleep ();
+    // }
+    // while ( !rivet_area_order.empty () )
+    // {
+    //   read_idx_writer ( rivet_area_order.front() );
+    //   rivet_area_order.erase ( rivet_area_order.begin () );
+    if ( filtered_scan_plan_idx != -1 )
     {
-      ros::Duration ( 0.1 ).sleep ();
-    }
-    while ( !rivet_area_order.empty () )
-    {
-      read_idx_writer ( rivet_area_order.front() );
-      rivet_area_order.erase ( rivet_area_order.begin () );
+      read_idx_writer ( filtered_scan_plan_idx );
       while ( current_execution_phase < 4 )
       {
         execute_stage ( current_execution_phase );
