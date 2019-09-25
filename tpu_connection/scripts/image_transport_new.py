@@ -39,19 +39,20 @@ class ImageTransport:
 
   def start_callback ( self, req ):
     self.is_transport = True
+    print ( "start image transport" )
     return {}
 
   def stop_callback ( self, req ):
     self.is_transport = False
-    print("stop image transport")
+    print ( "stop image transport" )
     return {}
 
   def callback ( self, data ):
 
     if self.is_transport == False:
-      rospy.sleep ( 0.1 )
+      self.image_pub.publish ( data )
       return {}
-
+      
     try:
       # subscribe to ros_image and convert it to opencv_image
       cv_image = self.bridge.imgmsg_to_cv2(data, "rgb8")
@@ -90,7 +91,7 @@ class ImageTransport:
 
     try:
         self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "rgb8"))
-        print(detection)
+        # print(detection)
         self.bbox_pub.publish( bbox_list )
     except CvBridgeError as e:
         print(e)
