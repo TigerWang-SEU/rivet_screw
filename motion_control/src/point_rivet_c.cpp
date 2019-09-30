@@ -162,10 +162,10 @@ void targetFileReader ( std::queue< Target >& target_queue )
     iss >> id >> x >> y >> z >> roll >> pitch >> yaw;
 
     float pitch_degree = pitch / M_PI * 180.0;
-    float pitch_degree_b = ( int ) ( pitch_degree / 10 ) * 10 + 5;
+    float pitch_degree_b = ( int ) ( pitch_degree / 5 ) * 5;
     if ( pitch_degree < 0 )
     {
-        pitch_degree_b -= 10;
+        pitch_degree_b -= 5;
     }
     std::string adjustment_key = std::to_string ( tool_angle ) + "" + std::to_string ( pitch_degree_b );
     std::cout << "*** pitch_degree = " << pitch_degree << "\n adjustment_key =" << adjustment_key << std::endl;
@@ -174,6 +174,7 @@ void targetFileReader ( std::queue< Target >& target_queue )
       continue;
     }
     Adjustment adjustment = adjustment_map [ adjustment_key ];
+    std::cout << "*** h_adjust = " << adjustment.h_adjust << " v_adjust =" << adjustment.v_adjust << std::endl;
     Eigen::Matrix4f h_v_adjust;
     h_v_adjust << 1, 0, 0, adjustment.tool_distance,
                   0, 1, 0, adjustment.h_adjust,
