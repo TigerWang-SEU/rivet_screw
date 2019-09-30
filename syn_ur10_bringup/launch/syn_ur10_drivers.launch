@@ -3,7 +3,7 @@
 
   <!-- Parameters of the ur10 driver -->
   <!-- 192.168.2.31 for the syn UR10 robot -->
-  <arg name="arm_ip" default="10.4.1.55"/>
+  <arg name="arm_ip" default="192.168.2.31"/>
   <!-- <arg name="arm_ip" default="10.4.1.55"/> -->
   <arg name="limited" default="false"/>
   <arg name="min_payload" default="0.0"/>
