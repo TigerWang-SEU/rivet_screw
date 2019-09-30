@@ -1,7 +1,9 @@
+#include <math.h>
 #include <cmath>
 #include <queue>
 #include <iostream>
 #include <string>
+#include <map>
 
 #include <ros/package.h>
 #include <std_srvs/Empty.h>
@@ -20,33 +22,55 @@
 
 std::string reference_frame = "world";
 ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
-float h_adjust = 0.0;
-float v_adjust = 0.0;
-float tool_distance = 0.0;
-float h_angle_adjust_v;
-float v_angle_adjust_v;
 
-double read_tool_angle ( )
+class Adjustment
 {
-  std::string tool_angle_file_name = "tool_angle.cfg";
-  std::string tool_angle_file = ros::package::getPath ( "motion_control" ) + "/config/" + tool_angle_file_name;
-  std::cout << "***The path of the tool_angle_file is: [" << tool_angle_file << "]" << std::endl;
+public:
+  float h_adjust, v_adjust, tool_distance;
+  Adjustment ();
+  Adjustment ( float h_adjust, float v_adjust, float tool_distance );
+  Adjustment& operator= ( const Adjustment& adjustment_in );
+};
 
+Adjustment::Adjustment () {}
+
+Adjustment::Adjustment ( float h_adjust, float v_adjust, float tool_distance )
+{
+  this->h_adjust = h_adjust;
+  this->v_adjust = v_adjust;
+  this->tool_distance = tool_distance;
+}
+
+Adjustment& Adjustment::operator= ( const Adjustment& adjustment_in )
+{
+   h_adjust = adjustment_in.h_adjust;
+   v_adjust = adjustment_in.v_adjust;
+   tool_distance = adjustment_in.tool_distance;
+}
+
+double read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
+{
+  std::string tool_angle_file = ros::package::getPath ( "motion_control" ) + "/config/tool_angle.cfg";
+  std::cout << "*** Read tool_angle_file is: [" << tool_angle_file << "]" << std::endl;
   std::ifstream input ( tool_angle_file );
-  std::string line;
-  double tool_angle = 0.0;
-  if ( std::getline ( input, line ) )
-  {
-    std::istringstream iss ( line );
-    iss >> tool_angle >> h_adjust >> v_adjust >> tool_distance;
-  }
-  if ( std::getline ( input, line ) )
-  {
-    std::istringstream iss ( line );
-    iss >> h_angle_adjust_v >> v_angle_adjust_v;
-  }
-  input.close();
 
+  std::string line;
+  float tool_angle = 0.0, pitch_degree, h_adjust, v_adjust, tool_distance;
+  adjustment_map.clear ();
+  while ( std::getline ( input, line ) )
+  {
+    if ( line.rfind ( "#", 0 ) == 0 || line.length() == 0 )
+    {
+      continue;
+    }
+    std::istringstream iss ( line );
+    iss >> tool_angle >> pitch_degree >> h_adjust >> v_adjust >> tool_distance;
+    std::string adjustment_key = std::to_string ( tool_angle ) + "" + std::to_string ( pitch_degree );
+    Adjustment adjustment ( h_adjust, v_adjust, tool_distance );
+    adjustment_map [ adjustment_key ] = adjustment;
+  }
+
+  input.close();
   return tool_angle;
 }
 
@@ -90,20 +114,6 @@ void get_rpy_from_matrix ( Eigen::Matrix4f rotation_matrix, double& roll, double
 
 void get_matrix_from_rpy ( Eigen::Matrix4f& rotation_matrix, double roll, double pitch, double yaw )
 {
-  // Eigen::Matrix4f _r_x_m, _r_y_m, _r_z_m;
-  // _r_x_m << 1,         0,          0, 0,
-	// 				  0, cos(roll), -sin(roll), 0,
-	// 				  0, sin(roll),  cos(roll), 0,
-	// 					0,         0,          0, 1;
-  // _r_y_m <<  cos(pitch), 0, sin(pitch), 0,
-	// 				            0, 1,          0, 0,
-	// 				  -sin(pitch), 0, cos(pitch), 0,
-  //                     0, 0,         0, 1;
-  // _r_z_m << cos(yaw), -sin(yaw), 0, 0,
-	// 				  sin(yaw),  cos(yaw), 0, 0,
-	// 				         0,         0, 1, 0,
-	// 					       0,         0, 0, 1;
-  // rotation_matrix = _r_z_m * _r_y_m * _r_x_m;
   rotation_matrix << cos(yaw)*cos(pitch),
                      cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll),  cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), 0,
                      sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), 0,
@@ -132,13 +142,11 @@ Target::Target ( int id_i, double x_i, double y_i, double z_i, double roll_i, do
 
 void targetFileReader ( std::queue< Target >& target_queue )
 {
-  float tool_angle = read_tool_angle();
+  std::map < std::string, Adjustment > adjustment_map;
+  float tool_angle = read_tool_angle ( adjustment_map );
   Eigen::Matrix4f h_v_adjust, r_x_theta;
-  h_v_adjust << 1, 0, 0, tool_distance,
-    				    0, 1, 0, h_adjust,
-    				    0, 0, 1, -v_adjust,
-    					  0, 0, 0, 1;
-  float theta_x = tool_angle / 180.0 * 3.14159265359;
+  // get a rotation matrix
+  float theta_x = tool_angle / 180.0 * M_PI;
   get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );
 
   std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg";
@@ -152,41 +160,43 @@ void targetFileReader ( std::queue< Target >& target_queue )
   {
     std::istringstream iss ( line );
     iss >> id >> x >> y >> z >> roll >> pitch >> yaw;
-    // std::cout << id << ": [x, y, z, roll, pitch, yaw] = [" << x << ", " << y << ", " << z << ", " << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
-    // show_frame ( "Target_" + std::to_string( id ) + "_0", x, y, z, roll, pitch, yaw );
 
-    float pitch_degree = pitch / 3.141592 * 180.0;
-    float pitch_diff = pitch_degree - 40.0;
-    std::cout << "$$$ pitch_diff = " << pitch_diff << std::endl;
-    float h_angle_adjust = h_angle_adjust_v * pitch_diff;
-    float v_angle_adjust = v_angle_adjust_v * pitch_diff;
-    std::cout << "$$$ new [h_adjust, v_adjust] = [" << h_adjust + h_angle_adjust << ", " << v_adjust + v_angle_adjust << "]" << std::endl;
-    h_v_adjust << 1, 0, 0, tool_distance,
-                  0, 1, 0, h_adjust + h_angle_adjust,
-                  0, 0, 1, - ( v_adjust + v_angle_adjust ),
+    float pitch_degree = pitch / M_PI * 180.0;
+    std::cout << "$$$ pitch_degree = " << pitch_degree << std::endl;
+    float b = (int ) ( pitch_degree / 10 ) * 10 + 5;
+    if ( pitch_degree < 0 )
+    {
+        b -= 10;
+    }
+    std::string adjustment_key = std::to_string ( tool_angle ) + "" + std::to_string ( b );
+    if ( adjustment_map.find ( adjustment_key ) == adjustment_map.end () )
+    {
+      continue;
+    }
+
+    Adjustment adjustment = adjustment_map [ adjustment_key ];
+    h_v_adjust << 1, 0, 0, adjustment.tool_distance,
+                  0, 1, 0, adjustment.h_adjust,
+                  0, 0, 1, -adjustment.v_adjust,
                   0, 0, 0, 1;
 
-    if ( tool_angle != 0 )
-    {
-      Eigen::Matrix4f origin_trans;
-      get_matrix_from_rpy ( origin_trans, roll, pitch, yaw );
-      origin_trans(0, 3) = x;
-      origin_trans(1, 3) = y;
-      origin_trans(2, 3) = z;
-      // std::cout << origin_trans << std::endl;
-      Eigen::Matrix4f total_transform =  origin_trans * h_v_adjust * r_x_theta;
-      Eigen::Vector4f point_origin;
-      point_origin << 0.0, 0.0, 0.0, 1.0;
-      point_origin = total_transform * point_origin;
-      x = point_origin ( 0 );
-      y = point_origin ( 1 );
-      z = point_origin ( 2 );
-      get_rpy_from_matrix ( total_transform, roll, pitch, yaw );
-    }
+    Eigen::Matrix4f origin_trans;
+    get_matrix_from_rpy ( origin_trans, roll, pitch, yaw );
+    origin_trans ( 0, 3 ) = x;
+    origin_trans ( 1, 3 ) = y;
+    origin_trans ( 2, 3 ) = z;
+    Eigen::Matrix4f total_transform =  origin_trans * h_v_adjust * r_x_theta;
+    Eigen::Vector4f point_origin;
+    point_origin << 0.0, 0.0, 0.0, 1.0;
+    point_origin = total_transform * point_origin;
+    x = point_origin ( 0 );
+    y = point_origin ( 1 );
+    z = point_origin ( 2 );
+    get_rpy_from_matrix ( total_transform, roll, pitch, yaw );
 
     if ( current_id != id )
     {
-      show_frame ( "Target_" + std::to_string( id ), x, y, z, roll, pitch, yaw );
+      show_frame ( "rivet_" + std::to_string( id ), x, y, z, roll, pitch, yaw );
       current_id = id;
     }
 
@@ -304,42 +314,43 @@ void do_point_rivet ()
         move_group.move ();
         ros::Duration ( 0.5 ) .sleep ();
 
+        new_nut_.call ( msg );
+
         // start the screwing part
         while ( !target_queue.empty () )
         {
           // pump out a new nut
-          ros::Duration ( 0.5 ) .sleep ();
-          new_nut_.call ( msg );
-          ros::Duration ( 0.5 ) .sleep ();
+          // new_nut_.call ( msg );
+          // ros::Duration ( 0.3 ) .sleep ();
 
           // get the in pose
           Target target = target_queue.front ();
-          target_queue.pop();
+          target_queue.pop ();
           geometry_msgs::Pose target_pose2;
           set_target_pose ( target, target_pose2 );
 
           // start screwing the rivet and move into the rivet
           start_screwing_.call ( msg );
           move_trajectory ( target_pose1, target_pose2, move_group );
-          ros::Duration ( 5 ) .sleep ();
+          ros::Duration ( 4.5 ) .sleep ();
           stop_screwing_.call ( msg );
           target_pose1 = target_pose2;
 
           // move back the rivet_tool and stop pump the nut
-          target = target_queue.front();
+          target = target_queue.front ();
           target_queue.pop ();
           set_target_pose ( target, target_pose2 );
           move_trajectory ( target_pose1, target_pose2, move_group );
-          stop_new_nut_.call ( msg );
 
-          // try to pump out the broken part of the nut
-          for ( int pump_counter = 0; pump_counter < 2; pump_counter++ )
-          {
-            new_nut_.call ( msg );
-            ros::Duration ( 1.2 ) .sleep ();
-            stop_new_nut_.call ( msg );
-            ros::Duration ( 0.6 ) .sleep ();
-          }
+          // pump out the broken part of a nut
+          // stop_new_nut_.call ( msg );
+          // for ( int pump_counter = 0; pump_counter < 2; pump_counter++ )
+          // {
+          //   ros::Duration ( 0.2 ) .sleep ();
+          //   new_nut_.call ( msg );
+          //   ros::Duration ( 0.3 ) .sleep ();
+          //   stop_new_nut_.call ( msg );
+          // }
 
           // move to the next rivet if there exist the next rivet
           target_pose1 = target_pose2;
@@ -352,6 +363,7 @@ void do_point_rivet ()
             target_pose1 = target_pose2;
           }
         }
+        stop_new_nut_.call ( msg );
       }
     }
   }
