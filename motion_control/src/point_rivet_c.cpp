@@ -1,8 +1,8 @@
 #include <math.h>
 #include <cmath>
-#include <queue>
 #include <iostream>
 #include <string>
+#include <queue>
 #include <map>
 
 #include <ros/package.h>
@@ -43,12 +43,13 @@ Adjustment::Adjustment ( float h_adjust, float v_adjust, float tool_distance )
 
 Adjustment& Adjustment::operator= ( const Adjustment& adjustment_in )
 {
-   h_adjust = adjustment_in.h_adjust;
-   v_adjust = adjustment_in.v_adjust;
-   tool_distance = adjustment_in.tool_distance;
+  h_adjust = adjustment_in.h_adjust;
+  v_adjust = adjustment_in.v_adjust;
+  tool_distance = adjustment_in.tool_distance;
+  return *this;
 }
 
-double read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
+float read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
 {
   std::string tool_angle_file = ros::package::getPath ( "motion_control" ) + "/config/tool_angle.cfg";
   std::cout << "*** Read tool_angle_file is: [" << tool_angle_file << "]" << std::endl;
@@ -144,13 +145,12 @@ void targetFileReader ( std::queue< Target >& target_queue )
 {
   std::map < std::string, Adjustment > adjustment_map;
   float tool_angle = read_tool_angle ( adjustment_map );
-  Eigen::Matrix4f h_v_adjust, r_x_theta;
-  // get a rotation matrix
+  Eigen::Matrix4f r_x_theta;
   float theta_x = tool_angle / 180.0 * M_PI;
   get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );
 
   std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg";
-  std::cout << "***The path of the point_rivet configuration file is: [" << cfgFileName << "]" << std::endl;
+  std::cout << "*** Read point_rivet file: [" << cfgFileName << "]" << std::endl;
 
   int id, current_id = -1;
   double x, y, z, roll, pitch, yaw;
@@ -162,19 +162,19 @@ void targetFileReader ( std::queue< Target >& target_queue )
     iss >> id >> x >> y >> z >> roll >> pitch >> yaw;
 
     float pitch_degree = pitch / M_PI * 180.0;
-    std::cout << "$$$ pitch_degree = " << pitch_degree << std::endl;
-    float b = (int ) ( pitch_degree / 10 ) * 10 + 5;
+    float pitch_degree_b = ( int ) ( pitch_degree / 10 ) * 10 + 5;
     if ( pitch_degree < 0 )
     {
-        b -= 10;
+        pitch_degree_b -= 10;
     }
-    std::string adjustment_key = std::to_string ( tool_angle ) + "" + std::to_string ( b );
+    std::string adjustment_key = std::to_string ( tool_angle ) + "" + std::to_string ( pitch_degree_b );
+    std::cout << "*** pitch_degree = " << pitch_degree << "\n adjustment_key =" << adjustment_key << std::endl;
     if ( adjustment_map.find ( adjustment_key ) == adjustment_map.end () )
     {
       continue;
     }
-
     Adjustment adjustment = adjustment_map [ adjustment_key ];
+    Eigen::Matrix4f h_v_adjust;
     h_v_adjust << 1, 0, 0, adjustment.tool_distance,
                   0, 1, 0, adjustment.h_adjust,
                   0, 0, 1, -adjustment.v_adjust,
