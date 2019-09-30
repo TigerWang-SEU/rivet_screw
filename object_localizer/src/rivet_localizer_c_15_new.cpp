@@ -94,7 +94,7 @@ bool check_circle ( pcl::PointCloud < PointT >::Ptr cloud_in_ )
 		float x = temp_point.x;
 		float y = temp_point.y;
 		float z = temp_point.z;
-    double degree = atan2 ( y, z ) * 180 / PI;
+    double degree = atan2 ( y, z ) * 180 / M_PI;
     degree_set.insert ( floor ( degree / 12.0 ) );
 	}
   std::cout << "\t### degree_set.size () = " << degree_set.size () << std::endl;
@@ -769,7 +769,7 @@ public:
       std::cout << "\t r_x_90" << std::endl;
       // rotate around x for 90 degrees
       Eigen::Matrix4f r_x_90;
-      float theta_90 = 90.0 / 180.0 * PI;
+      float theta_90 = 90.0 / 180.0 * M_PI;
       r_x_90 << 1,             0,              0, 0,
                 0, cos(theta_90), -sin(theta_90), 0,
                 0, sin(theta_90),  cos(theta_90), 0,
@@ -1078,7 +1078,7 @@ private:
   ros::Publisher cloud_pub_;
 
   bool rotate_45 = false;
-  float theta_x_45 = 45.0 / 180.0 * PI;
+  float theta_x_45 = 45.0 / 180.0 * M_PI;
   Eigen::Matrix4f r_x_45, r_x_45_inv;
 };
 
