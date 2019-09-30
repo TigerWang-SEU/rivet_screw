@@ -79,13 +79,13 @@ def stand_by():
 def start_lift_table ( req ):
     with grpc.insecure_channel("localhost:50051") as channel:
         client = festo_pb2_grpc.valveControllerStub ( channel )
-        client.openValve ( festo_pb2.ValveRequest ( valveNo = 3 ) )
+        client.openValve ( festo_pb2.ValveRequest ( valveNo = 2 ) )
     return {}
 
 def stop_lift_table ( req ):
     with grpc.insecure_channel("localhost:50051") as channel:
         client = festo_pb2_grpc.valveControllerStub ( channel )
-        client.closeValve ( festo_pb2.ValveRequest ( valveNo = 3 ) )
+        client.closeValve ( festo_pb2.ValveRequest ( valveNo = 2 ) )
     return {}
 
 # define the service recall functions for pump new rivet
