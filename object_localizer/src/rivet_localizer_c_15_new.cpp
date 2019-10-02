@@ -880,7 +880,7 @@ public:
     std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
 
     // step 7, filter out points belongs to rivets
-    r = 255, g = 0, b = 140;
+    r = 0, g = 0, b = 255;
     rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
     PointCloudT::Ptr cloud_rivet ( new PointCloudT );
     for ( PointT temp_point: cloud_in_transformed->points )
@@ -889,7 +889,7 @@ public:
       float x_compare = std::abs ( x - rivet_height );
       float y = temp_point.y;
       float z = temp_point.z;
-      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0015 )
+      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0045 )
       {
         PointT new_point;
         new_point.x = x;
