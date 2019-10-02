@@ -77,7 +77,7 @@ void targetFileReader ( pcl::PointCloud< pcl::PointXYZ >::Ptr& target_cloud, std
 			new_point.y = y;
 			new_point.z = z;
 			target_cloud->points.push_back ( new_point );
-      current_id == id;
+      current_id = id;
     }
   }
   input.close();
@@ -111,6 +111,9 @@ void target_post_process ()
   }
   std::map < int, std::list < int > > target_components = target_cloud_uf.get_components();
 
+  ofstream point_rivet_fs;
+  point_rivet_fs.open ( ros::package::getPath ( "object_localizer" ) + "/config/point_rivet_2.cfg" );
+  int rivet_counter = 0;
   for ( auto const& x : target_components )
   {
     int component_id = x.first;
@@ -121,8 +124,22 @@ void target_post_process ()
       std::cout << target_idx << " ";
     }
 
+    if ( component_element_list.size() > 6 )
+    {
+      for ( auto const& target_idx : component_element_list )
+      {
+        Target target_1 = target_vector [ target_idx * 3 ];
+        Target target_2 = target_vector [ target_idx * 3 + 1 ];
+        Target target_3 = target_vector [ target_idx * 3 + 2 ];
+        point_rivet_fs << rivet_counter << " " << target_1.x << " " << target_1.y << " " << target_1.z << " " << target_1.roll << " " << target_1.pitch << " " << target_1.yaw << std::endl;
+        point_rivet_fs << rivet_counter << " " << target_2.x << " " << target_2.y << " " << target_2.z << " " << target_2.roll << " " << target_2.pitch << " " << target_2.yaw << std::endl;
+        point_rivet_fs << rivet_counter << " " << target_3.x << " " << target_3.y << " " << target_3.z << " " << target_3.roll << " " << target_3.pitch << " " << target_3.yaw << std::endl;
+        rivet_counter ++;
+      }
+    }
     std::cout << std::endl;
   }
+  point_rivet_fs.close();
 
 }
 

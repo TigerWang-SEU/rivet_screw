@@ -1,5 +1,7 @@
 #include <set>
 #include <map>
+#ifndef UNION_FIND_H
+#define UNION_FIND_H
 
 // define the union-find data structure
 class UF
@@ -95,3 +97,5 @@ public:
     return component_map;
   }
 };
+
+#endif
