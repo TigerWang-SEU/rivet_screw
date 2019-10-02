@@ -28,7 +28,7 @@
   </node>
 
   <!-- start the node "rivet_localizer_c_15" which provides the service "start_rivet_localizer" -->
-  <node name="rivet_localizer_c_15" pkg="object_localizer" type="rivet_localizer_c_15" respawn="true" output="screen">
+  <node name="rivet_localizer_c_15_new" pkg="object_localizer" type="rivet_localizer_c_15_new" respawn="true" output="screen">
   </node>
 
   <!-- start the node "point_rivet_c" which provides the service "start_point_rivet" -->
