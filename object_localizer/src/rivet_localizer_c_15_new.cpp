@@ -14,6 +14,7 @@
 #include <set>
 #include <map>
 #include "head/union_find.h"
+#include "head/post_process.h"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -292,10 +293,6 @@ void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double
   object_m.getRPY ( roll, pitch, yaw );
 }
 
-//#############################################################################
-// function for calculating rotation around the x axis
-float tableheight = 0.855;
-
 int get_id ()
 {
   static int count = -1;
@@ -386,6 +383,9 @@ void show_transformation ( Eigen::Matrix4f transform )
   show_arrow ( get_id (), x, y, z, x_d, y_d, z_d, 0.0, 0.0, 1.0 );
 }
 
+//#############################################################################
+// function for calculating rotation around the x axis
+float tableheight = 0.855;
 float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
 {
   // step 1, get min_x and max_x
@@ -565,7 +565,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
               0,  0,  1, 0,
               0,  0,  0, 1;
   Eigen::Matrix4f transform_total = transform_2;
-  std::cout << "\t transform_total = \n" << transform_total << std::endl;
+  std::cout << "transform_total = \n" << transform_total << std::endl;
   if ( transform_total ( 0, 1 ) < 0 )
   {
     transform_total = r_z_180 * transform_total;
@@ -604,7 +604,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
     float x_compare = std::abs ( x - rivet_height_2 );
     float y = temp_point.y;
     float z = temp_point.z;
-    if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.001 )
+    if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0008 )
     {
       PointT new_point;
       new_point.x = x;
@@ -643,7 +643,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
     return;
   }
   std::cout << "circle coefficients: [" << center.transpose() << "], radius = " << radius << std::endl;
-  std::cout << "%%% inliers.size = " << inliers.size() << "; cloud_rivet_xy.size = " << cloud_rivet_xy->points.size() << std::endl;
+  std::cout << "inliers.size = " << inliers.size() << "; cloud_rivet_xy.size = " << cloud_rivet_xy->points.size() << std::endl;
 
   r = 255, g = 0, b = 0;
   rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
@@ -945,7 +945,6 @@ public:
       point_rivet_fs << rivet_counter << " " << rivet_point_in_final ( 0 ) << " " << rivet_point_in_final ( 1 ) << " " << rivet_point_in_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
       point_rivet_fs << rivet_counter << " " << rivet_point_new_final ( 0 ) << " " << rivet_point_new_final ( 1 ) << " " << rivet_point_new_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
 
-      std::cout << std::endl << std::endl;
       rivet_counter ++;
     }
     point_rivet_fs.close();
@@ -954,18 +953,22 @@ public:
     {
       pcl::transformPointCloud ( *scene_cloud_total, *scene_cloud_total, r_x_45_inv );
     }
+
+    // post-processing to filter out some rivet point with distance
+    target_post_process ();
+
     // step 10, show the point cloud
     if ( show_viz )
     {
       Visualize ( scene_cloud_total );
     }
-	}
+  }
 
-	// show the point cloud in rviz
+  // show the point cloud in rviz
   void Visualize ( PointCloudT::Ptr scene_cloud_total )
   {
     std::cout << "scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
-    if ( scene_cloud_total->width * scene_cloud_total->height > 0 )
+    if ( scene_cloud_total->size() > 0 )
     {
       int counter = 0;
       while ( counter < 3 )
@@ -976,7 +979,7 @@ public:
         ros::Duration ( 0.01 ) .sleep ();
         counter ++;
       }
-      std::cout << "***On Topic [/rivet_localizer/points], published [" << scene_cloud_total->width * scene_cloud_total->height << "] data points***" << std::endl;
+      std::cout << "***On Topic [/rivet_localizer/points], published [" << scene_cloud_total->size() << "] data points***" << std::endl;
     }
   }
 
