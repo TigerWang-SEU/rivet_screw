@@ -13,6 +13,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include "head/union_find.h"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -154,100 +155,6 @@ void find_near_point ( PointCloudT::Ptr cloud_in_, PointCloudT::Ptr cloud_out_, 
 	}
 }
 
-// define the union-find data structure
-class UF
-{
-	int size, cnt, *id, *sz;
-public:
-	// Create an empty union find data structure with N isolated sets.
-	UF ( int N )
-	{
-		size = N;
-		cnt = N;
-		id = new int[N];
-		sz = new int[N];
-		for ( int i = 0; i < N; i++ )
-		{
-			id[i] = i;
-	    sz[i] = 1;
-		}
-	}
-
-	~UF ()
-	{
-		delete [] id;
-		delete [] sz;
-	}
-
-	// Return the id of component corresponding to object p.
-	int find ( int p )
-	{
-		int root = p;
-		while ( root != id [ root ] )
-			root = id[root];
-		while ( p != root )
-		{
-			int newp = id [ p ];
-      id [ p ] = root;
-      p = newp;
-    }
-		return root;
-	}
-
-	// Replace sets containing x and y with their union.
-  void merge ( int x, int y )
-	{
-		int i = find ( x );
-		int j = find ( y );
-		if ( i == j ) return;
-
-		// make smaller root point to larger one
-		if ( sz [ i ] < sz [ j ] )
-		{
-			id [ i ] = j;
-			sz [ j ] += sz [ i ];
-		} else
-		{
-			id [ j ] = i;
-			sz [ i ] += sz [ j ];
-		}
-    cnt--;
-  }
-
-	// Are objects x and y in the same set?
-	bool connected ( int x, int y )
-	{
-		return find ( x ) == find ( y );
-  }
-
-	// Return the number of disjoint sets.
-	int count()
-	{
-		return cnt;
-  }
-
-	// return the list of connected components
-	std::map < int, std::list < int > > get_components ()
-	{
-		std::map < int, std::list < int > > component_map;
-		for ( int i = 0; i < size; i++ )
-		{
-			int component_id = find ( i );
-			if ( component_map.find ( component_id ) != component_map.end() )
-			{
-				component_map[ component_id ].push_back( i );
-			}
-			else
-			{
-				std::list < int > component = {i};
-				component_map.insert ( std::pair< int, std::list < int > > ( component_id, component ) );
-			}
-		}
-		return component_map;
-	}
-
-};
-
 // downsampling an input point cloud
 void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
@@ -268,9 +175,8 @@ void filterOutliner ( PointCloudT::Ptr cloud )
   sor.filter ( *cloud );
 }
 
-void calculate_transform ( PointCloudT::Ptr cloud_in,  Eigen::Matrix4f& projectionTransform )
+void calculate_transform ( PointCloudT::Ptr cloud_in,  Eigen::Matrix4f& transform )
 {
-  // Compute principal directions
   Eigen::Vector4f pcaCentroid;
   pcl::compute3DCentroid ( *cloud_in, pcaCentroid );
   Eigen::Matrix3f covariance;
@@ -279,17 +185,17 @@ void calculate_transform ( PointCloudT::Ptr cloud_in,  Eigen::Matrix4f& projecti
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
   Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
   Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
+  // make sure the vectors are perpendicular to each other
   eigenVectorsPCA.col ( 2 ) = eigenVectorsPCA.col ( 0 ).cross ( eigenVectorsPCA.col ( 1 ) );
-
-
-  std::cout << "eigen value = [" << eigenvaluesPCA.transpose() << "]" << std::endl;
-  std::cout << "eigen vector 0: [" << eigenVectorsPCA(0, 0) << ", " << eigenVectorsPCA(1, 0) << ", " << eigenVectorsPCA(2, 0) << "]" << std::endl;
-  std::cout << "eigen vector 1: [" << eigenVectorsPCA(0, 1) << ", " << eigenVectorsPCA(1, 1) << ", " << eigenVectorsPCA(2, 1) << "]" << std::endl;
-  std::cout << "eigen vector 2: [" << eigenVectorsPCA(0, 2) << ", " << eigenVectorsPCA(1, 2) << ", " << eigenVectorsPCA(2, 2) << "]" << std::endl;
+  eigenVectorsPCA.col ( 1 ) = eigenVectorsPCA.col ( 0 ).cross ( eigenVectorsPCA.col ( 2 ) );
+  std::cout << "eigen value : " << eigenvaluesPCA.transpose() << std::endl;
+  std::cout << "eigen vector 0: " << eigenVectorsPCA.col ( 0 ).transpose() << std::endl;
+  std::cout << "eigen vector 1: " << eigenVectorsPCA.col ( 1 ).transpose() << std::endl;
+  std::cout << "eigen vector 2: " << eigenVectorsPCA.col ( 2 ).transpose() << std::endl;
 
   // Transform the original cloud to the origin where the principal components correspond to the axes.
-  projectionTransform.block< 3, 3 >( 0, 0 ) = eigenVectorsPCA.transpose();
-  projectionTransform.block< 3, 1 >( 0, 3 ) = -1.0f * ( projectionTransform.block< 3, 3 >( 0, 0 ) * pcaCentroid.head< 3 >() );
+  transform.block< 3, 3 >( 0, 0 ) = eigenVectorsPCA.transpose();
+  transform.block< 3, 1 >( 0, 3 ) = -1.0f * ( transform.block< 3, 3 >( 0, 0 ) * pcaCentroid.head< 3 >() );
 }
 
 void scale_and_color_point_cloud ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr cloud_out, float scale_factor = 1.0 )
