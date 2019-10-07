@@ -56,7 +56,7 @@ int filter_mean_k = 40;
 float filter_stddev = 1.0;
 float scale_factor = 1.0;
 float rivet_height = 0.008; // unit meter
-float rivet_height_2 = 0.0085; // unit meter
+float rivet_height_2 = 0.0083; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
 float out_distance = 0.012;
@@ -571,7 +571,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
     transform_total = r_z_180 * transform_total;
     std::cout << "transform_total after [r_z_180] = \n" << transform_total << std::endl;
   }
-  if ( transform_total (1, 0) < 0 )
+  if ( transform_total ( 1, 0 ) > 0 )
   {
     transform_total = r_x_180 * transform_total;
     std::cout << "transform_total after [r_x_180] = \n" << transform_total << std::endl;
@@ -582,6 +582,22 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   getInverseMatrix ( transform_total, transform_total_inverse );
   get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
   std::cout << "\tRoll, Pitch, Yaw = [" << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
+
+  if ( roll != M_PI )
+  {
+    // Eigen::Matrix4f r_x_delta;
+    // float theta_delta = - ( M_PI - roll );
+    // std::cout << "theta_delta = " <<  theta_delta << std::endl;
+    // r_x_delta << 1,                0,                 0, 0,
+    //              0, cos(theta_delta), -sin(theta_delta), 0,
+    //              0, sin(theta_delta),  cos(theta_delta), 0,
+    //              0,                0,                 0, 1;
+    // transform_total = r_x_delta * transform_total;
+    // getInverseMatrix ( transform_total, transform_total_inverse );
+    // get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
+    // std::cout << "\t new Roll, Pitch, Yaw = [" << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
+    roll = M_PI;
+  }
 
   // step 7, transform the rivet_support_plane and cloud_in
   PointCloudT::Ptr rivet_support_plane_cloud_transformed ( new PointCloudT );
