@@ -149,7 +149,7 @@ void targetFileReader ( std::queue< Target >& target_queue )
   float theta_x = tool_angle / 180.0 * M_PI;
   get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );
 
-  std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet.cfg";
+  std::string cfgFileName = ros::package::getPath ( "object_localizer" ) + "/config/point_rivet_2.cfg";
   std::cout << "*** Read point_rivet file: [" << cfgFileName << "]" << std::endl;
 
   int id, current_id = -1;
@@ -169,6 +169,7 @@ void targetFileReader ( std::queue< Target >& target_queue )
     }
     std::string adjustment_key = std::to_string ( tool_angle ) + "" + std::to_string ( pitch_degree_b );
     std::cout << "*** pitch_degree = " << pitch_degree << "\n adjustment_key =" << adjustment_key << std::endl;
+    std::cout << "*** tool_angle = " << tool_angle << " pitch_degree_b = " << pitch_degree_b << std::endl;
     if ( adjustment_map.find ( adjustment_key ) == adjustment_map.end () )
     {
       continue;
