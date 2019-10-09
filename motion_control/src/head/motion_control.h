@@ -1,0 +1,26 @@
+#include <cmath>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <string>
+
+#include <ros/package.h>
+#include <std_srvs/Empty.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf/transform_listener.h>
+
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit_msgs/DisplayRobotState.h>
+#include <moveit_msgs/DisplayTrajectory.h>
+#include <moveit_msgs/AttachedCollisionObject.h>
+#include <moveit_msgs/CollisionObject.h>
+#include <moveit_visual_tools/moveit_visual_tools.h>
+#include <moveit/trajectory_processing/iterative_time_parameterization.h>
+
+#ifndef MOTION_CONTROL_H
+#define MOTION_CONTROL_H
+
+
+
+#endif
