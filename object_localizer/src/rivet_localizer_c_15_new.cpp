@@ -56,7 +56,7 @@ int filter_mean_k = 40;
 float filter_stddev = 1.0;
 float scale_factor = 1.0;
 float rivet_height = 0.008; // unit meter
-float rivet_height_2 = 0.0083; // unit meter
+float rivet_height_2 = 0.0084; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
 float out_distance = 0.012;
@@ -585,17 +585,6 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 
   if ( roll != M_PI )
   {
-    // Eigen::Matrix4f r_x_delta;
-    // float theta_delta = - ( M_PI - roll );
-    // std::cout << "theta_delta = " <<  theta_delta << std::endl;
-    // r_x_delta << 1,                0,                 0, 0,
-    //              0, cos(theta_delta), -sin(theta_delta), 0,
-    //              0, sin(theta_delta),  cos(theta_delta), 0,
-    //              0,                0,                 0, 1;
-    // transform_total = r_x_delta * transform_total;
-    // getInverseMatrix ( transform_total, transform_total_inverse );
-    // get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
-    // std::cout << "\t new Roll, Pitch, Yaw = [" << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
     roll = M_PI;
   }
 
@@ -611,7 +600,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   getMinMax3D ( *rivet_support_plane_cloud_transformed, minPoint, maxPoint );
   std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
   std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
-  r = 255, g = 0, b = 0;
+  r = 255, g = 0, b = 255;
   rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
   PointCloudT::Ptr cloud_rivet ( new PointCloudT );
   for ( PointT temp_point: cloud_in_transformed->points )
@@ -628,59 +617,32 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
       new_point.z = z;
       new_point.rgb = *reinterpret_cast<float*> ( &rgb );
       cloud_rivet->points.push_back ( new_point );
+      rivet_cloud->points.push_back ( new_point );
     }
   }
 
-  // step 8.1, map points in cloud_rivet on the y, z plane
-  PointCloudT::Ptr cloud_rivet_xy ( new PointCloudT );
+  if ( cloud_rivet->size () == 0 )
+  {
+    PCL_ERROR ( "no rivet point cloud" );
+    rivet_point_new_final ( 0 ) = NAN;
+    return;
+  }
+
+  // step 9, calculate the new central point
+  double x_sum = 0;
+  double y_sum = 0;
+  double z_sum = 0;
   for ( PointT temp_point: cloud_rivet->points )
   {
-    float x = temp_point.x;
-    float y = temp_point.y;
-    float z = temp_point.z;
-    PointT new_point;
-    new_point.x = y;
-    new_point.y = z;
-    new_point.z = 0.0;
-    cloud_rivet_xy->points.push_back ( new_point );
+    x_sum += temp_point.x;
+    y_sum += temp_point.y;
+    z_sum += temp_point.z;
   }
-
-  // step 9, calculate the new central point by fitting a circle to the point cloud
-  double min_circle_radius = 0.00145, max_circle_radius = 0.00155;
-  ransac_thresh = 0.0003;
-  Eigen::Vector3f center;
-  float radius;
-  inliers.clear ();
-  get_circle ( cloud_rivet_xy, min_circle_radius, max_circle_radius, ransac_thresh, center, radius, inliers );
-  if ( inliers.size () == 0 )
-  {
-    PCL_ERROR ( "Could not find a circle model from the given point cloud." );
-    rivet_point_new_final ( 0 ) = NAN;
-    return;
-  }
-  std::cout << "circle coefficients: [" << center.transpose() << "], radius = " << radius << std::endl;
-  std::cout << "inliers.size = " << inliers.size() << "; cloud_rivet_xy.size = " << cloud_rivet_xy->points.size() << std::endl;
-
-  r = 255, g = 0, b = 0;
-  rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
-  for ( int const& idx: inliers )
-  {
-    PointT new_point;
-    new_point.x = cloud_rivet->points [ idx ].x;
-    new_point.y = cloud_rivet->points [ idx ].y;
-    new_point.z = cloud_rivet->points [ idx ].z;
-    new_point.rgb = *reinterpret_cast < float* > ( &rgb );
-    rivet_cloud->points.push_back ( new_point );
-  }
-
-  // step 9.1, check the shape of the fitted circle
-  if ( check_circle ( rivet_cloud ) == false )
-  {
-    rivet_point_new_final ( 0 ) = NAN;
-    return;
-  }
+  double x_avg = x_sum / cloud_rivet->size ();
+  double y_avg = y_sum / cloud_rivet->size ();
+  double z_avg = z_sum / cloud_rivet->size ();
   Eigen::Vector4f rivet_center_point;
-  rivet_center_point << rivet_height_2 + out_distance, center [0], center [1], 1.0;
+  rivet_center_point << x_avg + out_distance, y_avg, z_avg, 1.0;
 
   // step 10, save the point cloud of the rivet for visualization
   pcl::transformPointCloud ( *rivet_cloud, *rivet_cloud, transform_total_inverse );
@@ -808,10 +770,9 @@ public:
     for ( PointT temp_point: cloud_in_transformed->points )
     {
       float x = temp_point.x;
-      float x_compare = std::abs ( x - rivet_height );
       float y = temp_point.y;
       float z = temp_point.z;
-      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0045 )
+      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x >= ( rivet_height - 0.004 ) && x <= ( rivet_height + 0.0025 ) )
       {
         PointT new_point;
         new_point.x = x;
@@ -911,7 +872,7 @@ public:
     PointCloudT::Ptr scene_cloud_total ( new PointCloudT );
 
     *scene_cloud_total += *cloud_in;
-    *scene_cloud_total += *plane_cloud_vis;
+    // *scene_cloud_total += *plane_cloud_vis;
     *scene_cloud_total += *cloud_rivet_vis;
 
     for ( Eigen::Vector4f rivet_point : rivet_vector )
