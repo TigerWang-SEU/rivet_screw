@@ -212,6 +212,7 @@ template < typename T > int sgn ( T val )
     return ( T ( 0 ) < val ) - ( val < T ( 0 ) );
 }
 
+float tableheight = 0.855;
 float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& central_point )
 {
   // Compute principal directions
@@ -230,29 +231,68 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& c
 	eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
 	eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
 	eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
-  std::cout << "****** eigen value 1 = [" << eigenvaluesPCA (0) << "] ******\n\t eigen vector 0: [" << eigenVectorsPCA (0, 0) << ", " << eigenVectorsPCA (1, 0) << ", " << eigenVectorsPCA (2, 0) << "] \n\t max_idx = " << max_idx_1_r << std::endl;
-  std::cout << "****** eigen value 2 = [" << eigenvaluesPCA (1) << "] ******\n\t eigen vector 1: [" << eigenVectorsPCA ( 0, 1 ) << ", " << eigenVectorsPCA ( 1, 1 ) << ", " << eigenVectorsPCA ( 2, 1 ) << "] \n\t max_idx = " << max_idx_2_r << std::endl;
-  std::cout << "****** eigen value 3 = [" << eigenvaluesPCA (2) << "] ******\n\t eigen vector 2: [" << eigenVectorsPCA ( 0, 2 ) << ", " << eigenVectorsPCA ( 1, 2 ) << ", " << eigenVectorsPCA ( 2, 2 ) << "] \n\t max_idx = " << max_idx_3_r << std::endl;
+  std::cout << "*** eigen value 1 = [" << eigenvaluesPCA (0) << "] ***\n\t eigen vector 1: [" << eigenVectorsPCA.block ( 0, 0, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_1_r << std::endl;
+  std::cout << "*** eigen value 2 = [" << eigenvaluesPCA (1) << "] ***\n\t eigen vector 2: [" << eigenVectorsPCA.block ( 0, 1, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_2_r << std::endl;
+  std::cout << "*** eigen value 3 = [" << eigenvaluesPCA (2) << "] ***\n\t eigen vector 3: [" << eigenVectorsPCA.block ( 0, 2, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_3_r << std::endl;
 
-	float y_tmp, z_tmp;
-	if ( max_idx_3_r != 0 )
-	{
-		y_tmp = eigenVectorsPCA ( 1, 2 );
-	  z_tmp = eigenVectorsPCA ( 2, 2 );
-	}
-	else
-	{
-		y_tmp = eigenVectorsPCA ( 1, 1 );
-	  z_tmp = eigenVectorsPCA ( 2, 1 );
-	}
-  if ( y_tmp < 0.0 )
+  float x_tmp, y_tmp, z_tmp;
+  if ( max_idx_3_r != 0 )
   {
-    y_tmp = - y_tmp;
-    z_tmp = - z_tmp;
+    x_tmp = eigenVectorsPCA ( 0, 2 );
+    y_tmp = eigenVectorsPCA ( 1, 2 );
+    z_tmp = eigenVectorsPCA ( 2, 2 );
   }
-  std::cout << "\t[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]\n";
-	float theta = atan2 ( z_tmp, y_tmp ) * 180.0 / M_PI + 90.0;
-	return theta;
+  else
+  {
+    x_tmp = eigenVectorsPCA ( 0, 1 );
+    y_tmp = eigenVectorsPCA ( 1, 1 );
+    z_tmp = eigenVectorsPCA ( 2, 1 );
+  }
+  // scale_vector ( x_tmp, y_tmp, z_tmp, 0.2 );
+  float y_new, z_new;
+  y_new = - z_tmp;
+  z_new = y_tmp;
+
+  // show_arrow ( get_id (), pcaCentroid ( 0 ),  pcaCentroid ( 1 ), pcaCentroid ( 2 ), x_tmp, y_new, z_new );
+  std::cout << "[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]" << std::endl;
+
+  float theta = 0.0;
+  float z_avg = central_point ( 2 );
+  float y_avg = central_point ( 1 );
+  if ( z_avg > tableheight )
+  {
+    theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
+    if ( theta < 0 )
+    {
+      theta = theta + 180;
+    }
+  }
+  else
+  {
+    if ( y_avg > 0 )
+    {
+      if ( y_new < 0 )
+      {
+        y_new = -y_new;
+        z_new = -z_new;
+      }
+      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
+    }
+    else
+    {
+      if ( y_new > 0 )
+      {
+        y_new = -y_new;
+        z_new = -z_new;
+      }
+      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
+      if ( theta < 0 )
+      {
+        theta = theta + 360;
+      }
+    }
+  }
+  return theta;
 }
 
 float get_central_point ( PointCloudT::Ptr segment_cloud, Eigen::Vector3f& central_point )
@@ -437,20 +477,6 @@ public:
         // float theta = get_central_point ( segment_cloud, central_point );
         float u_10_base_y = -0.212;
         float theta = calculate_theta ( segment_cloud, central_point );
-        if ( central_point ( 1 ) - u_10_base_y  < -0.2 )
-        {
-          if ( theta < 90.0 )
-          {
-            theta = theta + 180.0;
-          }
-        }
-        if ( central_point ( 1 ) - u_10_base_y  > 0.3 )
-        {
-          if ( theta > 90.0 )
-          {
-            theta = theta - 180.0;
-          }
-        }
         std::cout << std::endl << "[***] Rotation around x is [" << theta << "] degrees" << std::endl;
         float x_0 = central_point ( 0 );
         float y_0 = central_point ( 1 );
