@@ -78,6 +78,7 @@ public:
 
   void publish_box_t_b_list()
   {
+    static int list_size = 0;
     object_localizer_msg::BBox_list::Ptr bbox_list_msg ( new object_localizer_msg::BBox_list() );
     bbox_list_msg->header.frame_id = reference_frame;
     bbox_list_msg->header.stamp = ros::Time::now();
@@ -102,7 +103,11 @@ public:
       pcl_conversions::fromPCL ( segment_cloud_pc2, segment_cloud_sm );
       bbox_list_msg->Segment_list.push_back ( segment_cloud_sm );
     }
-    bbox_pub_.publish( bbox_list_msg );
+    if ( box_t_b_list.size() != list_size )
+    {
+      list_size = box_t_b_list.size();
+      bbox_pub_.publish( bbox_list_msg );
+    }
   }
 
   void print_box_t_b_list()
@@ -135,11 +140,11 @@ public:
           return;
         } else if ( bg::within ( box_n, box_o ) )
         {
-          box_t_b_list.erase ( box_t_b_list.begin() + idx_counter );
-          box_t_b_list.push_back ( box_n );
-          segment_list.erase ( segment_list.begin() + idx_counter );
-          segment_list.push_back ( box_cloud );
-          std::cout << "case 2, size " << box_t_b_list.size () << std::endl;
+          // box_t_b_list.erase ( box_t_b_list.begin() + idx_counter );
+          // box_t_b_list.push_back ( box_n );
+          // segment_list.erase ( segment_list.begin() + idx_counter );
+          // segment_list.push_back ( box_cloud );
+          // std::cout << "case 2, size " << box_t_b_list.size () << std::endl;
           return;
         }
         idx_counter++;
@@ -159,28 +164,28 @@ public:
           std::cout << "case 3, intersection_a" << intersection_a << " ratio 1 = " << intersection_a / box_n_a << " ratio 2 = " << intersection_a / box_o_a << std::endl;
           if ( (intersection_a / box_n_a) > 0.6 || (intersection_a / box_o_a) > 0.6 )
           {
-            box_t_b_list.erase ( box_t_b_list.begin() + idx_counter );
-            box_t_b_list.push_back ( box_intersection );
-            double min_x = box_intersection.min_corner().get<0>();
-            double min_y = box_intersection.min_corner().get<1>();
-            double max_x = box_intersection.max_corner().get<0>();
-            double max_y = box_intersection.max_corner().get<1>();
-            pcl::PointCloud<PointT>::Ptr box_cloud_intersection ( new PointCloudT );
-            int point_counter = 0;
-            for ( size_t i = 0; i < box_cloud->points.size (); ++i )
-            {
-              PointT temp_point = box_cloud->points[i];
-              if ( temp_point.x > min_x && temp_point.x < max_x &&  temp_point.y > min_y && temp_point.y < max_y )
-              {
-                box_cloud_intersection->points.push_back ( temp_point );
-                point_counter ++;
-              }
-            }
-            box_cloud_intersection->width = point_counter;
-            box_cloud_intersection->height = 1;
-            box_cloud_intersection->header.frame_id = reference_frame;
-            segment_list.erase ( segment_list.begin() + idx_counter );
-            segment_list.push_back ( box_cloud_intersection );
+            // box_t_b_list.erase ( box_t_b_list.begin() + idx_counter );
+            // box_t_b_list.push_back ( box_intersection );
+            // double min_x = box_intersection.min_corner().get<0>();
+            // double min_y = box_intersection.min_corner().get<1>();
+            // double max_x = box_intersection.max_corner().get<0>();
+            // double max_y = box_intersection.max_corner().get<1>();
+            // pcl::PointCloud<PointT>::Ptr box_cloud_intersection ( new PointCloudT );
+            // int point_counter = 0;
+            // for ( size_t i = 0; i < box_cloud->points.size (); ++i )
+            // {
+            //   PointT temp_point = box_cloud->points[i];
+            //   if ( temp_point.x > min_x && temp_point.x < max_x &&  temp_point.y > min_y && temp_point.y < max_y )
+            //   {
+            //     box_cloud_intersection->points.push_back ( temp_point );
+            //     point_counter ++;
+            //   }
+            // }
+            // box_cloud_intersection->width = point_counter;
+            // box_cloud_intersection->height = 1;
+            // box_cloud_intersection->header.frame_id = reference_frame;
+            // segment_list.erase ( segment_list.begin() + idx_counter );
+            // segment_list.push_back ( box_cloud_intersection );
             return;
           }
         }
