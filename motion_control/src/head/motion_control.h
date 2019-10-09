@@ -25,6 +25,9 @@ class MotionControl
 {
   std::string PLANNING_GROUP;
   boost::shared_ptr< moveit::planning_interface::MoveGroupInterface > move_group;
+  std::string reference_frame = "world";
+  std::string END_EFFECTOR_FRAME;
+  tf::TransformListener listener;
 
 public:
 
@@ -34,7 +37,8 @@ public:
     move_group.reset ( new moveit::planning_interface::MoveGroupInterface ( PLANNING_GROUP ) );
 
     ROS_INFO_NAMED ( "motion_control", "Reference frame: %s", move_group->getPlanningFrame().c_str() );
-    ROS_INFO_NAMED ( "motion_control", "End effector link: %s", move_group->getEndEffectorLink().c_str() );
+    END_EFFECTOR_FRAME = move_group->getEndEffectorLink();
+    ROS_INFO_NAMED ( "motion_control", "End effector link: %s", END_EFFECTOR_FRAME.c_str() );
   }
 
   bool move2target ( geometry_msgs::Pose& target_pose, double scale_factor = 0.3 )
@@ -114,6 +118,20 @@ public:
     moveit::core::RobotStatePtr current_state = move_group->getCurrentState ();
     const robot_state::JointModelGroup* joint_model_group = move_group->getCurrentState()->getJointModelGroup ( PLANNING_GROUP );
     current_state->copyJointGroupPositions ( joint_model_group, joint_group_positions );
+  }
+
+  void get_current_end_effector_pose ( geometry_msgs::Pose& target_pose )
+  {
+    tf::StampedTransform transform;
+    listener.lookupTransform ( reference_frame, END_EFFECTOR_FRAME, ros::Time ( 0 ), transform );
+    tf::Vector3 point = transform.getOrigin ();
+    target_pose.position.x = point.getX ();
+    target_pose.position.y = point.getY ();
+    target_pose.position.z = point.getZ ();
+    target_pose.orientation.x = transform.getRotation ().getAxis ().getX ();
+    target_pose.orientation.y = transform.getRotation ().getAxis ().getY ();
+    target_pose.orientation.z = transform.getRotation ().getAxis ().getZ ();
+    target_pose.orientation.w = transform.getRotation ().getW ();
   }
 
 };

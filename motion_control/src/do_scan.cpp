@@ -50,19 +50,13 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
 
   ROS_INFO_STREAM ( "Start for scanning" );
   geometry_msgs::Pose scan_start_pose;
-  scan_start_pose.position.x = -0.117;
-  scan_start_pose.position.y = -0.545;
-  scan_start_pose.position.z = 1.360;
-  float rollt = 3.066;
-  float pitcht = 0;
-  float yawt = 0;
-  scan_start_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
-
-  // move to the start point
+  motion_control.get_current_end_effector_pose ( scan_start_pose );
   bool success = motion_control.move2target ( scan_start_pose, 0.1 );
+
   if ( success )
   {
     geometry_msgs::Pose target_pose1;
+    float rollt, pitcht, yawt;
     target_pose1.position.x = start_point [ 0 ];
     target_pose1.position.y = start_point [ 1 ];
     target_pose1.position.z = start_point [ 2 ];
