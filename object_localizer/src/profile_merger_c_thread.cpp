@@ -151,68 +151,52 @@ public:
 		std::cout << "Transform thread [" << thread_id << "] is stopped" << std::endl;
   }
 
-	void merger_cb ()
-	{
-		std::cout << "Merger thread is started" << std::endl;
-		while ( !is_stop )
-		{
+  void merger_cb ()
+  {
+    std::cout << "Merger thread is started" << std::endl;
+    while ( !is_stop )
+    {
       if ( !is_publish_ )
       {
         ros::Duration ( 0.01 * num_threads ).sleep ();
         continue;
       }
 
-			if ( scene_pc_queue.length () <= 8 )
-			{
-				ros::Duration ( 0.01 * num_threads ).sleep ();
-				continue;
-			}
+      int buffer_counter = 0, buffer_length = 18;
+      if ( scene_pc_queue.length () <= buffer_length )
+      {
+        ros::Duration ( 0.01 * num_threads ).sleep ();
+        continue;
+      }
 
-			// get the front profile
-			PointCloudT::Ptr in_cloud_1 ( new PointCloudT );
-			PointCloudT::Ptr in_cloud_2 ( new PointCloudT );
-			PointCloudT::Ptr in_cloud_3 ( new PointCloudT );
-			PointCloudT::Ptr in_cloud_4 ( new PointCloudT );
-			PointCloudT::Ptr in_cloud_5 ( new PointCloudT );
-			PointCloudT::Ptr in_cloud_6 ( new PointCloudT );
-			PointCloudT::Ptr in_cloud_7 ( new PointCloudT );
-			PointCloudT::Ptr in_cloud_8 ( new PointCloudT );
-			scene_pc_queue.pop ( in_cloud_1 );
-			scene_pc_queue.pop ( in_cloud_2 );
-			scene_pc_queue.pop ( in_cloud_3 );
-			scene_pc_queue.pop ( in_cloud_4 );
-			scene_pc_queue.pop ( in_cloud_5 );
-			scene_pc_queue.pop ( in_cloud_6 );
-			scene_pc_queue.pop ( in_cloud_7 );
-			scene_pc_queue.pop ( in_cloud_8 );
-			PointCloudT::Ptr in_cloud ( new PointCloudT );
-			*in_cloud += *in_cloud_1;
-			*in_cloud += *in_cloud_2;
-			*in_cloud += *in_cloud_3;
-			*in_cloud += *in_cloud_4;
-			*in_cloud += *in_cloud_5;
-			*in_cloud += *in_cloud_6;
-			*in_cloud += *in_cloud_7;
-			*in_cloud += *in_cloud_8;
-			if ( in_cloud->size() == 0 )
-			{
-				return;
-			}
+      PointCloudT::Ptr in_cloud ( new PointCloudT );
+      while ( buffer_counter < buffer_length )
+      {
+        PointCloudT::Ptr _buffer_in_cloud ( new PointCloudT );
+        scene_pc_queue.pop ( _buffer_in_cloud );
+        *in_cloud += *_buffer_in_cloud;
+        buffer_counter ++;
+      }
 
-			// merge input point cloud with scene point cloud
-			*scene_cloud += *in_cloud;
-			PointCloudT::Ptr scene_cloud_sampled	( new PointCloudT );
-			downSampling ( scene_cloud, scene_cloud_sampled );
-			scene_cloud = scene_cloud_sampled;
-			std::cout << "Scene point cloud has [" << scene_cloud->size() << "] data points" << std::endl;
+      if ( in_cloud->size() == 0 )
+      {
+        return;
+      }
 
-			// show the scene point cloud
-			scene_cloud->header.frame_id = reference_frame;
-			pcl_conversions::toPCL ( ros::Time::now(), scene_cloud->header.stamp );
-			cloud_pub_.publish ( scene_cloud );
-		}
-		std::cout << "Merger thread is stopped" << std::endl;
-	}
+      // merge input point cloud with scene point cloud
+      *scene_cloud += *in_cloud;
+      PointCloudT::Ptr scene_cloud_sampled	( new PointCloudT );
+      downSampling ( scene_cloud, scene_cloud_sampled );
+      scene_cloud = scene_cloud_sampled;
+      std::cout << "Scene point cloud has [" << scene_cloud->size() << "] data points" << std::endl;
+
+      // show the scene point cloud
+      scene_cloud->header.frame_id = reference_frame;
+      pcl_conversions::toPCL ( ros::Time::now(), scene_cloud->header.stamp );
+      cloud_pub_.publish ( scene_cloud );
+    }
+    std::cout << "Merger thread is stopped" << std::endl;
+  }
 
   bool start_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
