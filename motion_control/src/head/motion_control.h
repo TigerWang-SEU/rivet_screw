@@ -21,6 +21,101 @@
 #ifndef MOTION_CONTROL_H
 #define MOTION_CONTROL_H
 
+class MotionControl
+{
+  std::string PLANNING_GROUP;
+  boost::shared_ptr< moveit::planning_interface::MoveGroupInterface > move_group;
 
+public:
+
+  MotionControl ( std::string PLANNING_GROUP )
+  {
+    this->PLANNING_GROUP = PLANNING_GROUP;
+    move_group.reset ( new moveit::planning_interface::MoveGroupInterface ( PLANNING_GROUP ) );
+
+    ROS_INFO_NAMED ( "motion_control", "Reference frame: %s", move_group->getPlanningFrame().c_str() );
+    ROS_INFO_NAMED ( "motion_control", "End effector link: %s", move_group->getEndEffectorLink().c_str() );
+  }
+
+  bool move2target ( geometry_msgs::Pose& target_pose, double scale_factor = 0.3 )
+  {
+    move_group->setPoseTarget ( target_pose );
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    bool success = ( move_group->plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
+    ROS_INFO_NAMED ( "do_scan", "planning for the target pose is %s", success ? "success" : "FAILED" );
+
+    if ( success )
+    {
+      move_group->setMaxVelocityScalingFactor ( scale_factor );
+      move_group->setMaxAccelerationScalingFactor ( scale_factor );
+      move_group->move ();
+    }
+
+    return success;
+  }
+
+  double get_trajectory ( std::vector < geometry_msgs::Pose>& waypoints, moveit::planning_interface::MoveGroupInterface::Plan& my_plan, double scale_factor = 0.3 )
+  {
+    moveit_msgs::RobotTrajectory trajectory;
+    const double jump_threshold = 0.0;
+    const double eef_step = 0.01;
+    double fraction = move_group->computeCartesianPath ( waypoints, eef_step, jump_threshold, trajectory );
+    ROS_INFO_NAMED ( "motion_control", "Cartesian path plan (%.2f%% acheived)", fraction * 100.0 );
+
+    if ( fraction > 0.98 )
+    {
+      // scale the velocity and acceleration of the trajectory
+      int point_size = trajectory.joint_trajectory.points.size ();
+      for ( int point_idx = 0; point_idx < point_size; point_idx++ )
+      {
+        trajectory_msgs::JointTrajectoryPoint point_tmp = trajectory.joint_trajectory.points [ point_idx ];
+        int size_tmp = point_tmp.velocities.size ();
+        for ( int i = 0; i <= size_tmp; i++ )
+        {
+          float velocity_tmp = point_tmp.velocities [ i ];
+          trajectory.joint_trajectory.points [ point_idx ].velocities [ i ] = velocity_tmp * scale_factor;
+          float acceleration_tmp = point_tmp.accelerations [ i ];
+          trajectory.joint_trajectory.points[point_idx].accelerations [ i ] = acceleration_tmp * scale_factor;
+        }
+        ros::Duration time_from_start_tmp = point_tmp.time_from_start;
+        trajectory.joint_trajectory.points [ point_idx ].time_from_start.fromSec ( time_from_start_tmp.toSec () / scale_factor );
+      }
+
+      my_plan.trajectory_ = trajectory;
+    }
+
+    return fraction;
+  }
+
+  double execute_trajectory ( moveit::planning_interface::MoveGroupInterface::Plan& my_plan )
+  {
+    move_group->execute ( my_plan );
+  }
+
+  void set_joint_angle ( int joint_idx, double joint_angle )
+  {
+    std::vector < double > joint_group_positions;
+    get_current_robot_state ( joint_group_positions );
+
+    joint_group_positions [ joint_idx ] = joint_angle;
+    move_group->setJointValueTarget ( joint_group_positions );
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    bool success = ( move_group->plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
+    if ( success )
+    {
+      move_group->setMaxVelocityScalingFactor ( 0.1 );
+      move_group->setMaxAccelerationScalingFactor ( 0.1 );
+      move_group->move ();
+    }
+  }
+
+  void get_current_robot_state ( std::vector < double >& joint_group_positions )
+  {
+    moveit::core::RobotStatePtr current_state = move_group->getCurrentState ();
+    const robot_state::JointModelGroup* joint_model_group = move_group->getCurrentState()->getJointModelGroup ( PLANNING_GROUP );
+    current_state->copyJointGroupPositions ( joint_model_group, joint_group_positions );
+  }
+
+};
 
 #endif
