@@ -33,6 +33,7 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 
 #include "PCL_name.h"
+#include "rviz_show.h"
 
 #ifndef PLANNER_H
 #define PLANNER_H
@@ -156,6 +157,133 @@ void calculate_start_end_point ( Eigen::Vector3f& central_point, Eigen::Vector3f
   scan_back_point ( 0 ) = x_0 + x_adjust;
   scan_back_point ( 1 ) = y_0 + ( scan_distance + back_distance ) * std::sin ( theta_tmp );
   scan_back_point ( 2 ) = z_0 - ( scan_distance + back_distance ) * std::cos ( theta_tmp );
+}
+
+// function for calculating rotation around the x axis
+float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& central_point )
+{
+  // step 1, get min_x and max_x
+  float min_x, max_x;
+  PointT minPt, maxPt;
+  getMinMax3D ( *cloudSegmented, minPt, maxPt );
+  min_x = minPt.x;
+  show_point ( get_id (), minPt.x, minPt.y, minPt.z );
+  std::cout << "\tmin_x = " << min_x << std::endl;
+  max_x = maxPt.x;
+  show_point ( get_id (), maxPt.x, maxPt.y, maxPt.z );
+  std::cout << "\tmax_x = " << max_x << std::endl;
+
+  // step 2, filter the segment point cloud
+  std::string boundary = read_boundary_file ();
+  PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
+  float y_avg = 0, z_avg = 0;
+  for ( PointT temp_point: cloudSegmented->points )
+  {
+    float x = temp_point.x;
+    float y = temp_point.y;
+    float z = temp_point.z;
+    if ( boundary == "right" )
+    {
+      if ( ( x - min_x ) / ( max_x - min_x ) < 0.5 )
+      {
+        continue;
+      }
+    }
+    else
+    {
+      if ( ( x - min_x ) / ( max_x - min_x ) > 0.5 )
+      {
+        continue;
+      }
+    }
+    PointT new_point;
+    new_point.x = x;
+    new_point.y = y;
+    y_avg += y;
+    new_point.z = z;
+    z_avg += z;
+    filtered_segment_cloud->points.push_back( new_point );
+  }
+  y_avg = y_avg / filtered_segment_cloud->points.size();
+  z_avg = z_avg / filtered_segment_cloud->points.size();
+
+  // step 3, compute principal directions
+  Eigen::Vector4f pcaCentroid;
+  pcl::compute3DCentroid ( *filtered_segment_cloud, pcaCentroid );
+  central_point = pcaCentroid.head< 3 >();
+
+  Eigen::Matrix3f covariance;
+  pcl::computeCovarianceMatrixNormalized ( *filtered_segment_cloud, pcaCentroid, covariance );
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
+  Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
+  Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
+
+  // get eigen vectors and find the maximum value column for each eigen vector
+  int max_idx_1_r, max_idx_2_r, max_idx_3_r, max_idx_1_c, max_idx_2_c, max_idx_3_c;
+  eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
+  eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
+  eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
+  std::cout << "*** eigen value 1 = [" << eigenvaluesPCA (0) << "] ***\n\t eigen vector 1: [" << eigenVectorsPCA.block ( 0, 0, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_1_r << std::endl;
+  std::cout << "*** eigen value 2 = [" << eigenvaluesPCA (1) << "] ***\n\t eigen vector 2: [" << eigenVectorsPCA.block ( 0, 1, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_2_r << std::endl;
+  std::cout << "*** eigen value 3 = [" << eigenvaluesPCA (2) << "] ***\n\t eigen vector 3: [" << eigenVectorsPCA.block ( 0, 2, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_3_r << std::endl;
+
+  float x_tmp, y_tmp, z_tmp;
+  if ( max_idx_3_r != 0 )
+  {
+    x_tmp = eigenVectorsPCA ( 0, 2 );
+    y_tmp = eigenVectorsPCA ( 1, 2 );
+    z_tmp = eigenVectorsPCA ( 2, 2 );
+  }
+  else
+  {
+    x_tmp = eigenVectorsPCA ( 0, 1 );
+    y_tmp = eigenVectorsPCA ( 1, 1 );
+    z_tmp = eigenVectorsPCA ( 2, 1 );
+  }
+  scale_vector ( x_tmp, y_tmp, z_tmp, 0.2 );
+  float y_new, z_new;
+  y_new = - z_tmp;
+  z_new = y_tmp;
+
+  show_arrow ( get_id (), pcaCentroid ( 0 ),  pcaCentroid ( 1 ), pcaCentroid ( 2 ), x_tmp, y_new, z_new );
+  std::cout << "[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]" << std::endl;
+  //###################### need more test #######################
+  float theta = 0.0;
+  if ( z_avg > tableheight )
+  {
+    theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
+    if ( theta < 0 )
+    {
+      theta = theta + 180;
+    }
+  }
+  else
+  {
+    if ( y_avg > 0 )
+    {
+      if ( y_new < 0 )
+      {
+        y_new = -y_new;
+        z_new = -z_new;
+      }
+      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
+    }
+    else
+    {
+      if ( y_new > 0 )
+      {
+        y_new = -y_new;
+        z_new = -z_new;
+      }
+      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
+      if ( theta < 0 )
+      {
+        theta = theta + 360;
+      }
+    }
+  }
+  return theta;
 }
 
 #endif
