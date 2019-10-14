@@ -45,8 +45,13 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/common/common_headers.h>
 
+#include "reference_frame.h"
+#include "transform.h"
+
 #ifndef RVIZ_SHOW_H
 #define RVIZ_SHOW_H
+
+ros::Publisher vis_pub;
 
 int get_id ()
 {
