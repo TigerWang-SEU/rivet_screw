@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <algorithm>
 #include <vector>
 #include <ctime>
 #include <boost/algorithm/string.hpp>
@@ -36,13 +37,11 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
 
-#include "do_scan.h"
+#include "head/do_scan.h"
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 static const std::string PLANNING_GROUP = "camera";
-
-int filtered_scan_plan_idx = -1;
 
 class ControlNode {
 
@@ -161,14 +160,27 @@ public:
     control_node_pub.publish ( msg );
   }
 
+  bool is_number ( const std::string& s )
+  {
+    return !s.empty () && std::find_if ( s.begin (), s.end (), [] ( char c ) { return !std::isdigit ( c ); } ) == s.end ();
+  }
+
   void rivet_area_order_cb ( const std_msgs::String::ConstPtr& msg )
   {
     ROS_INFO ( "rivet_area_order: [%s]", msg->data.c_str () );
+    if ( got_rivet_area_order == true )
+    {
+      return;
+    }
     std::vector < std::string > rivet_area_id_vector;
     boost::split ( rivet_area_id_vector, msg->data, boost::is_any_of ( ";" ) );
     for ( std::string rivet_area_id_str : rivet_area_id_vector )
     {
-      rivet_area_order.push_back ( std::stoi ( rivet_area_id_str ) );
+      if ( is_number ( rivet_area_id_str ) )
+      {
+        rivet_area_order.push_back ( std::stoi ( rivet_area_id_str ) );
+        std::cout << "insert " << std::stoi ( rivet_area_id_str ) << std::endl;
+      }
     }
     got_rivet_area_order = true;
   }
@@ -215,11 +227,6 @@ public:
               {
                 ScanPlan scan_plan = scan_plan_vector [ scan_plan_idx ];
                 ss << scan_plan_idx << ":" << scan_plan.color_r  << "," << scan_plan.color_g << "," << scan_plan.color_b << ";";
-                // check the height of collar plate to filter out the one we need.
-                if ( scan_plan.z_s < 1.90 && scan_plan.z_e > 1.90 )
-                {
-                  filtered_scan_plan_idx = scan_plan_idx;
-                }
                 scan_plan_idx ++;
               }
               std_msgs::String msg;
@@ -304,17 +311,16 @@ public:
     execute_stage ( current_execution_phase );
     current_execution_phase ++;
     check_pause ();
-    // while ( !got_rivet_area_order )
-    // {
-    //   ros::Duration ( 0.1 ).sleep ();
-    // }
-    // while ( !rivet_area_order.empty () )
-    // {
-    //   read_idx_writer ( rivet_area_order.front() );
-    //   rivet_area_order.erase ( rivet_area_order.begin () );
-    if ( filtered_scan_plan_idx != -1 )
+    while ( !got_rivet_area_order )
     {
-      read_idx_writer ( filtered_scan_plan_idx );
+      ros::Duration ( 0.1 ).sleep ();
+      std::cout << "waiting for rivet_area_order" << std::endl;
+    }
+    while ( !rivet_area_order.empty () )
+    {
+      std::cout << "write " << rivet_area_order.front() << std::endl;
+      read_idx_writer ( rivet_area_order.front() );
+      rivet_area_order.erase ( rivet_area_order.begin () );
       while ( current_execution_phase < 4 )
       {
         execute_stage ( current_execution_phase );
@@ -322,7 +328,7 @@ public:
         check_pause ();
       }
       current_execution_phase = 1;
-      ros::Duration ( 1 ).sleep ();
+      ros::Duration ( 0.5 ).sleep ();
     }
   }
 
