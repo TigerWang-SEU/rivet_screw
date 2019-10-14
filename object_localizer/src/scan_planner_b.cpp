@@ -82,88 +82,6 @@ void read_scan_planner_cfg_file ( )
   input.close();
 }
 
-float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& central_point )
-{
-  // Compute principal directions
-  Eigen::Vector4f pcaCentroid;
-  pcl::compute3DCentroid ( *cloudSegmented, pcaCentroid );
-  central_point = pcaCentroid.head< 3 >();
-
-  Eigen::Matrix3f covariance;
-  pcl::computeCovarianceMatrixNormalized ( *cloudSegmented, pcaCentroid, covariance );
-
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
-	Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
-  Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
-
-	int max_idx_1_r, max_idx_2_r, max_idx_3_r, max_idx_1_c, max_idx_2_c, max_idx_3_c;
-	eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
-	eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
-	eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
-  std::cout << "*** eigen value 1 = [" << eigenvaluesPCA (0) << "] ***\n\t eigen vector 1: [" << eigenVectorsPCA.block ( 0, 0, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_1_r << std::endl;
-  std::cout << "*** eigen value 2 = [" << eigenvaluesPCA (1) << "] ***\n\t eigen vector 2: [" << eigenVectorsPCA.block ( 0, 1, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_2_r << std::endl;
-  std::cout << "*** eigen value 3 = [" << eigenvaluesPCA (2) << "] ***\n\t eigen vector 3: [" << eigenVectorsPCA.block ( 0, 2, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_3_r << std::endl;
-
-  float x_tmp, y_tmp, z_tmp;
-  if ( max_idx_3_r != 0 )
-  {
-    x_tmp = eigenVectorsPCA ( 0, 2 );
-    y_tmp = eigenVectorsPCA ( 1, 2 );
-    z_tmp = eigenVectorsPCA ( 2, 2 );
-  }
-  else
-  {
-    x_tmp = eigenVectorsPCA ( 0, 1 );
-    y_tmp = eigenVectorsPCA ( 1, 1 );
-    z_tmp = eigenVectorsPCA ( 2, 1 );
-  }
-  // scale_vector ( x_tmp, y_tmp, z_tmp, 0.2 );
-  float y_new, z_new;
-  y_new = - z_tmp;
-  z_new = y_tmp;
-
-  // show_arrow ( get_id (), pcaCentroid ( 0 ),  pcaCentroid ( 1 ), pcaCentroid ( 2 ), x_tmp, y_new, z_new );
-  std::cout << "[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]" << std::endl;
-
-  float theta = 0.0;
-  float z_avg = central_point ( 2 );
-  float y_avg = central_point ( 1 );
-  if ( z_avg > tableheight )
-  {
-    theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
-    if ( theta < 0 )
-    {
-      theta = theta + 180;
-    }
-  }
-  else
-  {
-    if ( y_avg > 0 )
-    {
-      if ( y_new < 0 )
-      {
-        y_new = -y_new;
-        z_new = -z_new;
-      }
-      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
-    }
-    else
-    {
-      if ( y_new > 0 )
-      {
-        y_new = -y_new;
-        z_new = -z_new;
-      }
-      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
-      if ( theta < 0 )
-      {
-        theta = theta + 360;
-      }
-    }
-  }
-  return theta;
-}
-
 class ScanPlanner
 {
 public:
@@ -257,42 +175,13 @@ public:
           continue;
         }
 
-        // step 2.1, filter the segment point cloud
-        PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
-        for ( PointT temp_point: segment_cloud->points )
-        {
-          float x = temp_point.x;
-          float y = temp_point.y;
-          float z = temp_point.z;
-          if ( boundary == "right" )
-          {
-            if ( ( x - min_x ) / ( max_x - min_x ) < 0.6 )
-            {
-              continue;
-            }
-          }
-          else
-          {
-            if ( ( x - min_x ) / ( max_x - min_x ) > 0.4 )
-            {
-              continue;
-            }
-          }
-          PointT new_point;
-          new_point.x = x;
-          new_point.y = y;
-          new_point.z = z;
-          filtered_segment_cloud->points.push_back( new_point );
-        }
-        segment_cloud = filtered_segment_cloud;
-
         // step 3, find the central point of the segment point cloud
         Eigen::Vector3f central_point, scan_start_point, scan_end_point, scan_back_point;
         float theta = calculate_theta ( segment_cloud, central_point );
         std::cout << std::endl << "*** Rotation around x is [" << theta << "] degrees" << std::endl << "*** central_point = " << central_point.transpose () << std::endl;
         calculate_start_end_point ( central_point, scan_start_point, scan_end_point, scan_back_point, theta, x_adjust, scan_distance, scan_length, s_scale, e_scale, back_distance );
 
-        // step 5, write scanning plannings into the scanning plan file.
+        // step 4, write scanning plannings into the scanning plan file.
         do_scan_fs << theta << " " << scan_start_point.transpose () << " " << scan_end_point.transpose () << " " << scan_back_point.transpose () << " " << color_r << " " << color_g << " " << color_b << std::endl;
       }
     	do_scan_fs.close();
