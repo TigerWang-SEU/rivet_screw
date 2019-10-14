@@ -31,10 +31,10 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
+#include "head/reference_frame.h"
 #include "head/planner.h"
 #include "head/PCL_name.h"
 
-std::string reference_frame = "world";
 float x_adjust = -0.01; // adjustment for the x poistion
 float scan_distance = 0.075; // set the distance to the scanning part
 float back_distance = 0.120; // backward distance
