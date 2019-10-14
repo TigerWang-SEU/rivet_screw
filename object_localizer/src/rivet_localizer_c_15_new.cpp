@@ -45,14 +45,16 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/common/common_headers.h>
 
+#include "head/reference_frame.h"
+#include "head/transform.h"
 #include "head/union_find.h"
 #include "head/post_process.h"
 #include "head/planner.h"
+#include "head/rviz_show.h"
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 
-std::string reference_frame = "world";
 std::string SceneFileName;
 int filter_mean_k = 40;
 float filter_stddev = 1.0;
@@ -66,7 +68,6 @@ float in_distance = 0.0065;
 float tool_angle = 0.0;
 uint8_t r = 0, g = 255, b = 0;
 uint32_t rgb = 0;
-ros::Publisher vis_pub;
 
 void get_plane ( pcl::PointCloud< PointT >::Ptr cloud_in_, float ransac_thresh, Eigen::Vector3f &surface_normal, float &d, std::vector< int > &inliers )
 {
@@ -178,18 +179,6 @@ void scale_and_color_point_cloud ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr c
   cloud_out->header.frame_id = reference_frame;
 }
 
-void getInverseMatrix ( Eigen::Matrix4f& original_transform, Eigen::Matrix4f& inverse_transform )
-{
-	inverse_transform.block< 3, 3 >( 0, 0 ) = original_transform.block< 3, 3 >( 0, 0 ).transpose();
-  inverse_transform.block< 3, 1 >( 0, 3 ) = -1.0f * ( inverse_transform.block< 3, 3 >( 0, 0 ) * original_transform.block< 3, 1 >( 0, 3 ) );
-}
-
-void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double& pitch, double& yaw )
-{
-  tf::Matrix3x3 object_m ( rotation_matrix (0, 0), rotation_matrix (0, 1), rotation_matrix (0, 2), rotation_matrix (1, 0), rotation_matrix (1, 1), rotation_matrix (1, 2), rotation_matrix (2, 0), rotation_matrix (2, 1), rotation_matrix (2, 2) );
-  object_m.getRPY ( roll, pitch, yaw );
-}
-
 //#############################################################################
 // find orientation and central point for each rivet
 void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr search_cloud_, PointT &searchPoint, Eigen::Matrix4f transform_1, PointCloudT::Ptr& rivet_support_plane_cloud, PointCloudT::Ptr& rivet_cloud, double& roll, double& pitch, double& yaw, Eigen::Vector4f& rivet_point_new_final, Eigen::Vector4f& rivet_point_in_final )
@@ -271,7 +260,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   // step 6, calculate roll, pitch, yaw from the transform_total
   Eigen::Matrix4f transform_total_inverse ( Eigen::Matrix4f::Identity() );
   getInverseMatrix ( transform_total, transform_total_inverse );
-  get_rpy_from_matrix ( transform_total_inverse.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
+  get_rpy_from_matrix ( transform_total_inverse, roll, pitch, yaw );
   std::cout << "\tRoll, Pitch, Yaw = [" << roll << ", " << pitch << ", " << yaw << "]" << std::endl;
 
   if ( roll != M_PI )
@@ -353,7 +342,8 @@ public:
   {
     PointCloudT::Ptr cloud_scaled ( new PointCloudT );
     scale_and_color_point_cloud ( cloud_in_, cloud_scaled );
-    float plane_theta = calculate_theta ( cloud_scaled );
+    Eigen::Vector3f central_point;
+    float plane_theta = calculate_theta ( cloud_scaled, central_point );
     std::cout << "$$$ plane_theta = " << plane_theta << std::endl;
     if ( plane_theta < 100.0 )
     {
@@ -603,7 +593,7 @@ public:
         rivet_point_in_final = r_x_45_inv * rivet_point_in_final;
         Eigen::Matrix4f new_rotation_matrix;
         new_rotation_matrix = r_x_45_inv * old_rotation_matrix;
-        get_rpy_from_matrix ( new_rotation_matrix.block< 3, 3 >( 0, 0 ), roll, pitch, yaw );
+        get_rpy_from_matrix ( new_rotation_matrix, roll, pitch, yaw );
       }
 
       std::cout << "*** [" << rivet_counter << "] : " << rivet_point_new_final.head< 3 >().transpose() << std::endl;
