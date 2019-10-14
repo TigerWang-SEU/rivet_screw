@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <ctime>
+#include <float.h>
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -58,7 +59,7 @@ std::string read_boundary_file ()
   return line;
 }
 
-void check_boundary ( object_localizer_msg::Segment_list::Ptr segment_list )
+void check_boundary ( object_localizer_msg::Segment_list::Ptr segment_list, PointCloudT::Ptr left_half_pc, PointCloudT::Ptr right_half_pc )
 {
   int left_boundary_counter = 0, right_boundary_counter = 0;
   for ( sensor_msgs::PointCloud2 segment_cloud_pc : segment_list->Segment_list )
@@ -70,13 +71,12 @@ void check_boundary ( object_localizer_msg::Segment_list::Ptr segment_list )
 
     PointT minPt, maxPt;
     getMinMax3D ( *segment_cloud, minPt, maxPt );
-    std::cout << "Min [z]: = [" << minPt.z << "]" << std::endl;
-    std::cout << "Max [z]: = [" << maxPt.z << "]" << std::endl;
+    std::cout << "Min [x, z]: = [" << minPt.x << ", " << minPt.z << "]" << std::endl;
+    std::cout << "Max [x, z]: = [" << maxPt.x << ", " << maxPt.z << "]" << std::endl;
 
-    if ( ( maxPt.z - minPt.z ) > 0.05 && ( maxPt.z - tableheight ) < 0.9 )
+    if ( ( maxPt.z - minPt.z ) > 0.05 && ( maxPt.z - tableheight ) < 1.5 )
     {
-      double left_y_sum = 0, left_counter = 0;
-      double right_y_sum = 0, right_counter = 0;
+      double left_y_max = -DBL_MAX, right_y_max = -DBL_MAX;
       for ( PointT temp_point: segment_cloud->points )
       {
         float x = temp_point.x;
@@ -84,28 +84,44 @@ void check_boundary ( object_localizer_msg::Segment_list::Ptr segment_list )
         float z = temp_point.z;
         if ( ( x - minPt.x ) / ( maxPt.x - minPt.x ) < 0.5 )
         {
-          right_y_sum += y;
-          right_counter ++;
+          if ( right_y_max < y )
+          {
+            right_y_max = y;
+          }
+          PointT new_point;
+          new_point.x = x;
+          new_point.y = y;
+          new_point.z = z;
+          right_half_pc->points.push_back( new_point );
         }
-        else
+        else if ( ( x - minPt.x ) / ( maxPt.x - minPt.x ) > 0.5 )
         {
-          left_y_sum += y;
-          left_counter ++;
+          if ( left_y_max < y )
+          {
+            left_y_max = y;
+          }
+          PointT new_point;
+          new_point.x = x;
+          new_point.y = y;
+          new_point.z = z;
+          left_half_pc->points.push_back( new_point );
         }
       }
-      double right_y_avg = right_y_sum / right_counter;
-      double left_y_avg = left_y_sum / left_counter;
 
-      if ( right_y_avg > left_y_avg )
+      std::cout << "left_y_max = " << left_y_max << ", right_y_max = " << right_y_max << std::endl;
+
+      if ( right_y_max - left_y_max > 0.01 )
       {
         right_boundary_counter ++;
       }
-      else
+      else if ( left_y_max - right_y_max > 0.01 )
       {
         left_boundary_counter ++;
       }
     }
   }
+
+  std::cout << "left_boundary_counter = " << left_boundary_counter << ", right_boundary_counter = " << right_boundary_counter << std::endl;
   if ( right_boundary_counter > left_boundary_counter )
   {
     write_boundary_file ( "right" );

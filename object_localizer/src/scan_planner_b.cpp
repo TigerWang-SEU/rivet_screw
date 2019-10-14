@@ -184,6 +184,16 @@ public:
     }
   }
 
+  void show_half_pc ( PointCloudT::Ptr left_half_pc,  PointCloudT::Ptr right_half_pc )
+  {
+    left_half_pc->header.frame_id = reference_frame;
+    pcl_conversions::toPCL ( ros::Time::now(), left_half_pc->header.stamp );
+    left_cloud_pub_.publish ( left_half_pc );
+    right_half_pc->header.frame_id = reference_frame;
+    pcl_conversions::toPCL ( ros::Time::now(), right_half_pc->header.stamp );
+    right_cloud_pub_.publish ( right_half_pc );
+  }
+
   bool start_scan_planner ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
     read_scan_planner_cfg_file ();
@@ -191,7 +201,9 @@ public:
 
     if ( segment_list->BBox_list_float.size() > 0 )
     {
-      check_boundary ( segment_list );
+      PointCloudT::Ptr left_half_pc ( new PointCloudT ), right_half_pc ( new PointCloudT );
+      check_boundary ( segment_list, left_half_pc, right_half_pc );
+      show_half_pc ( left_half_pc, right_half_pc );
       std::string boundary = read_boundary_file ();
       if ( boundary == "right" )
       {
@@ -296,6 +308,9 @@ public:
     std::string segment_list_in_name = "/rough_localizer/bbox_list";
     segment_list_sub_ = nh_.subscribe ( segment_list_in_name, 10, &ScanPlanner::segment_list_cb, this );
     ROS_INFO_STREAM ( "Listening for segment list on topic: " << segment_list_in_name );
+
+    left_cloud_pub_ = nh_.advertise < pcl::PointCloud < PointT > > ( "/planner_h/left_half_pc", 30 );
+    right_cloud_pub_ = nh_.advertise < pcl::PointCloud < PointT > > ( "/planner_h/right_half_pc", 30 );
   }
 
   ~ScanPlanner () { }
@@ -305,6 +320,7 @@ private:
   object_localizer_msg::Segment_list::Ptr segment_list;
   ros::ServiceServer start_scan_planner_;
   ros::Subscriber segment_list_sub_;
+  ros::Publisher left_cloud_pub_, right_cloud_pub_;
 };
 
 int main ( int argc, char** argv )
