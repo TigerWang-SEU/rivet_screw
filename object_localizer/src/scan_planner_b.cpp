@@ -11,14 +11,12 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf/transform_listener.h>
 
-// converse header file between ros points2 and pcl point cloud
 #include <pcl_conversions/pcl_conversions.h>
 #include "object_localizer_msg/BBox_int.h"
 #include "object_localizer_msg/BBox_float.h"
 #include "object_localizer_msg/BBox_list.h"
 #include "object_localizer_msg/Segment_list.h"
 
-// PCL head files
 #include <pcl/io/ply_io.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
@@ -33,16 +31,16 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
-typedef pcl::PointXYZRGB PointT;
-typedef pcl::PointCloud< PointT > PointCloudT;
+#include "head/planner.h"
+#include "head/PCL_name.h"
 
 std::string reference_frame = "world";
 float x_adjust = -0.01; // adjustment for the x poistion
 float scan_distance = 0.075; // set the distance to the scanning part
 float back_distance = 0.120; // backward distance
-float scan_half_length = 0.10; // scanning path length
-float s_scale = 0.2; // scale of the start scanning scan_half_length
-float e_scale = 1.1; // scale of the end scanning scan_half_length
+float scan_length = 0.10; // scanning path length
+float s_scale = 0.2; // scale of the start scanning scan_length
+float e_scale = 1.1; // scale of the end scanning scan_length
 
 void read_scan_planner_cfg_file ( )
 {
@@ -69,7 +67,7 @@ void read_scan_planner_cfg_file ( )
   if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-    iss >> scan_half_length;
+    iss >> scan_length;
   }
   if ( std::getline ( input, line ) )
   {
@@ -84,97 +82,6 @@ void read_scan_planner_cfg_file ( )
   input.close();
 }
 
-void getMinMax3D ( const pcl::PointCloud<PointT> &cloud, PointT &min_pt, PointT &max_pt )
-{
-  Eigen::Array4f min_p, max_p;
-  min_p.setConstant (FLT_MAX);
-  max_p.setConstant (-FLT_MAX);
-
-  // If the data is dense, we don't need to check for NaN
-  if ( cloud.is_dense )
-  {
-    for (size_t i = 0; i < cloud.points.size (); ++i)
-    {
-      pcl::Array4fMapConst pt = cloud.points[i].getArray4fMap ();
-      min_p = min_p.min (pt);
-      max_p = max_p.max (pt);
-    }
-  }
-  // NaN or Inf values could exist => check for them
-  else
-  {
-    for (size_t i = 0; i < cloud.points.size (); ++i)
-    {
-      // Check if the point is invalid
-      if (!pcl_isfinite (cloud.points[i].x) ||
-          !pcl_isfinite (cloud.points[i].y) ||
-          !pcl_isfinite (cloud.points[i].z))
-          continue;
-      pcl::Array4fMapConst pt = cloud.points[i].getArray4fMap ();
-      min_p = min_p.min (pt);
-      max_p = max_p.max (pt);
-    }
-  }
-  min_pt.x = min_p[0]; min_pt.y = min_p[1]; min_pt.z = min_p[2];
-  max_pt.x = max_p[0]; max_pt.y = max_p[1]; max_pt.z = max_p[2];
-}
-
-void calculate_bounding_box ( PointCloudT::ConstPtr cloudSegmented )
-{
-  // Compute principal directions
-  Eigen::Vector4f pcaCentroid;
-  pcl::compute3DCentroid( *cloudSegmented, pcaCentroid );
-  Eigen::Matrix3f covariance;
-  pcl::computeCovarianceMatrixNormalized( *cloudSegmented, pcaCentroid, covariance );
-
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver( covariance, Eigen::ComputeEigenvectors );
-  Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
-  // This line is necessary for proper orientation in some cases. The numbers come out the same without it, but
-  // the signs are different and the box doesn't get correctly oriented in some cases.
-  eigenVectorsPCA.col(2) = eigenVectorsPCA.col(0).cross(eigenVectorsPCA.col(1));
-
-  std::cout << "eigen vector 0: [" << eigenVectorsPCA(0, 0) << ", " << eigenVectorsPCA(1, 0) << ", " << eigenVectorsPCA(2, 0) << "]" << std::endl;
-  std::cout << "eigen vector 1: [" << eigenVectorsPCA(0, 1) << ", " << eigenVectorsPCA(1, 1) << ", " << eigenVectorsPCA(2, 1) << "]" << std::endl;
-  std::cout << "eigen vector 2: [" << eigenVectorsPCA(0, 2) << ", " << eigenVectorsPCA(1, 2) << ", " << eigenVectorsPCA(2, 2) << "]" << std::endl;
-  // std::cout << "eigen vector 1: " << eigenVectorsPCA.col(1) << std::endl;
-  // std::cout << "eigen vector 2: " << eigenVectorsPCA.col(2) << std::endl;
-
-  // Transform the original cloud to the origin where the principal components correspond to the axes.
-  Eigen::Matrix4f projectionTransform( Eigen::Matrix4f::Identity() );
-  projectionTransform.block< 3,3 >( 0, 0 ) = eigenVectorsPCA.transpose();
-  projectionTransform.block< 3,1 >( 0, 3 ) = -1.0f * ( projectionTransform.block< 3, 3 >( 0, 0 ) * pcaCentroid.head< 3 >() );
-  pcl::PointCloud< PointT >::Ptr cloudPointsProjected ( new pcl::PointCloud< PointT > );
-  pcl::transformPointCloud( *cloudSegmented, *cloudPointsProjected, projectionTransform );
-  // Get the minimum and maximum points of the transformed cloud.
-  pcl::PointXYZRGB minPoint, maxPoint;
-  getMinMax3D( *cloudPointsProjected, minPoint, maxPoint );
-  const Eigen::Vector3f meanDiagonal = 0.5f * ( maxPoint.getVector3fMap() + minPoint.getVector3fMap() );
-
-  // calculate quaternion from eigenvectors
-  const Eigen::Quaternionf bboxQuaternion( eigenVectorsPCA );
-  const Eigen::Vector3f bboxTransform = eigenVectorsPCA * meanDiagonal + pcaCentroid.head< 3 >();
-
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer ( new pcl::visualization::PCLVisualizer ( "Segment Viewer" ) );
-  viewer->setBackgroundColor ( 0, 0, 0 );
-  pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb( cloudSegmented );
-  viewer->addPointCloud< PointT > ( cloudSegmented, rgb, "segment cloud" );
-  viewer->setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "segment cloud" );
-  viewer->addCoordinateSystem ( 1.0 );
-  viewer->addCube ( bboxTransform, bboxQuaternion, maxPoint.x - minPoint.x, maxPoint.y - minPoint.y, maxPoint.z - minPoint.z, "bbox" );
-  viewer->initCameraParameters ();
-  while ( !viewer->wasStopped () )
-  {
-    viewer->spinOnce ( 100 );
-    boost::this_thread::sleep ( boost::posix_time::microseconds (100000) );
-  }
-}
-
-template < typename T > int sgn ( T val )
-{
-    return ( T ( 0 ) < val ) - ( val < T ( 0 ) );
-}
-
-float tableheight = 0.855;
 float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& central_point )
 {
   // Compute principal directions
@@ -280,10 +187,21 @@ public:
   bool start_scan_planner ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
     read_scan_planner_cfg_file ();
-    std::cout << "[x_adjust, scan_distance, back_distance, scan_half_length, s_scale, e_scale] = ["<< x_adjust << ", " << scan_distance << ", " << back_distance << ", " << scan_half_length << ", " << s_scale << ", " << e_scale << "]"<< std::endl;
+    std::cout << "[x_adjust, scan_distance, back_distance, scan_length, s_scale, e_scale] = ["<< x_adjust << ", " << scan_distance << ", " << back_distance << ", " << scan_length << ", " << s_scale << ", " << e_scale << "]"<< std::endl;
 
     if ( segment_list->BBox_list_float.size() > 0 )
     {
+      check_boundary ( segment_list );
+      std::string boundary = read_boundary_file ();
+      if ( boundary == "right" )
+      {
+        x_adjust -= 0.02;
+      }
+      else
+      {
+        x_adjust -= 0.01;
+      }
+
       ofstream do_scan_fs;
       std::string cfgFileName = ros::package::getPath ( "motion_control" ) + "/config/scan_plan.cfg";
       do_scan_fs.open ( cfgFileName );
@@ -321,7 +239,7 @@ public:
         max_x = maxPt.x;
 
         float distance_ = std::sqrt ( std::pow ( ( maxPt.y - minPt.y ), 2 ) + std::pow ( ( maxPt.z - minPt.z ), 2 ) );
-        std::cout << "$$$$$$ distance_ = [" << distance_ << "]" << std::endl;
+        std::cout << "### distance = [" << distance_ << "]" << std::endl;
         if ( distance_  < 0.08 )
         {
           continue;
@@ -334,12 +252,22 @@ public:
           float x = temp_point.x;
           float y = temp_point.y;
           float z = temp_point.z;
-          if ( ( x - min_x ) / ( max_x - min_x ) < 0.6 )
+          if ( boundary == "right" )
           {
-            continue;
+            if ( ( x - min_x ) / ( max_x - min_x ) < 0.6 )
+            {
+              continue;
+            }
+          }
+          else
+          {
+            if ( ( x - min_x ) / ( max_x - min_x ) > 0.4 )
+            {
+              continue;
+            }
           }
           PointT new_point;
-          new_point.x = x - 0.02;
+          new_point.x = x;
           new_point.y = y;
           new_point.z = z;
           filtered_segment_cloud->points.push_back( new_point );
@@ -347,35 +275,13 @@ public:
         segment_cloud = filtered_segment_cloud;
 
         // step 3, find the central point of the segment point cloud
-        Eigen::Vector3f central_point;
+        Eigen::Vector3f central_point, scan_start_point, scan_end_point, scan_back_point;
         float theta = calculate_theta ( segment_cloud, central_point );
-        std::cout << std::endl << "[***] Rotation around x is [" << theta << "] degrees" << std::endl;
-        float x_0 = central_point ( 0 );
-        float y_0 = central_point ( 1 );
-        float z_0 = central_point ( 2 );
-
-        // step 4, calculate the scanning start point and the scanning end point
-        float theta_tmp = ( theta - 90.0 ) * M_PI / 180.0;
-        float x_tmp = x_0 + x_adjust;
-        float y_tmp = y_0 + scan_distance * std::sin ( theta_tmp );
-        float z_tmp = z_0 - scan_distance * std::cos ( theta_tmp );
-
-        float x_s = x_tmp;
-        float y_s = y_tmp - scan_half_length * std::cos ( theta_tmp ) * s_scale;
-        float z_s = z_tmp - scan_half_length * std::sin ( theta_tmp ) * s_scale;
-        std::cout << "[***] Scan start point is [x, y, z] = [" << x_s << ", " << y_s << ", " << z_s << "]" << std::endl;
-
-        float x_e = x_tmp;
-        float y_e = y_tmp + scan_half_length * std::cos ( theta_tmp ) * e_scale;
-        float z_e = z_tmp + scan_half_length * std::sin ( theta_tmp ) * e_scale;
-        std::cout << "[***] Scan end point is [x, y, z] = [" << x_e << ", " << y_e << ", " << z_e << "]" << std::endl << std::endl;
-
-        float x_final = x_0 + x_adjust;
-        float y_final = y_0 + ( scan_distance + back_distance ) * std::sin ( theta_tmp );
-        float z_final = z_0 - ( scan_distance + back_distance ) * std::cos ( theta_tmp );
+        std::cout << std::endl << "*** Rotation around x is [" << theta << "] degrees" << std::endl << "*** central_point = " << central_point.transpose () << std::endl;
+        calculate_start_end_point ( central_point, scan_start_point, scan_end_point, scan_back_point, theta, x_adjust, scan_distance, scan_length, s_scale, e_scale, back_distance );
 
         // step 5, write scanning plannings into the scanning plan file.
-        do_scan_fs << theta << " " << x_s << " " << y_s << " " << z_s << " " << x_e << " " << y_e << " " << z_e << " " << x_final << " " << y_final << " " << z_final << " " << color_r << " " << color_g << " " << color_b << std::endl;
+        do_scan_fs << theta << " " << scan_start_point.transpose () << " " << scan_end_point.transpose () << " " << scan_back_point.transpose () << " " << color_r << " " << color_g << " " << color_b << std::endl;
       }
     	do_scan_fs.close();
     }
