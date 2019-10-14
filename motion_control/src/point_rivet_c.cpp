@@ -20,9 +20,11 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
+#include "/home/syn/ros_ws/src/object_localizer/src/head/reference_frame.h"
+#include "/home/syn/ros_ws/src/object_localizer/src/head/transform.h"
+#include "/home/syn/ros_ws/src/object_localizer/src/head/rviz_show.h"
 #include "/home/syn/ros_ws/src/object_localizer/src/head/planner.h"
 
-std::string reference_frame = "world";
 ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
 
 class Adjustment
@@ -74,53 +76,6 @@ void read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
   }
 
   input.close();
-}
-
-void show_frame ( std::string frame_name, double x, double y, double z, double roll, double pitch, double yaw )
-{
-  static tf2_ros::StaticTransformBroadcaster br;
-	geometry_msgs::TransformStamped transformStamped;
-	// create a frame for each object
-  transformStamped.header.stamp = ros::Time::now();
-  transformStamped.header.frame_id = reference_frame;
-  transformStamped.child_frame_id = frame_name;
-  transformStamped.transform.translation.x = x;
-  transformStamped.transform.translation.y = y;
-  transformStamped.transform.translation.z = z;
-  tf2::Quaternion q;
-  q.setRPY(roll, pitch, yaw);
-  transformStamped.transform.rotation.x = q.x();
-  transformStamped.transform.rotation.y = q.y();
-  transformStamped.transform.rotation.z = q.z();
-  transformStamped.transform.rotation.w = q.w();
-  ros::Rate loop_rate(10);
-  for ( int i = 0; i < 10; i++ )
-	{
-      br.sendTransform(transformStamped);
-      loop_rate.sleep();
-  }
-  std::cout << "\tFrame " << frame_name << " is added\n";
-}
-
-void getInverseMatrix ( Eigen::Matrix4f& original_transform, Eigen::Matrix4f& inverse_transform )
-{
-	inverse_transform.block< 3, 3 >( 0, 0 ) = original_transform.block< 3, 3 >( 0, 0 ).transpose();
-  inverse_transform.block< 3, 1 >( 0, 3 ) = -1.0f * ( inverse_transform.block< 3, 3 >( 0, 0 ) * original_transform.block< 3, 1 >( 0, 3 ) );
-}
-
-void get_rpy_from_matrix ( Eigen::Matrix4f rotation_matrix, double& roll, double& pitch, double& yaw )
-{
-  tf::Matrix3x3 object_m ( rotation_matrix (0, 0), rotation_matrix (0, 1), rotation_matrix (0, 2), rotation_matrix (1, 0), rotation_matrix (1, 1), rotation_matrix (1, 2), rotation_matrix (2, 0), rotation_matrix (2, 1), rotation_matrix (2, 2) );
-  object_m.getRPY ( roll, pitch, yaw );
-}
-
-void get_matrix_from_rpy ( Eigen::Matrix4f& rotation_matrix, double roll, double pitch, double yaw )
-{
-  rotation_matrix << cos(yaw)*cos(pitch),
-                     cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll),  cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), 0,
-                     sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), 0,
-                    -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), 0,
-                              0,                    0,                    0, 1;
 }
 
 class Target
