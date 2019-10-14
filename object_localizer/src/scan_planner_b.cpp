@@ -33,11 +33,10 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
-std::string reference_frame = "world";
-
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 
+std::string reference_frame = "world";
 float x_adjust = -0.01; // adjustment for the x poistion
 float scan_distance = 0.075; // set the distance to the scanning part
 float back_distance = 0.120; // backward distance
@@ -47,79 +46,42 @@ float e_scale = 1.1; // scale of the end scanning scan_half_length
 
 void read_scan_planner_cfg_file ( )
 {
-  std::string scan_planner_cfg_file_name = "scan_planner.cfg";
-  std::string scan_planner_cfg_file = ros::package::getPath ( "object_localizer" ) + "/config/" + scan_planner_cfg_file_name;
-  std::cout << "***The path of the scan_planner file is: [" << scan_planner_cfg_file << "]" << std::endl;
+  std::string scan_planner_cfg_file = ros::package::getPath ( "object_localizer" ) + "/config/scan_planner.cfg";
+  std::cout << "***Reading the configuration file scan_planner at [" << scan_planner_cfg_file << "]" << std::endl;
 
   std::ifstream input ( scan_planner_cfg_file );
   std::string line;
   if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-		// adjustment for the x poistion
     iss >> x_adjust;
   }
-	if ( std::getline ( input, line ) )
+  if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-		// set the distance to the scanning part
     iss >> scan_distance;
   }
   if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-		// set the backward distance
     iss >> back_distance;
   }
-	if ( std::getline ( input, line ) )
+  if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-		// scanning path length
     iss >> scan_half_length;
   }
-	if ( std::getline ( input, line ) )
+  if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-		// scale of the start scanning scan_half_length
     iss >> s_scale;
   }
-	if ( std::getline ( input, line ) )
+  if ( std::getline ( input, line ) )
   {
     std::istringstream iss ( line );
-		// scale of the end scanning scan_half_length
     iss >> e_scale;
   }
-
   input.close();
-}
-
-// filtering an input point cloud
-int filter_mean_k = 40;
-float filter_stddev = 1.0;
-
-void filterOutliner ( PointCloudT::Ptr cloud )
-{
-	static pcl::StatisticalOutlierRemoval < PointT > sor;
-  sor.setInputCloud ( cloud );
-  sor.setMeanK ( filter_mean_k );
-  sor.setStddevMulThresh ( filter_stddev );
-  sor.filter ( *cloud );
-}
-
-void show_segment_cloud ( PointCloudT::ConstPtr cloud )
-{
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer ( new pcl::visualization::PCLVisualizer ( "Segment Viewer" ) );
-  viewer->setBackgroundColor ( 0, 0, 0 );
-  pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb( cloud );
-  viewer->addPointCloud< PointT > ( cloud, rgb, "segment cloud" );
-  viewer->setPointCloudRenderingProperties ( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "segment cloud" );
-  viewer->addCoordinateSystem ( 1.0 );
-  viewer->initCameraParameters ();
-  while ( !viewer->wasStopped () )
-  {
-    viewer->spinOnce ( 100 );
-    boost::this_thread::sleep ( boost::posix_time::microseconds (100000) );
-  }
 }
 
 void getMinMax3D ( const pcl::PointCloud<PointT> &cloud, PointT &min_pt, PointT &max_pt )
@@ -295,90 +257,6 @@ float calculate_theta ( PointCloudT::ConstPtr cloudSegmented, Eigen::Vector3f& c
   return theta;
 }
 
-float get_central_point ( PointCloudT::Ptr segment_cloud, Eigen::Vector3f& central_point )
-{
-  filterOutliner ( segment_cloud );
-  PointT minPt, maxPt, searchPoint, midPt;
-  getMinMax3D ( *segment_cloud, minPt, maxPt );
-  // get the (x, y, z) of maximum and minimum points
-  std::cout << "Min [x, y, z]: = [" << minPt.x << ", " << minPt.y << ", " << minPt.z << "]" << std::endl;
-  std::cout << "Max [x, y, z]: = [" << maxPt.x << ", " << maxPt.y << ", " << maxPt.z << "]" << std::endl;
-  // calculate the middle point
-  searchPoint.x = ( maxPt.x + minPt.x ) / 2.0;
-  searchPoint.y = ( maxPt.y + minPt.y ) / 2.0;
-  searchPoint.z = ( maxPt.z + minPt.z ) / 2.0;
-  // search the points within the radius of 4.5 centimeter
-  std::vector < int > pointIdxRadiusSearch;
-  std::vector < float > pointRadiusSquaredDistance;
-  float radius = 0.045;
-  std::cout << "Neighbors within radius search at (" << searchPoint.x << " " << searchPoint.y << " " << searchPoint.z
-            << ") with radius=" << radius << std::endl;
-  pcl::KdTreeFLANN < PointT > kdtree;
-  kdtree.setInputCloud ( segment_cloud );
-  midPt.x = midPt.y = midPt.z = 0;
-  minPt.z = maxPt.z = searchPoint.z;
-  if ( kdtree.radiusSearch ( searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance ) > 0 )
-  {
-    for ( size_t i = 0; i < pointIdxRadiusSearch.size (); ++i )
-    {
-      midPt.x += segment_cloud->points[ pointIdxRadiusSearch[i] ].x;
-      midPt.y += segment_cloud->points[ pointIdxRadiusSearch[i] ].y;
-      midPt.z += segment_cloud->points[ pointIdxRadiusSearch[i] ].z;
-      if ( segment_cloud->points[ pointIdxRadiusSearch[i] ].z >= maxPt.z )
-      {
-        maxPt = segment_cloud->points[ pointIdxRadiusSearch[i] ];
-      }
-      if ( segment_cloud->points[ pointIdxRadiusSearch[i] ].z <= minPt.z )
-      {
-        minPt = segment_cloud->points[ pointIdxRadiusSearch[i] ];
-      }
-    }
-    midPt.x = midPt.x / pointIdxRadiusSearch.size ();
-    midPt.y = midPt.y / pointIdxRadiusSearch.size ();
-    midPt.z = midPt.z / pointIdxRadiusSearch.size ();
-  }
-  central_point ( 0 ) = midPt.x;
-  central_point ( 1 ) = midPt.y;
-  central_point ( 2 ) = midPt.z;
-
-  PointT minPt_2, maxPt_2;
-  minPt_2.x = minPt_2.y = minPt_2.z = 0;
-  maxPt_2.x = maxPt_2.y = maxPt_2.z = 0;
-  radius = 0.025;
-  if ( kdtree.radiusSearch ( maxPt, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance ) > 0 )
-  {
-    for ( size_t i = 0; i < pointIdxRadiusSearch.size (); ++i )
-    {
-      maxPt_2.x += segment_cloud->points[ pointIdxRadiusSearch[i] ].x;
-      maxPt_2.y += segment_cloud->points[ pointIdxRadiusSearch[i] ].y;
-      maxPt_2.z += segment_cloud->points[ pointIdxRadiusSearch[i] ].z;
-    }
-    maxPt_2.x = maxPt_2.x / pointIdxRadiusSearch.size ();
-    maxPt_2.y = maxPt_2.y / pointIdxRadiusSearch.size ();
-    maxPt_2.z = maxPt_2.z / pointIdxRadiusSearch.size ();
-  }
-
-  radius = 0.01;
-  if ( kdtree.radiusSearch ( minPt, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance ) > 0 )
-  {
-    for ( size_t i = 0; i < pointIdxRadiusSearch.size (); ++i )
-    {
-      minPt_2.x += segment_cloud->points[ pointIdxRadiusSearch[i] ].x;
-      minPt_2.y += segment_cloud->points[ pointIdxRadiusSearch[i] ].y;
-      minPt_2.z += segment_cloud->points[ pointIdxRadiusSearch[i] ].z;
-    }
-    minPt_2.x = minPt_2.x / pointIdxRadiusSearch.size ();
-    minPt_2.y = minPt_2.y / pointIdxRadiusSearch.size ();
-    minPt_2.z = minPt_2.z / pointIdxRadiusSearch.size ();
-  }
-
-  std::cout << "new Mid [x, y, z]: = [" << midPt.x << ", " << midPt.y << ", " << midPt.z << "]" << std::endl;
-  std::cout << "new Min [x, y, z]: = [" << minPt_2.x << ", " << minPt_2.y << ", " << minPt_2.z << "]" << std::endl;
-  std::cout << "new Max [x, y, z]: = [" << maxPt_2.x << ", " << maxPt_2.y << ", " << maxPt_2.z << "]" << std::endl;
-  float theta = atan2 ( std::abs ( maxPt_2.z - minPt_2.z ), std::abs ( maxPt_2.y - minPt_2.y ) ) * 180.0 / M_PI + 90.0;
-  return theta;
-}
-
 class ScanPlanner
 {
 public:
@@ -401,8 +279,8 @@ public:
 
   bool start_scan_planner ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
-		read_scan_planner_cfg_file ( );
-		std::cout << "[x_adjust, scan_distance, back_distance, scan_half_length, s_scale, e_scale] = ["<< x_adjust << ", " << scan_distance << ", " << back_distance << ", " << scan_half_length << ", " << s_scale << ", " << e_scale << "]"<< std::endl;
+    read_scan_planner_cfg_file ();
+    std::cout << "[x_adjust, scan_distance, back_distance, scan_half_length, s_scale, e_scale] = ["<< x_adjust << ", " << scan_distance << ", " << back_distance << ", " << scan_half_length << ", " << s_scale << ", " << e_scale << "]"<< std::endl;
 
     if ( segment_list->BBox_list_float.size() > 0 )
     {
@@ -432,10 +310,7 @@ public:
           color_b = 255;
         }
         bbox_idx ++;
-        // show_segment_cloud( segment_cloud );
-        // calculate_bounding_box( segment_cloud );
 
-        ///////////////////////////////////////////////////////////////////////
         // step 2, filter out point clouds which is not longer than 0.08
         float min_x, max_x;
         PointT minPt, maxPt;
@@ -470,12 +345,9 @@ public:
           filtered_segment_cloud->points.push_back( new_point );
         }
         segment_cloud = filtered_segment_cloud;
-        ///////////////////////////////////////////////////////////////////////
 
-        Eigen::Vector3f central_point;
         // step 3, find the central point of the segment point cloud
-        // float theta = get_central_point ( segment_cloud, central_point );
-        float u_10_base_y = -0.212;
+        Eigen::Vector3f central_point;
         float theta = calculate_theta ( segment_cloud, central_point );
         std::cout << std::endl << "[***] Rotation around x is [" << theta << "] degrees" << std::endl;
         float x_0 = central_point ( 0 );
