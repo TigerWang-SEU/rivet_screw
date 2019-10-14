@@ -13,8 +13,6 @@
 #include <list>
 #include <set>
 #include <map>
-#include "head/union_find.h"
-#include "head/post_process.h"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -47,6 +45,10 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/common/common_headers.h>
 
+#include "head/union_find.h"
+#include "head/post_process.h"
+#include "head/planner.h"
+
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 
@@ -64,51 +66,7 @@ float in_distance = 0.0065;
 float tool_angle = 0.0;
 uint8_t r = 0, g = 255, b = 0;
 uint32_t rgb = 0;
-int degree_num_threshold = 12;
-
 ros::Publisher vis_pub;
-
-/** Fits a circle to the points in the given 3D pointcloud
-    and saves them in the CENTER and RADIUS.
-    It assumes that the points lie on the SAME XY plane,
-    i.e. their Z-component is the same.  */
-void get_circle ( pcl::PointCloud< PointT >::Ptr cloud_in_, double min_circle_radius, double max_circle_radius, float ransac_thresh, Eigen::Vector3f &center, float &radius, std::vector< int > &inliers )
-{
-  boost::shared_ptr < pcl::SampleConsensusModelCircle2D < PointT > > model ( new pcl::SampleConsensusModelCircle2D < PointT > ( cloud_in_ ) );
-	model->setRadiusLimits ( min_circle_radius, max_circle_radius );
-
-  pcl::RandomSampleConsensus < PointT > sac ( model, ransac_thresh );
-  sac.setMaxIterations ( 200 );
-
-  // compute the model and get parameters
-  bool result = sac.computeModel ();
-  sac.getInliers ( inliers );
-  Eigen::VectorXf xyr;
-  sac.getModelCoefficients ( xyr );
-  center ( 0 ) = xyr ( 0 );
-  center ( 1 ) = xyr ( 1 );
-  center ( 2 ) = cloud_in_->points [ 0 ].z;
-  radius = xyr ( 2 );
-}
-
-bool check_circle ( pcl::PointCloud < PointT >::Ptr cloud_in_ )
-{
-  std::set < double > degree_set;
-  for ( PointT temp_point: cloud_in_->points )
-	{
-		float x = temp_point.x;
-		float y = temp_point.y;
-		float z = temp_point.z;
-    double degree = atan2 ( y, z ) * 180 / M_PI;
-    degree_set.insert ( floor ( degree / 12.0 ) );
-	}
-  std::cout << "\t### degree_set.size () = " << degree_set.size () << std::endl;
-  if ( degree_set.size () < degree_num_threshold )
-  {
-    return false;
-  }
-  return true;
-}
 
 void get_plane ( pcl::PointCloud< PointT >::Ptr cloud_in_, float ransac_thresh, Eigen::Vector3f &surface_normal, float &d, std::vector< int > &inliers )
 {
@@ -220,71 +178,10 @@ void scale_and_color_point_cloud ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr c
   cloud_out->header.frame_id = reference_frame;
 }
 
-void getMinMax3D ( const pcl::PointCloud<PointT> &cloud, PointT &min_pt, PointT &max_pt )
-{
-  Eigen::Array4f min_p, max_p;
-  min_p.setConstant ( FLT_MAX );
-  max_p.setConstant ( -FLT_MAX );
-
-  // If the data is dense, we don't need to check for NaN
-  if ( cloud.is_dense )
-  {
-    for ( size_t i = 0; i < cloud.points.size (); ++i )
-    {
-      pcl::Array4fMapConst pt = cloud.points[i].getArray4fMap ();
-      min_p = min_p.min (pt);
-      max_p = max_p.max (pt);
-    }
-  }
-  // NaN or Inf values could exist => check for them
-  else
-  {
-    for ( size_t i = 0; i < cloud.points.size (); ++i )
-    {
-      // Check if the point is invalid
-      if ( !pcl_isfinite (cloud.points[i].x) ||
-           !pcl_isfinite (cloud.points[i].y) ||
-           !pcl_isfinite (cloud.points[i].z) )
-          continue;
-      pcl::Array4fMapConst pt = cloud.points[i].getArray4fMap ();
-      min_p = min_p.min (pt);
-      max_p = max_p.max (pt);
-    }
-  }
-  min_pt.x = min_p[0]; min_pt.y = min_p[1]; min_pt.z = min_p[2];
-  max_pt.x = max_p[0]; max_pt.y = max_p[1]; max_pt.z = max_p[2];
-}
-
 void getInverseMatrix ( Eigen::Matrix4f& original_transform, Eigen::Matrix4f& inverse_transform )
 {
 	inverse_transform.block< 3, 3 >( 0, 0 ) = original_transform.block< 3, 3 >( 0, 0 ).transpose();
   inverse_transform.block< 3, 1 >( 0, 3 ) = -1.0f * ( inverse_transform.block< 3, 3 >( 0, 0 ) * original_transform.block< 3, 1 >( 0, 3 ) );
-}
-
-void show_frame ( std::string frame_name, double x, double y, double z, double roll, double pitch, double yaw )
-{
-  static tf2_ros::StaticTransformBroadcaster br;
-	geometry_msgs::TransformStamped transformStamped;
-	// create a frame for each object
-  transformStamped.header.stamp = ros::Time::now ();
-  transformStamped.header.frame_id = reference_frame;
-  transformStamped.child_frame_id = frame_name;
-  transformStamped.transform.translation.x = x;
-  transformStamped.transform.translation.y = y;
-  transformStamped.transform.translation.z = z;
-  tf2::Quaternion q;
-  q.setRPY(roll, pitch, yaw);
-  transformStamped.transform.rotation.x = q.x ();
-  transformStamped.transform.rotation.y = q.y ();
-  transformStamped.transform.rotation.z = q.z ();
-  transformStamped.transform.rotation.w = q.w ();
-  ros::Rate loop_rate ( 100 );
-  for ( int i = 0; i < 3; i++ )
-	{
-      br.sendTransform ( transformStamped );
-      loop_rate.sleep ();
-  }
-  std::cout << "\tFrame " << frame_name << " is added" << std::endl;
 }
 
 void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double& pitch, double& yaw )
@@ -293,213 +190,7 @@ void get_rpy_from_matrix ( Eigen::Matrix3f rotation_matrix, double& roll, double
   object_m.getRPY ( roll, pitch, yaw );
 }
 
-int get_id ()
-{
-  static int count = -1;
-  count = ( count + 1 ) % 10000;
-  return count;
-}
-
-void show_point ( int id, double x, double y, double z )
-{
-  visualization_msgs::Marker points;
-  points.header.frame_id = reference_frame;
-  points.header.stamp = ros::Time ();
-  points.ns = "my_arrow";
-  points.id = id;
-  points.type = visualization_msgs::Marker::POINTS;
-  points.action = visualization_msgs::Marker::ADD;
-  geometry_msgs::Point p_start;
-  p_start.x = x;
-  p_start.y = y;
-  p_start.z = z;
-  points.points.push_back ( p_start );
-  points.scale.x = 0.0035;
-  points.scale.y = 0.0035;
-  points.color.r = 1.0;
-  points.color.a = 1.0;
-  vis_pub.publish( points );
-}
-
-void show_arrow ( int id, double x, double y, double z, double x_d, double y_d, double z_d, float r_in = 0.0, float g_in = 1.0, float b_in = 0.0 )
-{
-  visualization_msgs::Marker points, line_strip;
-  points.header.frame_id = line_strip.header.frame_id = reference_frame;
-  points.header.stamp = line_strip.header.stamp = ros::Time ();
-  points.ns = line_strip.ns = "my_arrow";
-  points.id = id + 10000;
-  line_strip.id = id;
-  points.type = visualization_msgs::Marker::POINTS;
-  line_strip.type = visualization_msgs::Marker::LINE_STRIP;
-  points.action = line_strip.action = visualization_msgs::Marker::ADD;
-  geometry_msgs::Point p_start;
-  p_start.x = x;
-  p_start.y = y;
-  p_start.z = z;
-  line_strip.points.push_back ( p_start );
-  geometry_msgs::Point p_end;
-  p_end.x = x + x_d;
-  p_end.y = y + y_d;
-  p_end.z = z + z_d;
-  line_strip.points.push_back ( p_end );
-  points.points.push_back ( p_end );
-  points.scale.x = 0.0035;
-  points.scale.y = 0.0035;
-  points.color.r = 1.0;
-  points.color.g = 0.5;
-  points.color.a = 1.0;
-  line_strip.scale.x = 0.002;
-  line_strip.color.a = 1.0;
-  line_strip.color.r = r_in;
-  line_strip.color.g = g_in;
-  line_strip.color.b = b_in;
-  vis_pub.publish( points );
-  vis_pub.publish( line_strip );
-}
-
-void scale_vector ( float& x_d, float& y_d, float& z_d, float scale = 0.15 )
-{
-  float vector_scale = std::pow ( std::pow ( x_d, 2 ) + std::pow ( y_d, 2 ) + std::pow ( z_d, 2 ), 0.5 );
-  x_d = x_d / vector_scale * scale;
-  y_d = y_d / vector_scale * scale;
-  z_d = z_d / vector_scale * scale;
-}
-
-void show_transformation ( Eigen::Matrix4f transform )
-{
-  Eigen::Matrix4f transform_inverse ( Eigen::Matrix4f::Identity () );
-  getInverseMatrix ( transform, transform_inverse );
-  float x = transform_inverse ( 0, 3 );
-  float y = transform_inverse ( 1, 3 );
-  float z = transform_inverse ( 2, 3 );
-  float x_d = transform ( 0, 0 ), y_d = transform ( 0, 1 ), z_d = transform ( 0, 2 );
-  scale_vector ( x_d, y_d,  z_d );
-  show_arrow ( get_id (), x, y, z, x_d, y_d, z_d, 1.0, 0.0, 0.0 );
-  x_d = transform ( 1, 0 ), y_d = transform ( 1, 1 ), z_d = transform ( 1, 2 );
-  scale_vector ( x_d, y_d,  z_d );
-  show_arrow ( get_id (), x, y, z, x_d, y_d, z_d, 0.0, 1.0, 0.0 );
-  x_d = transform ( 2, 0 ), y_d = transform ( 2, 1 ), z_d = transform ( 2, 2 );
-  scale_vector ( x_d, y_d,  z_d );
-  show_arrow ( get_id (), x, y, z, x_d, y_d, z_d, 0.0, 0.0, 1.0 );
-}
-
 //#############################################################################
-// function for calculating rotation around the x axis
-float tableheight = 0.855;
-float calculate_theta ( PointCloudT::ConstPtr cloudSegmented )
-{
-  // step 1, get min_x and max_x
-  float min_x, max_x;
-  PointT minPt, maxPt;
-  getMinMax3D ( *cloudSegmented, minPt, maxPt );
-  min_x = minPt.x;
-  show_point ( get_id (), minPt.x, minPt.y, minPt.z );
-  std::cout << "\tmin_x = " << min_x << std::endl;
-  max_x = maxPt.x;
-  show_point ( get_id (), maxPt.x, maxPt.y, maxPt.z );
-  std::cout << "\tmax_x = " << max_x << std::endl;
-
-  // step 2, filter the segment point cloud
-  PointCloudT::Ptr filtered_segment_cloud	( new PointCloudT );
-  float y_avg = 0, z_avg = 0;
-  for ( PointT temp_point: cloudSegmented->points )
-  {
-    float x = temp_point.x;
-    float y = temp_point.y;
-    float z = temp_point.z;
-    if ( ( x - min_x ) / ( max_x - min_x ) < 0.2 )
-    {
-      continue;
-    }
-    PointT new_point;
-    new_point.x = x;
-    new_point.y = y;
-    y_avg += y;
-    new_point.z = z;
-    z_avg += z;
-    filtered_segment_cloud->points.push_back( new_point );
-  }
-  y_avg = y_avg / filtered_segment_cloud->points.size();
-  z_avg = z_avg / filtered_segment_cloud->points.size();
-
-  // step 3, compute principal directions
-  Eigen::Vector4f pcaCentroid;
-  pcl::compute3DCentroid ( *filtered_segment_cloud, pcaCentroid );
-
-  Eigen::Matrix3f covariance;
-  pcl::computeCovarianceMatrixNormalized ( *filtered_segment_cloud, pcaCentroid, covariance );
-
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver ( covariance, Eigen::ComputeEigenvectors );
-  Eigen::Vector3f eigenvaluesPCA = eigen_solver.eigenvalues ();
-  Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors ();
-
-  // get eigen vectors and find the maximum value column for each eigen vector
-  int max_idx_1_r, max_idx_2_r, max_idx_3_r, max_idx_1_c, max_idx_2_c, max_idx_3_c;
-  eigenVectorsPCA.block ( 0, 0, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_1_r, &max_idx_1_c );
-  eigenVectorsPCA.block ( 0, 1, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_2_r, &max_idx_2_c );
-  eigenVectorsPCA.block ( 0, 2, 3, 1 ).cwiseAbs().maxCoeff( &max_idx_3_r, &max_idx_3_c );
-  std::cout << "*** eigen value 1 = [" << eigenvaluesPCA (0) << "] ***\n\t eigen vector 1: [" << eigenVectorsPCA.block ( 0, 0, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_1_r << std::endl;
-  std::cout << "*** eigen value 2 = [" << eigenvaluesPCA (1) << "] ***\n\t eigen vector 2: [" << eigenVectorsPCA.block ( 0, 1, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_2_r << std::endl;
-  std::cout << "*** eigen value 3 = [" << eigenvaluesPCA (2) << "] ***\n\t eigen vector 3: [" << eigenVectorsPCA.block ( 0, 2, 3, 1 ).transpose () << "] \n\t max_idx = " << max_idx_3_r << std::endl;
-
-  float x_tmp, y_tmp, z_tmp;
-  if ( max_idx_3_r != 0 )
-  {
-    x_tmp = eigenVectorsPCA ( 0, 2 );
-    y_tmp = eigenVectorsPCA ( 1, 2 );
-    z_tmp = eigenVectorsPCA ( 2, 2 );
-  }
-  else
-  {
-    x_tmp = eigenVectorsPCA ( 0, 1 );
-    y_tmp = eigenVectorsPCA ( 1, 1 );
-    z_tmp = eigenVectorsPCA ( 2, 1 );
-  }
-  scale_vector ( x_tmp, y_tmp, z_tmp, 0.2 );
-  float y_new, z_new;
-  y_new = - z_tmp;
-  z_new = y_tmp;
-
-  show_arrow ( get_id (), pcaCentroid ( 0 ),  pcaCentroid ( 1 ), pcaCentroid ( 2 ), x_tmp, y_new, z_new );
-  std::cout << "[y_tmp, z_tmp] = [" << y_tmp << ", " << z_tmp << "]" << std::endl;
-  //###################### need more test #######################
-  float theta = 0.0;
-  if ( z_avg > tableheight )
-  {
-    theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
-    if ( theta < 0 )
-    {
-      theta = theta + 180;
-    }
-  }
-  else
-  {
-    if ( y_avg > 0 )
-    {
-      if ( y_new < 0 )
-      {
-        y_new = -y_new;
-        z_new = -z_new;
-      }
-      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
-    }
-    else
-    {
-      if ( y_new > 0 )
-      {
-        y_new = -y_new;
-        z_new = -z_new;
-      }
-      theta = atan2 ( z_new, y_new ) * 180.0 / M_PI;
-      if ( theta < 0 )
-      {
-        theta = theta + 360;
-      }
-    }
-  }
-  return theta;
-}
-
 // find orientation and central point for each rivet
 void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr search_cloud_, PointT &searchPoint, Eigen::Matrix4f transform_1, PointCloudT::Ptr& rivet_support_plane_cloud, PointCloudT::Ptr& rivet_cloud, double& roll, double& pitch, double& yaw, Eigen::Vector4f& rivet_point_new_final, Eigen::Vector4f& rivet_point_in_final )
 {
