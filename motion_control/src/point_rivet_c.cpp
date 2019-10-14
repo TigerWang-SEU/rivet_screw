@@ -20,6 +20,8 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
+#include "/home/syn/ros_ws/src/object_localizer/src/head/planner.h"
+
 std::string reference_frame = "world";
 ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
 
@@ -49,10 +51,10 @@ Adjustment& Adjustment::operator= ( const Adjustment& adjustment_in )
   return *this;
 }
 
-float read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
+void read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
 {
   std::string tool_angle_file = ros::package::getPath ( "motion_control" ) + "/config/tool_angle.cfg";
-  std::cout << "*** Read tool_angle_file is: [" << tool_angle_file << "]" << std::endl;
+  std::cout << "*** Reading tool_angle_file : [" << tool_angle_file << "]" << std::endl;
   std::ifstream input ( tool_angle_file );
 
   std::string line;
@@ -60,7 +62,7 @@ float read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
   adjustment_map.clear ();
   while ( std::getline ( input, line ) )
   {
-    if ( line.rfind ( "#", 0 ) == 0 || line.length() == 0 )
+    if ( line.length() == 0 || line.rfind ( "#", 0 ) == 0 )
     {
       continue;
     }
@@ -72,7 +74,6 @@ float read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
   }
 
   input.close();
-  return tool_angle;
 }
 
 void show_frame ( std::string frame_name, double x, double y, double z, double roll, double pitch, double yaw )
@@ -143,8 +144,19 @@ Target::Target ( int id_i, double x_i, double y_i, double z_i, double roll_i, do
 
 void targetFileReader ( std::queue< Target >& target_queue )
 {
+  float tool_angle;
+  std::string boundary = read_boundary_file ();
+  if ( boundary == "right" )
+  {
+    tool_angle = 15;
+  }
+  else
+  {
+    tool_angle = -15;
+  }
+
   std::map < std::string, Adjustment > adjustment_map;
-  float tool_angle = read_tool_angle ( adjustment_map );
+  read_tool_angle ( adjustment_map );
   Eigen::Matrix4f r_x_theta;
   float theta_x = tool_angle / 180.0 * M_PI;
   get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );

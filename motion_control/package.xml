@@ -23,6 +23,7 @@
   <build_depend>std_srvs</build_depend>
   <build_depend>pcl_ros</build_depend>
   <build_depend>pcl_conversions</build_depend>
+  <build_depend>object_localizer_msg</build_depend>
 
   <run_depend>pluginlib</run_depend>
   <run_depend>moveit_core</run_depend>
@@ -37,5 +38,6 @@
   <run_depend>std_srvs</run_depend>
   <run_depend>pcl_ros</run_depend>
   <run_depend>pcl_conversions</run_depend>
+  <run_depend>object_localizer_msg</run_depend>
 
 </package>

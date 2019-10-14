@@ -23,6 +23,7 @@ find_package(catkin REQUIRED
     std_srvs
     pcl_ros
     pcl_conversions
+    object_localizer_msg
 )
 
 find_package(Boost REQUIRED system filesystem date_time thread)
@@ -37,6 +38,7 @@ catkin_package(
     moveit_visual_tools
     moveit_ros_planning_interface
     interactive_markers
+    object_localizer_msg
   DEPENDS
     EIGEN3
 )
