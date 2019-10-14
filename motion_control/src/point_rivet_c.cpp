@@ -53,7 +53,7 @@ Adjustment& Adjustment::operator= ( const Adjustment& adjustment_in )
   return *this;
 }
 
-void read_tool_angle ( std::map < std::string, Adjustment > & adjustment_map )
+void read_adjustment ( std::map < std::string, Adjustment > & adjustment_map )
 {
   std::string tool_angle_file = ros::package::getPath ( "motion_control" ) + "/config/tool_angle.cfg";
   std::cout << "*** Reading tool_angle_file : [" << tool_angle_file << "]" << std::endl;
@@ -97,7 +97,7 @@ Target::Target ( int id_i, double x_i, double y_i, double z_i, double roll_i, do
   yaw = yaw_i;
 }
 
-void targetFileReader ( std::queue< Target >& target_queue )
+void read_target ( std::queue< Target >& target_queue )
 {
   float tool_angle;
   std::string boundary = read_boundary_file ();
@@ -111,7 +111,7 @@ void targetFileReader ( std::queue< Target >& target_queue )
   }
 
   std::map < std::string, Adjustment > adjustment_map;
-  read_tool_angle ( adjustment_map );
+  read_adjustment ( adjustment_map );
   Eigen::Matrix4f r_x_theta;
   float theta_x = tool_angle / 180.0 * M_PI;
   get_matrix_from_rpy ( r_x_theta, theta_x, 0, 0 );
@@ -216,7 +216,15 @@ void move_trajectory ( geometry_msgs::Pose& target_pose1, geometry_msgs::Pose& t
 
 void set_target_pose_1 ( Target& target, geometry_msgs::Pose& target_pose )
 {
-  target_pose.position.x = target.x + 0.04;
+  std::string boundary = read_boundary_file ();
+  if ( boundary == "right" )
+  {
+    target_pose.position.x = target.x + 0.04;
+  }
+  else
+  {
+    target_pose.position.x = target.x - 0.04;
+  }
   target_pose.position.y = target.y + 0.05;
   target_pose.position.z = target.z - 0.05;
   float rollt  = target.roll;
@@ -241,7 +249,7 @@ void do_point_rivet ()
   // step 1, read in all target rivets
   std_srvs::Empty msg;
   std::queue< Target > target_queue;
-  targetFileReader ( target_queue );
+  read_target ( target_queue );
 
   // step 2, create interface for motion planning
   static const std::string PLANNING_GROUP = "rivet_tool";
