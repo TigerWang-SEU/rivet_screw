@@ -25,7 +25,7 @@
 #include "/home/syn/ros_ws/src/object_localizer/src/head/rviz_show.h"
 #include "/home/syn/ros_ws/src/object_localizer/src/head/planner.h"
 
-ros::ServiceClient new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
+ros::ServiceClient start_new_nut_, stop_new_nut_, start_screwing_, stop_screwing_;
 
 class Adjustment
 {
@@ -291,13 +291,13 @@ void do_point_rivet ()
         move_group.move ();
         ros::Duration ( 0.5 ) .sleep ();
 
-        new_nut_.call ( msg );
+        start_new_nut_.call ( msg );
 
         // start the screwing part
         while ( !target_queue.empty () )
         {
           // pump out a new nut
-          // new_nut_.call ( msg );
+          // start_new_nut_.call ( msg );
           // ros::Duration ( 0.3 ) .sleep ();
 
           // get the in pose
@@ -324,7 +324,7 @@ void do_point_rivet ()
           // for ( int pump_counter = 0; pump_counter < 2; pump_counter++ )
           // {
           //   ros::Duration ( 0.2 ) .sleep ();
-          //   new_nut_.call ( msg );
+          //   start_new_nut_.call ( msg );
           //   ros::Duration ( 0.3 ) .sleep ();
           //   stop_new_nut_.call ( msg );
           // }
@@ -357,7 +357,7 @@ int main ( int argc, char** argv )
   ros::init ( argc, argv, "point_rivet_c" );
   ros::NodeHandle nh_;
 
-  new_nut_ = nh_.serviceClient < std_srvs::Empty > ( "new_nut" );
+  start_new_nut_ = nh_.serviceClient < std_srvs::Empty > ( "start_new_nut" );
   stop_new_nut_ = nh_.serviceClient < std_srvs::Empty > ( "stop_new_nut" );
   start_screwing_ = nh_.serviceClient < std_srvs::Empty > ( "start_screwing" );
   stop_screwing_ = nh_.serviceClient < std_srvs::Empty > ( "stop_screwing" );
