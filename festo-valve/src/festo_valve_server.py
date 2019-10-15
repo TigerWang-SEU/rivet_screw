@@ -25,7 +25,7 @@ def stop_lift_table ( req ):
     return {}
 
 # define the service recall functions for pump new rivet
-def new_nut ( req ):
+def start_new_nut ( req ):
     with grpc.insecure_channel("localhost:50051") as channel:
         client = festo_pb2_grpc.valveControllerStub ( channel )
         client.openValve ( festo_pb2.ValveRequest ( valveNo = 1 ) )
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     rospy.init_node ( 'festo_valve_server' )
     start_lift_table = rospy.Service ( 'start_lift_table', Empty, start_lift_table )
     stop_lift_table = rospy.Service ( 'stop_lift_table', Empty, stop_lift_table )
-    new_nut = rospy.Service ( 'new_nut', Empty, new_nut )
+    start_new_nut = rospy.Service ( 'start_new_nut', Empty, start_new_nut )
     stop_new_nut = rospy.Service ( 'stop_new_nut', Empty, stop_new_nut )
 
     rospy.spin ()
