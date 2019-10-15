@@ -29,10 +29,6 @@ find_package(catkin REQUIRED
 find_package(Boost REQUIRED system filesystem date_time thread)
 
 catkin_package(
-  INCLUDE_DIRS
-    common/include
-  LIBRARIES
-    modbus
   CATKIN_DEPENDS
     moveit_core
     moveit_visual_tools
@@ -47,11 +43,9 @@ catkin_package(
 ## Build ##
 ###########
 
-add_library(modbus common/src/modbus.cpp)
-
-include_directories(SYSTEM ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIRS})
-include_directories(${catkin_INCLUDE_DIRS} common/include)
-link_directories(${catkin_LIBRARY_DIRS})
+include_directories ( SYSTEM ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIRS} )
+include_directories ( ${catkin_INCLUDE_DIRS} )
+link_directories ( ${catkin_LIBRARY_DIRS} )
 
 add_executable(avoid_obstacle src/avoid_obstacle.cpp)
 target_link_libraries(avoid_obstacle ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -98,14 +92,8 @@ target_link_libraries(do_scan_b_2 ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(do_scan_c src/do_scan_c.cpp)
 target_link_libraries(do_scan_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(point_rivet src/point_rivet.cpp)
-target_link_libraries(point_rivet ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
-add_executable(point_rivet_b src/point_rivet_b.cpp)
-target_link_libraries(point_rivet_b ${catkin_LIBRARIES} ${Boost_LIBRARIES} modbus)
-
 add_executable(point_rivet_c src/point_rivet_c.cpp)
-target_link_libraries(point_rivet_c ${catkin_LIBRARIES} ${Boost_LIBRARIES} modbus)
+target_link_libraries ( point_rivet_c ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
 
 add_executable(pose_test src/pose_test.cpp)
 target_link_libraries(pose_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
