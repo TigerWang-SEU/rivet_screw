@@ -9,16 +9,19 @@ find_package( catkin REQUIRED COMPONENTS
   roscpp
   rospy
 )
+find_package ( Boost REQUIRED )
+find_package ( PkgConfig REQUIRED )
+
+include_directories ( modbuspp ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 
 catkin_package(
-  #  INCLUDE_DIRS include
+  INCLUDE_DIRS modbuspp
   #  LIBRARIES object_localizer
   #  CATKIN_DEPENDS roscpp rospy std_msgs
   CATKIN_DEPENDS roscpp
 )
 
-include_directories(
-  # include
-  ${catkin_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
-)
+add_library ( modbus modbuspp/modbus.cpp )
+
+add_executable ( festo_valve_server_b src/festo_valve_server_b.cpp )
+target_link_libraries ( festo_valve_server_b modbus ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
