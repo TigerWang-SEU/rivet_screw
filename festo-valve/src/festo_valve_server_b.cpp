@@ -1,9 +1,11 @@
-#include "ros/ros.h"
 #include <iostream>
 #include <vector>
-#include "modbus.h"
-#include <boost/utility/binary.hpp>
 #include <bitset>
+
+#include "ros/ros.h"
+#include <std_srvs/Empty.h>
+
+#include "modbus.h"
 
 class FestoValveController
 {
@@ -12,36 +14,36 @@ private:
   std::string ip_address;
   uint16_t current_state = 0b0000000000000000;
   ros::NodeHandle nh_;
-  ros::ServiceServer start_rough_localizer_, stop_rough_localizer_;
+  ros::ServiceServer start_new_nut_, stop_new_nut_, start_lift_table_, stop_lift_table_;
 public:
   FestoValveController ();
   ~FestoValveController ();
   void open_valve ( int valve_no );
   void close_valve ( int valve_no );
 
-  // bool start_new_nut ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
-  // {
-  //   open_valve ( 1 );
-  //   return true;
-  // }
-  //
-  // bool stop_new_nut ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
-  // {
-  //   close_valve ( 1 );
-  //   return true;
-  // }
-  //
-  // bool start_lift_table ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
-  // {
-  //   open_valve ( 2 );
-  //   return true;
-  // }
-  //
-  // bool stop_lift_table ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
-  // {
-  //   close_valve ( 2 );
-  //   return true;
-  // }
+  bool start_new_nut ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    open_valve ( 1 );
+    return true;
+  }
+
+  bool stop_new_nut ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    close_valve ( 1 );
+    return true;
+  }
+
+  bool start_lift_table ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    open_valve ( 2 );
+    return true;
+  }
+
+  bool stop_lift_table ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
+  {
+    close_valve ( 2 );
+    return true;
+  }
 
 };
 
@@ -52,13 +54,10 @@ FestoValveController::FestoValveController ()
   mb_ptr.reset ( new modbus ( ip_address, 502 ) );
   mb_ptr->modbus_set_slave_id ( 1 );
   mb_ptr->modbus_connect ();
-
-  // start_rough_localizer_ = nh_.advertiseService ( "start_rough_localizer", &RoughLocalizer::start_rough_localizer, this );
-  // stop_rough_localizer_ = nh_.advertiseService ( "stop_rough_localizer", &RoughLocalizer::stop_rough_localizer, this );
-  // start_lift_table = nh_.advertiseService ( 'start_lift_table', Empty, start_lift_table )
-  // stop_lift_table = nh_.advertiseService ( 'stop_lift_table', Empty, stop_lift_table )
-  // start_new_nut = nh_.advertiseService ( 'start_new_nut', Empty, start_new_nut )
-  // stop_new_nut = nh_.advertiseService ( 'stop_new_nut', Empty, stop_new_nut )
+  start_new_nut_ = nh_p_.advertiseService ( "start_new_nut", &FestoValveController::start_new_nut, this );
+  stop_new_nut_ = nh_p_.advertiseService ( "stop_new_nut", &FestoValveController::stop_new_nut, this );
+  start_lift_table_ = nh_p_.advertiseService ( "start_lift_table", &FestoValveController::start_lift_table, this );
+  stop_lift_table_ = nh_p_.advertiseService ( "stop_lift_table", &FestoValveController::stop_lift_table, this );
 }
 
 FestoValveController::~FestoValveController ()
@@ -109,16 +108,7 @@ int main ( int argc, char** argv )
   nh_p_.setParam ( "ip_address", "192.168.2.183" );
   ros::AsyncSpinner spinner ( 4 );
   spinner.start ();
-  // to do somehting
   FestoValveController fv_con;
-  fv_con.open_valve ( 1 );
-  ros::Duration ( 2 ).sleep ();
-  fv_con.open_valve ( 2 );
-  ros::Duration ( 2 ).sleep ();
-  fv_con.close_valve ( 2 );
-  ros::Duration ( 2 ).sleep ();
-  fv_con.close_valve ( 1 );
-  ros::Duration ( 2 ).sleep ();
   ros::waitForShutdown ();
   return 0;
 }
