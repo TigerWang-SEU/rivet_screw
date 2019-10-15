@@ -54,10 +54,12 @@ FestoValveController::FestoValveController ()
   mb_ptr.reset ( new modbus ( ip_address, 502 ) );
   mb_ptr->modbus_set_slave_id ( 1 );
   mb_ptr->modbus_connect ();
-  start_new_nut_ = nh_p_.advertiseService ( "start_new_nut", &FestoValveController::start_new_nut, this );
-  stop_new_nut_ = nh_p_.advertiseService ( "stop_new_nut", &FestoValveController::stop_new_nut, this );
-  start_lift_table_ = nh_p_.advertiseService ( "start_lift_table", &FestoValveController::start_lift_table, this );
-  stop_lift_table_ = nh_p_.advertiseService ( "stop_lift_table", &FestoValveController::stop_lift_table, this );
+
+  ros::NodeHandle nh_;
+  start_new_nut_ = nh_.advertiseService ( "start_new_nut", &FestoValveController::start_new_nut, this );
+  stop_new_nut_ = nh_.advertiseService ( "stop_new_nut", &FestoValveController::stop_new_nut, this );
+  start_lift_table_ = nh_.advertiseService ( "start_lift_table", &FestoValveController::start_lift_table, this );
+  stop_lift_table_ = nh_.advertiseService ( "stop_lift_table", &FestoValveController::stop_lift_table, this );
 }
 
 FestoValveController::~FestoValveController ()
