@@ -290,15 +290,12 @@ void do_point_rivet ()
         move_group.setMaxAccelerationScalingFactor ( 0.3 );
         move_group.move ();
         ros::Duration ( 0.5 ) .sleep ();
-
-        start_new_nut_.call ( msg );
-
         // start the screwing part
         while ( !target_queue.empty () )
         {
           // pump out a new nut
-          // start_new_nut_.call ( msg );
-          // ros::Duration ( 0.3 ) .sleep ();
+          start_new_nut_.call ( msg );
+          ros::Duration ( 0.2 ) .sleep ();
 
           // get the in pose
           Target target = target_queue.front ();
@@ -309,7 +306,7 @@ void do_point_rivet ()
           // start screwing the rivet and move into the rivet
           start_screwing_.call ( msg );
           move_trajectory ( target_pose1, target_pose2, move_group );
-          ros::Duration ( 4.5 ) .sleep ();
+          ros::Duration ( 4.0 ) .sleep ();
           stop_screwing_.call ( msg );
           target_pose1 = target_pose2;
 
@@ -320,14 +317,14 @@ void do_point_rivet ()
           move_trajectory ( target_pose1, target_pose2, move_group );
 
           // pump out the broken part of a nut
-          // stop_new_nut_.call ( msg );
-          // for ( int pump_counter = 0; pump_counter < 2; pump_counter++ )
-          // {
-          //   ros::Duration ( 0.2 ) .sleep ();
-          //   start_new_nut_.call ( msg );
-          //   ros::Duration ( 0.3 ) .sleep ();
-          //   stop_new_nut_.call ( msg );
-          // }
+          stop_new_nut_.call ( msg );
+          for ( int pump_counter = 0; pump_counter < 2; pump_counter++ )
+          {
+            ros::Duration ( 0.15 ) .sleep ();
+            start_new_nut_.call ( msg );
+            ros::Duration ( 0.25 ) .sleep ();
+            stop_new_nut_.call ( msg );
+          }
 
           // move to the next rivet if there exist the next rivet
           target_pose1 = target_pose2;
@@ -340,7 +337,6 @@ void do_point_rivet ()
             target_pose1 = target_pose2;
           }
         }
-        stop_new_nut_.call ( msg );
       }
     }
   }
