@@ -3,9 +3,7 @@
 
   <include file="$(find syn_ur10_bringup)/launch/syn_ur10_bringup.launch"/>
 
-  <!-- <node name="scan_reader" pkg="model_loader" type="scan_reader" respawn="true" output="screen">
-  </node> -->
-  <!-- add new tf dummy node to fix the table on the floor -->
+  <!-- use tf dummy node to fix the table on the floor -->
   <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
   </node>
 
@@ -19,11 +17,14 @@
 
   <!-- <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
   </node> -->
-  <node name="object_detector" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
+  <node name="image_transport" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
   </node>
 
   <node name="festo_valve_server" pkg="festo-valve" type="festo_valve_server" respawn="true" output="screen">
     <param name="ip_address" type="str" value="192.168.2.183"/>
+  </node>
+
+  <node name="screwing_server_b" pkg="focus_6000" type="screwing_server_b.py" respawn="true" output="screen">
   </node>
 
   <include file="$(find motion_control)/launch/start_motion_control.launch"/>
