@@ -1,10 +1,12 @@
+#ifndef RVIZ_SHOW_H
+#define RVIZ_SHOW_H
+
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <ctime>
 #include <limits>
-#include <boost/algorithm/string/predicate.hpp>
 #include <sstream>
 #include <math.h>
 #include <cmath>
@@ -20,38 +22,26 @@
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 #include <visualization_msgs/Marker.h>
-#include <ros/package.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf/transform_listener.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 
-#include <pcl/io/ply_io.h>
-#include <pcl/point_types.h>
-#include <pcl/registration/icp.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/ModelCoefficients.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/common/transforms.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/filters/project_inliers.h>
-#include <pcl/sample_consensus/ransac.h>
-#include <pcl/common/common_headers.h>
-
 #include "reference_frame.h"
 #include "transform.h"
 
-#ifndef RVIZ_SHOW_H
-#define RVIZ_SHOW_H
-
-ros::Publisher vis_pub;
+ros::Publisher& get_vis_pub ()
+{
+  static bool is_initialized = false;
+  static ros::Publisher vis_pub_holder;
+  if ( is_initialized == false )
+  {
+    std::cout << "\033[31;47m create the vis_pub... \033[0m" << std::endl;
+    ros::NodeHandle nh_;
+    vis_pub_holder = nh_.advertise < visualization_msgs::Marker > ( "visualization_marker", 10 );
+    is_initialized = true;
+  }
+  return vis_pub_holder;
+}
 
 int get_id ()
 {
@@ -86,6 +76,8 @@ void show_point ( int id, double x, double y, double z )
   points.scale.y = 0.0035;
   points.color.r = 1.0;
   points.color.a = 1.0;
+  ros::Publisher vis_pub;
+  vis_pub = get_vis_pub ();
   vis_pub.publish( points );
 }
 
@@ -121,6 +113,8 @@ void show_arrow ( int id, double x, double y, double z, double x_d, double y_d, 
   line_strip.color.r = r_in;
   line_strip.color.g = g_in;
   line_strip.color.b = b_in;
+  ros::Publisher vis_pub;
+  vis_pub = get_vis_pub ();
   vis_pub.publish( points );
   vis_pub.publish( line_strip );
 }
