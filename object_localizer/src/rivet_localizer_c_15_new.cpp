@@ -297,26 +297,57 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
       new_point.z = z;
       new_point.rgb = *reinterpret_cast<float*> ( &rgb );
       cloud_rivet->points.push_back ( new_point );
-      rivet_cloud->points.push_back ( new_point );
+      // rivet_cloud->points.push_back ( new_point );
     }
   }
 
   if ( cloud_rivet->size () == 0 )
   {
-    PCL_ERROR ( "no rivet point cloud" );
+    PCL_ERROR ( "no rivet point cloud ...\n" );
     rivet_point_new_final ( 0 ) = NAN;
     return;
   }
+
+  filter_mean_k = 20;
+  filter_stddev = 0.1;
+  filterOutliner ( cloud_rivet );
+  rivet_cloud = cloud_rivet;
 
   // step 9, calculate the new central point
   double x_sum = 0;
   double y_sum = 0;
   double z_sum = 0;
+  double y_min = DBL_MAX, y_max = -DBL_MAX, z_min = DBL_MAX, z_max = -DBL_MAX;
   for ( PointT temp_point: cloud_rivet->points )
   {
     x_sum += temp_point.x;
     y_sum += temp_point.y;
     z_sum += temp_point.z;
+    if ( temp_point.y < y_min )
+    {
+      y_min = temp_point.y;
+    }
+    if ( temp_point.y > y_max )
+    {
+      y_max = temp_point.y;
+    }
+    if ( temp_point.z < z_min )
+    {
+      z_min = temp_point.z;
+    }
+    if ( temp_point.z > z_max )
+    {
+      z_max = temp_point.z;
+    }
+  }
+  double _rad_1 = std::abs ( y_max - y_min );
+  double _rad_2 = std::abs ( z_max - z_min );
+  std::cout << "[_rad_1, _rad_2] = " << _rad_1 << ", " << _rad_2 << std::endl;
+  if ( _rad_1 < 0.003 || _rad_1 > 0.007 || _rad_2 < 0.003 || _rad_2 > 0.007 )
+  {
+    PCL_ERROR ( "Not rivet ...\n" );
+    rivet_point_new_final ( 0 ) = NAN;
+    return;
   }
   double x_avg = x_sum / cloud_rivet->size ();
   double y_avg = y_sum / cloud_rivet->size ();
@@ -529,19 +560,19 @@ public:
       }
 
     	int rivet_point_counter = component_element_list.size ();
-    	double x_avg = x_sum / rivet_point_counter;
-    	double y_avg = y_sum / rivet_point_counter;
-    	double z_avg = z_sum / rivet_point_counter;
-    	double _radius_1 = std::sqrt ( std::pow ( ( y_max - y_avg ) , 2 ) + std::pow ( ( z_max - z_avg ) , 2 ) ) * 2.0;
-    	double _radius_2 = std::sqrt ( std::pow ( ( y_max - y_avg ) , 2 ) ) * 2.0;
-    	double _radius_3 = std::sqrt ( std::pow ( ( z_max - z_avg ) , 2 ) ) * 2.0;
-    	if ( _radius_1 > 0.003 && _radius_2 > 0.003 && _radius_3 > 0.003 )
-    	{
-    		Eigen::Vector4f rivet_point;
-    		rivet_point << (x_avg + 0.01), y_avg, z_avg, 1.0;
-    		rivet_vector.push_back ( rivet_point );
-    		std::cout << "*** [" << rivet_counter << "] : rivet center = [" << x_avg << ", " << y_avg << ", " << z_avg << "] " << std::endl;
-    	}
+      double x_avg = x_sum / rivet_point_counter;
+      double y_avg = y_sum / rivet_point_counter;
+      double z_avg = z_sum / rivet_point_counter;
+      double _radius_1 = std::sqrt ( std::pow ( ( y_max - y_avg ) , 2 ) + std::pow ( ( z_max - z_avg ) , 2 ) ) * 2.0;
+      double _radius_2 = std::sqrt ( std::pow ( ( y_max - y_avg ) , 2 ) ) * 2.0;
+      double _radius_3 = std::sqrt ( std::pow ( ( z_max - z_avg ) , 2 ) ) * 2.0;
+      if ( _radius_1 > 0.003 && _radius_2 > 0.003 && _radius_3 > 0.003 && _radius_1 < 0.02 && _radius_2 < 0.02 && _radius_3 < 0.02 )
+      {
+        Eigen::Vector4f rivet_point;
+        rivet_point << (x_avg + 0.01), y_avg, z_avg, 1.0;
+        rivet_vector.push_back ( rivet_point );
+        std::cout << "*** [" << rivet_counter << "] : rivet center = [" << x_avg << ", " << y_avg << ", " << z_avg << "] " << std::endl;
+      }
       rivet_counter ++;
     }
     std::cout << "rivet_vector.size() = " << rivet_vector.size() << std::endl;
@@ -628,15 +659,10 @@ public:
     std::cout << "scene_cloud_total has [" << scene_cloud_total->size() << "] data points" << std::endl;
     if ( scene_cloud_total->size() > 0 )
     {
-      int counter = 0;
-      while ( counter < 3 )
-      {
-        scene_cloud_total->header.frame_id = reference_frame;
-        pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
-        cloud_pub_.publish ( scene_cloud_total );
-        ros::Duration ( 0.01 ) .sleep ();
-        counter ++;
-      }
+      scene_cloud_total->header.frame_id = reference_frame;
+      pcl_conversions::toPCL ( ros::Time::now(), scene_cloud_total->header.stamp );
+      cloud_pub_.publish ( scene_cloud_total );
+      ros::Duration ( 0.01 ) .sleep ();
       std::cout << "***On Topic [/rivet_localizer/points], published [" << scene_cloud_total->size() << "] data points***" << std::endl;
     }
   }
@@ -718,8 +744,6 @@ public:
     std::string cloud_out_name = "/rivet_localizer/points";
     cloud_pub_ = nh_.advertise < PointCloudT > ( cloud_out_name, 30 );
     ROS_INFO_STREAM ( "Publishing point cloud message on topic " << cloud_out_name );
-
-    vis_pub = nh_.advertise < visualization_msgs::Marker > ( "visualization_marker", 0 );
 
     r_x_45 << 1,  0,  0,  0,
               0, cos(theta_x_45), -sin(theta_x_45), 0,
