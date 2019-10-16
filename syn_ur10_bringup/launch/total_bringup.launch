@@ -5,7 +5,6 @@
 
   <!-- <node name="scan_reader" pkg="model_loader" type="scan_reader" respawn="true" output="screen">
   </node> -->
-
   <!-- add new tf dummy node to fix the table on the floor -->
   <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
   </node>
@@ -23,10 +22,10 @@
   <node name="object_detector" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
   </node>
 
-  <!-- <include file="$(find microepsilon_scancontrol)/launch/scanner.launch"/> -->
+  <node name="festo_valve_server" pkg="festo-valve" type="festo_valve_server" respawn="true" output="screen">
+    <param name="ip_address" type="str" value="192.168.2.183"/>
+  </node>
 
-  <!-- using old motion control launch file [start_motion_control] -->
-  <!-- start_motion_control_b for the horizontal test part -->
   <include file="$(find motion_control)/launch/start_motion_control.launch"/>
 
 </launch>
