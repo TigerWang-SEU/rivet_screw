@@ -24,8 +24,8 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
 
-#include "ProfilesCallback/ProfilesCallback.h"
-#include "ProfilesCallback/ThreadSafeQueue.h"
+#include "head/ProfilesCallback.h"
+#include "head/ThreadSafeQueue.h"
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
