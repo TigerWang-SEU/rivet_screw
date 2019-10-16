@@ -4,9 +4,7 @@ project ( microepsilon_scancontrol )
 add_compile_options ( -std=c++11 )
 
 find_package ( catkin REQUIRED COMPONENTS roscpp sensor_msgs std_srvs std_msgs pcl_ros pcl_conversions )
-
 find_package ( Boost REQUIRED )
-
 find_package ( PkgConfig REQUIRED )
 pkg_check_modules ( ARAVIS4 REQUIRED aravis-0.4 )
 
@@ -26,27 +24,6 @@ add_library ( ${PROJECT_NAME} common/src/${PROJECT_NAME}.cpp )
 add_dependencies ( ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} )
 target_link_libraries ( ${PROJECT_NAME} ${catkin_LIBRARIES} ${LLT_LIBRARY} ${MESCAN_LIBRARY} ${ARAVIS4_LIBRARIES} )
 
-
 add_executable ( ${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp )
 add_dependencies ( ${PROJECT_NAME}_node ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} )
 target_link_libraries ( ${PROJECT_NAME}_node ${PROJECT_NAME} ${catkin_LIBRARIES} )
-
-add_executable ( test_2 src/test.cpp )
-target_link_libraries ( test_2 ${catkin_LIBRARIES} ${LLT_LIBRARY} ${MESCAN_LIBRARY} ${ARAVIS4_LIBRARIES} )
-
-### INSTALL ###
-install ( TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install ( DIRECTORY common/include/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  PATTERN ".svn" EXCLUDE
-)
-
-install ( DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  PATTERN ".svn" EXCLUDE
-)
