@@ -53,23 +53,14 @@ target_link_libraries(avoid_obstacle ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(motion_control src/motion_control.cpp)
 target_link_libraries(motion_control ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(control_node src/control_node.cpp)
-target_link_libraries(control_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
 add_executable(control_node_b src/control_node_b.cpp)
 target_link_libraries(control_node_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
-add_executable(control_node_test src/control_node_test.cpp)
-target_link_libraries(control_node_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
-add_executable(control_node_test_2 src/control_node_test_2.cpp)
-target_link_libraries(control_node_test_2 ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(control_node_plan_test src/control_node_plan_test.cpp)
 target_link_libraries(control_node_plan_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(save_pc_control_node src/save_pc_control_node.cpp)
-target_link_libraries(save_pc_control_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_executable(control_node_test src/control_node_test.cpp)
+target_link_libraries(control_node_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(move_camera src/move_camera.cpp)
 target_link_libraries(move_camera ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -77,23 +68,11 @@ target_link_libraries(move_camera ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(move_camera_b src/move_camera_b.cpp)
 target_link_libraries(move_camera_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(move_camera_c src/move_camera_c.cpp)
-target_link_libraries(move_camera_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
 add_executable(do_scan src/do_scan.cpp)
 target_link_libraries(do_scan ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(do_scan_b src/do_scan_b.cpp)
 target_link_libraries(do_scan_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(do_scan_b_2 src/do_scan_b_2.cpp)
-target_link_libraries(do_scan_b_2 ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
-add_executable(do_scan_c src/do_scan_c.cpp)
-target_link_libraries(do_scan_c ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
 add_executable(point_rivet_c src/point_rivet_c.cpp)
 target_link_libraries ( point_rivet_c ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
-
-add_executable(pose_test src/pose_test.cpp)
-target_link_libraries(pose_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})

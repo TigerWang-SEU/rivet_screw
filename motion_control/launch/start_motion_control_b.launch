@@ -28,13 +28,11 @@
   </node>
 
   <!-- start the node "rivet_localizer_c_15" which provides the service "start_rivet_localizer" -->
-  <node name="rivet_localizer_c_15" pkg="object_localizer" type="rivet_localizer_c_15" respawn="true" output="screen">
+  <node name="rivet_localizer_c_15_new" pkg="object_localizer" type="rivet_localizer_c_15_new" respawn="true" output="screen">
   </node>
 
   <!-- start the node "point_rivet_c" which provides the service "start_point_rivet" -->
   <node name="point_rivet_c" pkg="motion_control" type="point_rivet_c" respawn="true" output="screen">
-    <param name="XDK" type="int" value="-1"/>
-    <param name="ip_address" type="str" value="192.168.2.183"/>
   </node>
 
 </launch>

@@ -33,8 +33,6 @@
 
   <!-- start the node "point_rivet_c" which provides the service "start_point_rivet" -->
   <node name="point_rivet_c" pkg="motion_control" type="point_rivet_c" respawn="true" output="screen">
-    <param name="XDK" type="int" value="-1"/>
-    <param name="ip_address" type="str" value="192.168.2.183"/>
   </node>
 
 </launch>

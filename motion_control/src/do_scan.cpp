@@ -18,7 +18,8 @@
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
 #include "head/do_scan.h"
-#include "head/motion_control.h"
+#include "head/motion_plan.h"
+#include "/home/syn/ros_ws/src/object_localizer/src/head/planner.h"
 
 void set_rivet_tool_forward ( MotionControl& motion_control )
 {
