@@ -23,5 +23,5 @@ catkin_package(
 
 add_library ( modbus modbuspp/modbus.cpp )
 
-add_executable ( festo_valve_server_b src/festo_valve_server_b.cpp )
-target_link_libraries ( festo_valve_server_b modbus ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
+add_executable ( festo_valve_server src/festo_valve_server.cpp )
+target_link_libraries ( festo_valve_server modbus ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
