@@ -222,34 +222,36 @@ bool connect_scanner ( std::string serial_number_ )
   return true;
 }
 
-bool power_off ()
+bool power_on ()
 {
-  unsigned int value;
-  // if ( hLLT->GetFeature ( INQUIRY_FUNCTION_LASERPOWER, &value ) )
-  // {
-  //   std::cout << "Error while setting INQUIRY_FUNCTION_LASERPOWER!" << std::endl;
-  //   return false;
-  // }
-  // std::cout << "power state is " << value << std::endl;
-  value = 0;
+  // power on the laser scanner
+  unsigned int value = 2;
   if ( hLLT->SetFeature ( FEATURE_FUNCTION_LASERPOWER, value ) < GENERAL_FUNCTION_OK )
   {
     std::cout << "Error while setting FEATURE_FUNCTION_LASERPOWER!" << std::endl;
     return false;
   }
+  // start profile transfer
+  gint32 ret = 0;
+  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
+  {
+    std::cout << "Error in profile transfer! - [" << ret << "]" << std::endl;
+    return false;
+  }
   return true;
 }
 
-bool power_on ()
+bool power_off ()
 {
-  unsigned int value;
-  // if ( hLLT->GetFeature ( INQUIRY_FUNCTION_LASERPOWER, &value ) )
-  // {
-  //   std::cout << "Error while setting INQUIRY_FUNCTION_LASERPOWER!" << std::endl;
-  //   return false;
-  // }
-  // std::cout << "power state is " << value << std::endl;
-  value = 2;
+  // stop profile transfer
+  gint32 ret = 0;
+  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, false ) ) < GENERAL_FUNCTION_OK )
+  {
+    std::cout << "Error while stopping transmission! - [" << ret << "]" << std::endl;
+    return false;
+  }
+  // power off the laser scanner
+  unsigned int value = 0;
   if ( hLLT->SetFeature ( FEATURE_FUNCTION_LASERPOWER, value ) < GENERAL_FUNCTION_OK )
   {
     std::cout << "Error while setting FEATURE_FUNCTION_LASERPOWER!" << std::endl;
