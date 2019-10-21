@@ -4,16 +4,16 @@
   <node name="move_camera_b" pkg="motion_control" type="move_camera_b" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "rough_localizer_b" which provides the services "start_rough_localizer" and "stop_rough_localizer" -->
-  <node name="rough_localizer_b" pkg="object_localizer" type="rough_localizer_b" respawn="true" output="screen">
+  <!-- start the node "rough_localizer" which provides the services "start_rough_localizer" and "stop_rough_localizer" -->
+  <node name="rough_localizer" pkg="object_localizer" type="rough_localizer" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "box_segmenter_b" which provides the services "start_box_segmenter" and "stop_box_segmenter" -->
-  <node name="box_segmenter_b" pkg="object_localizer" type="box_segmenter_b" respawn="true" output="screen">
+  <!-- start the node "box_segmenter" which provides the services "start_box_segmenter" and "stop_box_segmenter" -->
+  <node name="box_segmenter" pkg="object_localizer" type="box_segmenter" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "scan_planner_b" which provides the service "start_scan_planner" -->
-  <node name="scan_planner_b" pkg="object_localizer" type="scan_planner_b" respawn="true" output="screen">
+  <!-- start the node "scan_planner" which provides the service "start_scan_planner" -->
+  <node name="scan_planner" pkg="object_localizer" type="scan_planner" respawn="true" output="screen">
     <param name="scan_plan_file" type="str" value="scan_plan.cfg"/>
   </node>
 
@@ -23,16 +23,16 @@
     <param name="scan_idx" type="int" value="1"/>
   </node>
 
-  <!-- start the node "profile_merger" which provides the service "start_profile_merger" and "stop_profile_merger" -->
-  <node name="profile_merger_c_thread" pkg="object_localizer" type="profile_merger_c_thread" respawn="true" output="screen">
+  <!-- start the node "profile_merger_thread" which provides the service "start_profile_merger" and "stop_profile_merger" -->
+  <node name="profile_merger_thread" pkg="object_localizer" type="profile_merger_thread" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "rivet_localizer_c_15" which provides the service "start_rivet_localizer" -->
-  <node name="rivet_localizer_c_15_new" pkg="object_localizer" type="rivet_localizer_c_15_new" respawn="true" output="screen">
+  <!-- start the node "rivet_localizer" which provides the service "start_rivet_localizer" -->
+  <node name="rivet_localizer_new" pkg="object_localizer" type="rivet_localizer_new" respawn="true" output="screen">
   </node>
 
-  <!-- start the node "point_rivet_c" which provides the service "start_point_rivet" -->
-  <node name="point_rivet_c" pkg="motion_control" type="point_rivet_c" respawn="true" output="screen">
+  <!-- start the node "point_rivet" which provides the service "start_point_rivet" -->
+  <node name="point_rivet" pkg="motion_control" type="point_rivet" respawn="true" output="screen">
   </node>
 
 </launch>
