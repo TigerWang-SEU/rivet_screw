@@ -31,14 +31,13 @@
 #include <vector>
 #include <deque>
 
+#include "head/reference_frame.h"
+
 namespace bg = boost::geometry;
 typedef bg::model::point<double, 2, bg::cs::cartesian> point_t_b;
 typedef bg::model::box<point_t_b> box_t_b;
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
-
-std::string reference_frame = "world";
-std::string camera_frame = "camera_depth_optical_frame";
 
 void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
@@ -46,7 +45,7 @@ void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
   grid.setInputCloud ( cloud );
   grid.setLeafSize ( 0.005f, 0.005f, 0.005f );
   grid.filter ( *cloud_sampled );
-	std::printf( "Downsampled cloud size is %d, %d\n", cloud_sampled->width, cloud_sampled->height );
+  std::printf( "Downsampled cloud size is %lu\n", cloud_sampled->size() );
 }
 
 void print_box_t_b ( box_t_b& box_n )

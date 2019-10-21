@@ -22,6 +22,7 @@ CInterfaceLLT *hLLT;
 guint32 resolution;
 std::vector<guint8> profile_buffer;
 TScannerType llt_type;
+bool is_transfer = false;
 // event handle
 EHANDLE *event;
 
@@ -233,11 +234,16 @@ bool power_on ()
   }
   // start profile transfer
   gint32 ret = 0;
-  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
+  if ( !is_transfer )
   {
-    std::cout << "Error in profile transfer! - [" << ret << "]" << std::endl;
-    return false;
+    if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
+    {
+      std::cout << "Error in profile transfer! - [" << ret << "]" << std::endl;
+      return false;
+    }
+    is_transfer = true;
   }
+  std::cout << "LASERPOWER ON!" << std::endl;
   return true;
 }
 
@@ -245,10 +251,14 @@ bool power_off ()
 {
   // stop profile transfer
   gint32 ret = 0;
-  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, false ) ) < GENERAL_FUNCTION_OK )
+  if ( is_transfer )
   {
-    std::cout << "Error while stopping transmission! - [" << ret << "]" << std::endl;
-    return false;
+    if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, false ) ) < GENERAL_FUNCTION_OK )
+    {
+      std::cout << "Error while stopping transmission! - [" << ret << "]" << std::endl;
+      return false;
+    }
+    is_transfer = false;
   }
   // power off the laser scanner
   unsigned int value = 0;
@@ -257,6 +267,7 @@ bool power_off ()
     std::cout << "Error while setting FEATURE_FUNCTION_LASERPOWER!" << std::endl;
     return false;
   }
+  std::cout << "LASERPOWER OFF!" << std::endl;
   return true;
 }
 
