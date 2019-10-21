@@ -34,11 +34,8 @@
 #include <vector>
 #include <deque>
 
-std::string reference_frame = "world";
+#include "head/reference_frame.h"
 
-namespace bg = boost::geometry;
-typedef bg::model::point<double, 2, bg::cs::cartesian> point_t_b;
-typedef bg::model::box<point_t_b> box_t_b;
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
 
@@ -50,7 +47,6 @@ public:
   {
     if ( is_publish_ && bbox_list->Segment_list.size() > 0 )
     {
-      // create the bounding box list
       cropped_cloud->clear ();
       int box_counter = 0;
       for ( sensor_msgs::PointCloud2 segment_cloud_sm : bbox_list->Segment_list )
@@ -114,7 +110,6 @@ public:
     is_publish_ = false;
     start_box_segmenter_ = nh_.advertiseService ( "start_box_segmenter", &BoxSegmenter::start_box_segmenter, this );
     stop_box_segmenter_ = nh_.advertiseService ( "stop_box_segmenter", &BoxSegmenter::stop_box_segmenter, this );
-    ros::Duration ( 1 ) .sleep ();
 
     std::string bbox_in_name = "/rough_localizer/bbox_list";
     bbox_sub_ = nh_.subscribe ( bbox_in_name, 6, &BoxSegmenter::bbox_cb, this );
@@ -129,13 +124,11 @@ public:
 
 private:
   ros::NodeHandle nh_;
-  PointCloudT::Ptr saved_cloud;
   PointCloudT::Ptr cropped_cloud;
   bool is_publish_;
   ros::ServiceServer start_box_segmenter_, stop_box_segmenter_;
   ros::Subscriber bbox_sub_;
   ros::Publisher cloud_pub_;
-  ros::Time sample_time;
 };
 
 int main ( int argc, char** argv )
