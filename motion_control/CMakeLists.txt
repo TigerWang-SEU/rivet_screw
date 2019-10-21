@@ -74,5 +74,5 @@ target_link_libraries(do_scan ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(do_scan_b src/do_scan_b.cpp)
 target_link_libraries(do_scan_b ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(point_rivet_c src/point_rivet_c.cpp)
-target_link_libraries ( point_rivet_c ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
+add_executable(point_rivet src/point_rivet.cpp)
+target_link_libraries ( point_rivet ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
