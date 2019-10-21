@@ -24,6 +24,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
 
+#include "head/reference_frame.h"
 #include "head/ProfilesCallback.h"
 #include "head/ThreadSafeQueue.h"
 
@@ -32,8 +33,6 @@ typedef pcl::PointCloud< PointT > PointCloudT;
 uint8_t r = 255, g = 255, b = 255;
 uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
 
-std::string reference_frame = "world";
-std::string scanner_frame = "scanCONTROL_2900-50_scanner_laser_link";
 double lag_compensation_ = 0.001;
 static const int num_threads = 4;
 bool is_stop = false;
@@ -42,73 +41,62 @@ int current_thread_index = 0;
 ThreadSafeQueue < PointCloudT::Ptr > profile_thread_queue [ num_threads ];
 ThreadSafeQueue < PointCloudT::Ptr > scene_pc_queue;
 
-// filtering point cloud
-void filterOutliner ( PointCloudT::Ptr cloud )
-{
-	static pcl::StatisticalOutlierRemoval < PointT > sor;
-	sor.setStddevMulThresh ( 1.0 );
-  sor.setInputCloud ( cloud );
-  sor.setMeanK ( cloud->size() / 2 );
-  sor.filter ( *cloud );
-}
-
 void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
   static pcl::VoxelGrid < PointT > grid;
   grid.setInputCloud ( cloud );
   grid.setLeafSize ( 0.0002f, 0.0002f, 0.0002f );
   grid.filter ( *cloud_sampled );
-	std::printf ( "Downsampled cloud size is [%d, %d]\n", cloud_sampled->width, cloud_sampled->height );
+  std::printf ( "Downsampled cloud size is %lu\n", cloud_sampled->size () );
 }
 
 class ProfileMerger
 {
 public:
-	void transform_point_cloud ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_out )
-	{
-	  tf::StampedTransform transform;
-		ros::Time sample_time = pcl_conversions::fromPCL ( cloud->header.stamp );
-		bool is_lookuped = false;
-		int delay_counter = 0;
-		while ( is_lookuped == false )
-		{
-			try
-			{
-		    listener.lookupTransform ( reference_frame, scanner_frame, sample_time, transform );
-				is_lookuped = true;
-		  }
-		  catch ( tf::TransformException ex )
-		  {
-				if ( boost::starts_with ( ex.what(), "Lookup would require extrapolation into the future." ) )
-				{
-					// wait for 0.01 second every time
-					ros::Duration ( 0.01 ).sleep ();
-					if ( delay_counter == 4 )
-					{
-						return;
-					}
-					delay_counter++;
-				}
-				else
-				{
-					ROS_ERROR ( "%s", ex.what() );
-					return;
-				}
-		  }
-		}
+  void transform_point_cloud ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_out )
+  {
+    tf::StampedTransform transform;
+    ros::Time sample_time = pcl_conversions::fromPCL ( cloud->header.stamp );
+    bool is_lookuped = false;
+    int delay_counter = 0;
+    while ( is_lookuped == false )
+    {
+      try
+      {
+        listener.lookupTransform ( reference_frame, scanner_frame, sample_time, transform );
+        is_lookuped = true;
+      }
+      catch ( tf::TransformException ex )
+      {
+        if ( boost::starts_with ( ex.what(), "Lookup would require extrapolation into the future." ) )
+        {
+          ros::Duration ( 0.01 ).sleep ();
+          if ( delay_counter == 4 )
+          {
+            return;
+          }
+          delay_counter++;
+        }
+        else
+        {
+          ROS_ERROR ( "%s", ex.what() );
+          return;
+        }
+      }
+    }
 
-    tf::Vector3 point ( 0, 0, 0 );
+    tf::Vector3 point_o ( 0, 0, 0 );
     tf::Vector3 point_n ( 0, 0, 0 );
     for ( PointT temp_point : cloud->points )
     {
-      point.setX ( temp_point.x );
-      point.setY ( temp_point.y );
-      point.setZ ( temp_point.z );
       if ( temp_point.y < 0.085 )
       {
         continue;
       }
-      tf::Vector3 point_n = transform * point;
+      point_o.setX ( temp_point.x );
+      point_o.setY ( temp_point.y );
+      point_o.setZ ( temp_point.z );
+      tf::Vector3 point_n = transform * point_o;
       temp_point.x = point_n.getX ();
       temp_point.y = point_n.getY ();
       temp_point.z = point_n.getZ ();
@@ -119,41 +107,7 @@ public:
 
   void transform_cb ( int thread_id )
   {
-		std::cout << "Transform thread [" << thread_id << "] is started" << std::endl;
-		while ( !is_stop )
-		{
-      if ( !is_publish_ )
-      {
-        ros::Duration ( 0.01 * num_threads ).sleep ();
-        continue;
-      }
-
-			// get the front profile
-			PointCloudT::Ptr in_cloud ( new PointCloudT );
-			profile_thread_queue [ thread_id ].pop ( in_cloud );
-			if ( in_cloud->size() == 0 )
-			{
-				continue;
-			}
-
-			// transforming the input point cloud
-			PointCloudT::Ptr in_cloud_transformed	( new PointCloudT );
-			transform_point_cloud ( in_cloud, in_cloud_transformed );
-			// std::cout << "Transform thread [" << thread_id << "]: input point cloud after transforming has [" << in_cloud_transformed->size() << "] data points" << std::endl;
-			if ( in_cloud_transformed->size() == 0 )
-			{
-				continue;
-			}
-
-			scene_pc_queue.push ( in_cloud_transformed );
-		}
-
-		std::cout << "Transform thread [" << thread_id << "] is stopped" << std::endl;
-  }
-
-  void merger_cb ()
-  {
-    std::cout << "Merger thread is started" << std::endl;
+    std::cout << "Transform thread [" << thread_id << "] is started." << std::endl;
     while ( !is_stop )
     {
       if ( !is_publish_ )
@@ -162,13 +116,47 @@ public:
         continue;
       }
 
-      int buffer_counter = 0, buffer_length = 18;
+      // get a profile cloud
+      PointCloudT::Ptr in_cloud ( new PointCloudT );
+      profile_thread_queue [ thread_id ].pop ( in_cloud );
+      if ( in_cloud->size() == 0 )
+      {
+        continue;
+      }
+
+      // transforming the profile cloud to the frame [world]
+      PointCloudT::Ptr in_cloud_transformed ( new PointCloudT );
+      transform_point_cloud ( in_cloud, in_cloud_transformed );
+      if ( in_cloud_transformed->size() == 0 )
+      {
+        continue;
+      }
+
+      scene_pc_queue.push ( in_cloud_transformed );
+    }
+
+    std::cout << "Transform thread [" << thread_id << "] is stopped." << std::endl;
+  }
+
+  void merger_cb ()
+  {
+    std::cout << "Merger thread is started." << std::endl;
+    while ( !is_stop )
+    {
+      if ( !is_publish_ )
+      {
+        ros::Duration ( 0.01 * num_threads ).sleep ();
+        continue;
+      }
+
+      int buffer_length = 18;
       if ( scene_pc_queue.length () <= buffer_length )
       {
         ros::Duration ( 0.01 * num_threads ).sleep ();
         continue;
       }
 
+      int buffer_counter = 0;
       PointCloudT::Ptr in_cloud ( new PointCloudT );
       while ( buffer_counter < buffer_length )
       {
@@ -195,14 +183,14 @@ public:
       pcl_conversions::toPCL ( ros::Time::now(), scene_cloud->header.stamp );
       cloud_pub_.publish ( scene_cloud );
     }
-    std::cout << "Merger thread is stopped" << std::endl;
+    std::cout << "Merger thread is stopped." << std::endl;
   }
 
   bool start_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
-    // clear the scene point cloud
     is_publish_ = false;
     ros::Duration ( 0.01 * ( num_threads + 1 ) ).sleep ();
+    // clear the profile_thread_queue, scene_pc_queue, and scene point cloud.
     for ( int idx = 0; idx < num_threads; ++idx )
     {
       profile_thread_queue [ idx ].clear ();
@@ -216,7 +204,7 @@ public:
 
   bool stop_profile_merger ( std_srvs::Empty::Request& req, std_srvs::Empty::Response& res )
   {
-    ros::Duration ( 3 ).sleep ();
+    ros::Duration ( 0.5 ).sleep ();
     is_publish_ = false;
     power_off ();
     return true;
@@ -224,10 +212,9 @@ public:
 
   ProfileMerger () : scene_cloud ( new pcl::PointCloud< PointT > )
   {
-		is_publish_ = false;
-		start_profile_merger_ = nh_.advertiseService ( "start_profile_merger", &ProfileMerger::start_profile_merger, this );
-		stop_profile_merger_ = nh_.advertiseService ( "stop_profile_merger", &ProfileMerger::stop_profile_merger, this );
-		ros::Duration ( 1 ).sleep ();
+    is_publish_ = false;
+    start_profile_merger_ = nh_.advertiseService ( "start_profile_merger", &ProfileMerger::start_profile_merger, this );
+    stop_profile_merger_ = nh_.advertiseService ( "stop_profile_merger", &ProfileMerger::stop_profile_merger, this );
 
     std::string cloud_out_name = "/profile_merger/points";
     cloud_pub_ = nh_.advertise < PointCloudT > ( cloud_out_name, 30 );
@@ -238,15 +225,15 @@ public:
 
 private:
   ros::NodeHandle nh_;
-	tf::TransformListener listener;
-	ros::ServiceServer start_profile_merger_, stop_profile_merger_;
-	pcl::PointCloud<PointT>::Ptr scene_cloud;
+  tf::TransformListener listener;
+  ros::ServiceServer start_profile_merger_, stop_profile_merger_;
+  pcl::PointCloud<PointT>::Ptr scene_cloud;
   ros::Publisher cloud_pub_;
 };
 
 double average ( double a, double b )
 {
-	return ( a + b ) / 100000.0 / 2.0;
+  return ( a + b ) / 100000.0 / 2.0;
 }
 
 void scanner_cb ()
@@ -256,7 +243,7 @@ void scanner_cb ()
   // 1. connect the laser scanner
   if ( ! connect_scanner ( serial_number ) )
   {
-		std::cout << "Error in connecting the laser scanner!" << std::endl;
+    std::cout << "Error in connecting the laser scanner!" << std::endl;
     return;
   }
 
@@ -266,14 +253,7 @@ void scanner_cb ()
   value_z.resize ( resolution );
   CInterfaceLLT::ResetEvent ( event );
 
-  // 2. start transfer profoles
-  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, true ) ) < GENERAL_FUNCTION_OK )
-  {
-    std::cout << "Error in profile transfer! - [" << ret << "]" << std::endl;
-    return;
-  }
-
-  // power off the laser scanner
+  // 2. power off the laser scanner
   power_off ();
 
   // 3. loop until receive the end signal
@@ -285,13 +265,13 @@ void scanner_cb ()
     }
     CInterfaceLLT::ResetEvent ( event );
 
-		if ( !is_publish_ )
-		{
-			ros::Duration ( 0.01 * num_threads ).sleep ();
-			continue;
-		}
+    if ( !is_publish_ )
+    {
+      ros::Duration ( 0.01 * num_threads ).sleep ();
+      continue;
+    }
 
-		// 3.1. get x and z arrays
+    // 3.1. get x and z arrays
     if ( ( ret = CInterfaceLLT::ConvertProfile2Values ( &profile_buffer [ 0 ], profile_buffer.size(), resolution, PROFILE, llt_type, 0, NULL, NULL, NULL, &value_x [ 0 ], &value_z [ 0 ], NULL, NULL ) ) != ( CONVERT_X | CONVERT_Z ) )
     {
       std::cout << "Error while extracting profiles! - [" << ret << "]" << std::endl;
@@ -302,7 +282,6 @@ void scanner_cb ()
     guint32 profile_counter = 0;
     double shutter_closed = 0, shutter_opened = 0;
     CInterfaceLLT::Timestamp2TimeAndCount ( &profile_buffer[ ( resolution * 64 ) - 16 ], &shutter_closed, &shutter_opened, &profile_counter, NULL );
-		// std::cout << "Profile: [" << profile_counter << "] has time [shutter_closed, shutter_opened] = [" << shutter_closed << "," << shutter_opened << "]" << std::endl;
 
     // 3.3. create a new profile point cloud
     PointCloudT::Ptr profile_cloud ( new PointCloudT );
@@ -322,56 +301,48 @@ void scanner_cb ()
       }
     }
 
-		if ( profile_cloud->size () == 0 )
-		{
-			continue;
-		}
+    if ( profile_cloud->size () == 0 )
+    {
+      continue;
+    }
 
-		// 3.4. put the new profile point cloud into each profile_thread_queue
-		// std::cout << "Profile [" << profile_counter << "] for thread [" << current_thread_index << "]" << std::endl;
-		profile_thread_queue [ current_thread_index ].push ( profile_cloud );
-		current_thread_index = ( current_thread_index + 1 ) % num_threads;
+    // 3.4. put the new profile point cloud into each profile_thread_queue
+    profile_thread_queue [ current_thread_index ].push ( profile_cloud );
+    current_thread_index = ( current_thread_index + 1 ) % num_threads;
   }
 
-  // 4. stop transfer profiles
-  if ( ( ret = hLLT->TransferProfiles ( NORMAL_TRANSFER, false ) ) < GENERAL_FUNCTION_OK )
-  {
-    std::cout << "Error while stopping transmission! - [" << ret << "]" << std::endl;
-  }
-
-  // 5. disconnect the laser scanner
+  // 4. disconnect the laser scanner
   disconnect_scanner ();
-
-	std::cout << "scanner thread is stopped!" << std::endl;
+  std::cout << "scanner thread is stopped!" << std::endl;
 }
 
 int main ( int argc, char** argv )
 {
-	ros::init ( argc, argv, "profile_merger_c_thread" );
-	ros::AsyncSpinner spinner ( 3 );
+  ros::init ( argc, argv, "profile_merger_thread" );
+  ros::AsyncSpinner spinner ( 3 );
   spinner.start ();
-	ProfileMerger pm;
+  ProfileMerger pm;
 
-	// create a merger thread, [num_threads] transform threads, and a scanner thread
-	std::thread merger_thread =  std::thread ( &ProfileMerger::merger_cb, &pm );
-	std::thread transform_thread [ num_threads ];
+  // create a merger thread, [num_threads] transform threads, and a scanner thread
+  std::thread merger_thread =  std::thread ( &ProfileMerger::merger_cb, &pm );
+  std::thread transform_thread [ num_threads ];
   for ( int idx = 0; idx < num_threads; ++idx )
   {
     transform_thread [ idx ] = std::thread ( &ProfileMerger::transform_cb, &pm, idx );
   }
-	std::thread scanner_thread =  std::thread ( &scanner_cb );
+  std::thread scanner_thread =  std::thread ( &scanner_cb );
 
-	// wait for stop signal
+  // wait for stop signal
   ros::waitForShutdown ();
-	is_stop = true;
+  is_stop = true;
 
-	// Join the threads with the main thread
-	scanner_thread.join ();
+  // Join the threads with the main thread
+  scanner_thread.join ();
   for ( int idx = 0; idx < num_threads; ++idx )
   {
     transform_thread [ idx ].join ();
   }
-	merger_thread.join ();
+  merger_thread.join ();
 
   return 0;
 }
