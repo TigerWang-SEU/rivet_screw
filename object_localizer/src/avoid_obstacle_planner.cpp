@@ -228,6 +228,8 @@ std::vector<std::string> string_end_1_buffer;
 std::vector<std::string> string_start_2_buffer;
 std::vector<std::string> string_middle_2_buffer;
 std::vector<std::string> string_end_2_buffer;
+std::vector<std::string> string_down_1_buffer;
+std::vector<std::string> string_down_2_buffer;
 int cmd_counter = 1;
 void avoid_beginning_obstacle ( float x_start, float x_min, float y_tmp, float z_tmp, float deg_tmp )
 {
@@ -461,6 +463,32 @@ void write_cfg_file ( ofstream &avoid_obstacle_planner_fs, std::vector< Obstacle
 	write_string_buffer_total ( avoid_obstacle_planner_fs, z_tmp );
 }
 
+void write_string_down_1_buffer ( ofstream &avoid_obstacle_planner_fs )
+{
+	std::cout << "string_down_1_buffer.size() = " << string_down_1_buffer.size() << std::endl;
+	for (int idx = 0; idx < string_down_1_buffer.size(); idx++)
+	{
+		avoid_obstacle_planner_fs << string_down_1_buffer[idx];
+		if ( idx == 3 )
+		{
+			break;
+		}
+	}
+}
+
+void write_string_down_2_buffer ( ofstream &avoid_obstacle_planner_fs )
+{
+	std::cout << "string_down_2_buffer.size() = " << string_down_2_buffer.size() << std::endl;
+	for (int idx = 0; idx < string_down_2_buffer.size(); idx++)
+	{
+		avoid_obstacle_planner_fs << string_down_2_buffer[idx];
+		if ( idx == 3 )
+		{
+			break;
+		}
+	}
+}
+
 class Avoid_obstacle_planner
 {
 public:
@@ -491,9 +519,9 @@ public:
 			// z  2.02  (+-0.02);  1.91 (+-0.02);  1.80 (+-0.02)
 			if ( ( x_tmp > (x_2 - 0.04) && x_tmp < (x_1 + 0.10) ) || (  x_tmp > (x_4 - 0.08) && x_tmp < (x_3 + 0.025) ) )
 			{
-				if ( z_tmp > ( z_1 - z_offset )  && z_tmp < ( z_1 + z_offset * 0.5 ) )
+				if ( z_tmp > ( z_1 - z_offset*2.5 )  && z_tmp < ( z_1 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_1 - y_offset * 0.0 ) )
+					if ( y_tmp > ( y_1 - y_offset * ( 0.0 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -506,9 +534,9 @@ public:
 						cloud_cut_counter ++;
 					}
 				}
-				else if ( z_tmp > ( z_2 - z_offset )  && z_tmp < ( z_2 + z_offset * 0.5 ) )
+				else if ( z_tmp > ( z_2 - z_offset*2.5 )  && z_tmp < ( z_2 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_2 - y_offset * 0.8 ) )
+					if ( y_tmp > ( y_2 - y_offset * ( 0.29 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -521,9 +549,9 @@ public:
 						cloud_cut_counter ++;
 					}
 				}
-				else if ( z_tmp > ( z_3 - z_offset )  && z_tmp < ( z_3 + z_offset * 0.5 ) )
+				else if ( z_tmp > ( z_3 - z_offset*2.5 )  && z_tmp < ( z_3 - z_offset * 0.5 ) )
 				{
-					if ( y_tmp > ( y_3 - y_offset * 0.9 ) )
+					if ( y_tmp > ( y_3 - y_offset * ( 0.29 ) ) )
 					{
 						PointT new_point;
 						new_point.x = x_tmp;
@@ -535,6 +563,40 @@ public:
 						cloud_cut->points.push_back( new_point );
 						cloud_cut_counter ++;
 					}
+				}
+			}
+			if ( x_tmp > ( x_4 - 0.015 ) && x_tmp < ( x_4 + 0.055 ) && z_tmp < ( z_1 - 0.030 ) && z_tmp > ( z_2 + 0.015 ) )
+			{
+				float k = ( y_1 - y_2 ) / ( z_1 - z_2 );
+				float k_2 = ( y_1 - y_tmp ) / ( z_1 - z_tmp );
+				if ( k_2 < k )
+				{
+					PointT new_point;
+					new_point.x = x_tmp;
+					new_point.y = y_tmp;
+					new_point.z = z_tmp;
+					uint8_t r = 255, g = 255, b = 0;
+					uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+					new_point.rgb = *reinterpret_cast<float*>( &rgb );
+					cloud_cut->points.push_back( new_point );
+					cloud_cut_counter ++;
+				}
+			}
+			if ( x_tmp > (x_1 - 0.015) && x_tmp < (x_1 + 0.055) && z_tmp < (z_2 - 0.030 ) && z_tmp > ( z_3 + 0.015 ) )
+			{
+				float k = ( y_2 - y_3 ) / ( z_2 - z_3 );
+				float k_2 = ( y_2 - y_tmp ) / ( z_2 - z_tmp );
+				if ( k_2 < k )
+				{
+					PointT new_point;
+					new_point.x = x_tmp;
+					new_point.y = y_tmp;
+					new_point.z = z_tmp;
+					uint8_t r = 0, g = 255, b = 255;
+					uint32_t rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
+					new_point.rgb = *reinterpret_cast<float*>( &rgb );
+					cloud_cut->points.push_back( new_point );
+					cloud_cut_counter ++;
 				}
 			}
 	  }
@@ -618,6 +680,18 @@ public:
 		std::vector< Obstacle > obstacle_vector_1;
 		std::vector< Obstacle > obstacle_vector_2;
 		std::vector< Obstacle > obstacle_vector_3;
+		std::vector< Obstacle > obstacle_vector_4;
+		std::vector< Obstacle > obstacle_vector_5;
+		float y_start_1 = 0;
+		float z_start_1 = 0;
+		float y_end_1 = 0;
+		float z_end_1 = 10;
+		bool is_down_1 = false;
+		float y_start_2 = 0;
+		float z_start_2 = 0;
+		float y_end_2 = 0;
+		float z_end_2 = 10;
+		bool is_down_2 = false;
 		for ( int idx = 0; idx < obstacle_pc_vector.size(); idx++ )
 		{
 			PointCloudT::Ptr cloud_tmp	= obstacle_pc_vector[idx];
@@ -639,12 +713,12 @@ public:
 			if ( minPoint.x > 0.0 )
 			{
 				x_min_tmp = minPoint.x - 0.04;
-				x_max_tmp = x_min_tmp + 0.11;
+				x_max_tmp = x_min_tmp + 0.095;
 			}
 			if ( maxPoint.x < 0.0 )
 			{
 				x_max_tmp = maxPoint.x + 0.02;
-				x_min_tmp = x_max_tmp - 0.10;
+				x_min_tmp = x_max_tmp - 0.11;
 			}
 			if ( std::abs( z_tmp - z_1 ) < 0.03 )
 			{
@@ -662,9 +736,97 @@ public:
 				Obstacle obstacle_tmp_3 ( x_max_tmp, x_min_tmp, maxPoint.y, minPoint.y, z_tmp, cloud_tmp->points.size () );
 		    obstacle_vector_3.push_back ( obstacle_tmp_3 );
 			}
+			if ( z_tmp < z_1 - 0.03 && z_tmp > z_2 + 0.015 )
+			{
+				is_down_1 = true;
+				float k = ( y_1 - y_2 ) / ( z_1 - z_2 );
+				float z_start = maxPoint.z + 0.022;
+				if ( z_start >= z_1 - 0.005 )
+				{
+					z_start = z_1 - 0.005;
+				}
+				float y_start = y_1 - k * ( z_1 - z_start );
+				float z_end = minPoint.z - 0.015;
+				float y_end = y_1 - k * ( z_1 - z_end );
+
+				if ( z_start > z_start_1 )
+				{
+					y_start_1 = y_start;
+					z_start_1 = z_start;
+				}
+				if ( z_end < z_end_1 )
+				{
+					y_end_1 = y_end;
+					z_end_1 = z_end;
+				}
+			}
+			if ( z_tmp < z_2 - 0.03 && z_tmp > z_3 + 0.015 )
+			{
+				is_down_2 = true;
+				float k = ( y_2 - y_3 ) / ( z_2 - z_3 );
+				float z_start = maxPoint.z + 0.022;
+				if ( z_start >= z_2 - 0.005 )
+				{
+					z_start = z_2 - 0.005;
+				}
+				float y_start = y_2 - k * ( z_2 - z_start );
+				float z_end = minPoint.z - 0.015;
+				float y_end = y_2 - k * ( z_2 - z_end );
+
+				if ( z_start > z_start_2 )
+				{
+					y_start_2 = y_start;
+					z_start_2 = z_start;
+				}
+				if ( z_end < z_end_2 )
+				{
+					y_end_2 = y_end;
+					z_end_2 = z_end;
+				}
+			}
 			std::cout << "***z_tmp = " << z_tmp << std::endl;
 			Obstacle obstacle_tmp ( x_max_tmp, x_min_tmp, maxPoint.y, minPoint.y, z_tmp, cloud_tmp->points.size () );
 	    obstacle_vector.push_back ( obstacle_tmp );
+		}
+		if ( is_down_1 ) {
+			std::string x_4_s = std::to_string( x_4 );
+			std::string z_start_s = std::to_string( z_start_1 );
+			std::string y_start_s = std::to_string( y_start_1 );
+			std::string z_end_s = std::to_string( z_end_1 );
+			std::string y_end_s = std::to_string( y_end_1 );
+			std::string deg_tmp_s = std::to_string( deg_2 );
+			std::string str_tmp_1 = std::to_string(cmd_counter) + " " + x_4_s + " " + y_start_s + " " +  z_start_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			std::string str_tmp_2 = std::to_string(cmd_counter) + " " + x_4_s + " " + std::to_string(  y_start_1 + 0.06 ) + " " +  z_start_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			std::string str_tmp_3 = std::to_string(cmd_counter) + " " + x_4_s + " " + std::to_string(  y_end_1 + 0.06 ) + " " +  z_end_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			std::string str_tmp_4 = std::to_string(cmd_counter) + " " + x_4_s + " " + y_end_s + " " +  z_end_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			string_down_1_buffer.push_back ( str_tmp_1 );
+			string_down_1_buffer.push_back ( str_tmp_2 );
+			string_down_1_buffer.push_back ( str_tmp_3 );
+			string_down_1_buffer.push_back ( str_tmp_4 );
+		}
+		if ( is_down_2 ) {
+			std::string x_1_s = std::to_string( x_1 );
+			std::string z_start_s = std::to_string( z_start_2 );
+			std::string y_start_s = std::to_string( y_start_2 );
+			std::string z_end_s = std::to_string( z_end_2 );
+			std::string y_end_s = std::to_string( y_end_2 );
+			std::string deg_tmp_s = std::to_string( deg_3 );
+			std::string str_tmp_1 = std::to_string(cmd_counter) + " " + x_1_s + " " + y_start_s + " " +  z_start_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			std::string str_tmp_2 = std::to_string(cmd_counter) + " " + x_1_s + " " + std::to_string(  y_start_2 + 0.06 ) + " " +  z_start_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			std::string str_tmp_3 = std::to_string(cmd_counter) + " " + x_1_s + " " + std::to_string(  y_end_2 + 0.06 ) + " " +  z_end_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			std::string str_tmp_4 = std::to_string(cmd_counter) + " " + x_1_s + " " + y_end_s + " " +  z_end_s + " " + deg_tmp_s + "\n";
+			cmd_counter++;
+			string_down_2_buffer.push_back ( str_tmp_1 );
+			string_down_2_buffer.push_back ( str_tmp_2 );
+			string_down_2_buffer.push_back ( str_tmp_3 );
+			string_down_2_buffer.push_back ( str_tmp_4 );
 		}
 		std::sort ( obstacle_vector_1.begin(), obstacle_vector_1.end(), obstacleComp );
 		std::sort ( obstacle_vector_2.begin(), obstacle_vector_2.end(), obstacleComp );
@@ -677,16 +839,19 @@ public:
 	  avoid_obstacle_planner_fs.open ( cfgFileName );
 		std::cout << obstacle_vector_1.size() << std::endl;
 		write_cfg_file ( avoid_obstacle_planner_fs, obstacle_vector_1, y_1, z_1, deg_1 );
+		write_string_down_1_buffer ( avoid_obstacle_planner_fs );
 		std::cout << obstacle_vector_2.size() << std::endl;
 		write_cfg_file ( avoid_obstacle_planner_fs, obstacle_vector_2, y_2, z_2, deg_2 );
+		 write_string_down_2_buffer ( avoid_obstacle_planner_fs );
 		std::cout << obstacle_vector_3.size() << std::endl;
 		write_cfg_file ( avoid_obstacle_planner_fs, obstacle_vector_3, y_3, z_3, deg_3 );
 		avoid_obstacle_planner_fs.close();
 
 		// step 6, show the point cloud
 		PointCloudT::Ptr scene_cloud_total	( new PointCloudT );
-		*scene_cloud_total += *cloud_filtered;
-		*scene_cloud_total += *obstacle_cloud_tmp;
+		// *scene_cloud_total += *cloud_filtered;
+		// *scene_cloud_total += *cloud_cut;
+		*scene_cloud_total += *obstacle_cloud_total;
 		scene_cloud_total->header.frame_id = "world";
 		cloud_pub_.publish ( scene_cloud_total );
 		// Visualize ( cloud_filtered, obstacle_pc_vector[0] );
