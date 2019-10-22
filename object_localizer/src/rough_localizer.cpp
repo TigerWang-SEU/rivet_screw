@@ -310,7 +310,6 @@ public:
     is_publish_ = false;
     start_rough_localizer_ = nh_.advertiseService ( "start_rough_localizer", &RoughLocalizer::start_rough_localizer, this );
     stop_rough_localizer_ = nh_.advertiseService ( "stop_rough_localizer", &RoughLocalizer::stop_rough_localizer, this );
-    ros::Duration ( 1 ) .sleep ();
 
     std::string cloud_in_name = "/camera/depth_registered/points";
     cloud_sub_ = nh_.subscribe ( cloud_in_name, 30, &RoughLocalizer::cloud_cb, this );

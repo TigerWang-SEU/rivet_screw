@@ -57,7 +57,7 @@ std::string SceneFileName;
 int filter_mean_k = 40;
 float filter_stddev = 1.0;
 float scale_factor = 1.0;
-float rivet_height = 0.008; // unit meter
+float rivet_height = 0.009; // unit meter
 float rivet_height_2 = 0.0084; // unit meter
 float rivet_radius = 0.007; // unit meter
 bool show_viz = false;
@@ -309,16 +309,17 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   filter_stddev = 0.1;
   filterOutliner ( rivet_cloud_tmp );
   std::vector < PointCloudT::Ptr > cloud_vector;
-  partition_pc ( rivet_cloud_tmp, cloud_vector, 0.0003 );
+  partition_pc ( rivet_cloud_tmp, cloud_vector, 0.0005 );
   if ( cloud_vector.size () > 1 )
   {
     int max_comp_size = 0;
     for ( auto const& comp_cloud: cloud_vector )
     {
+      std::cout << "comp_cloud->size = " << comp_cloud->size () << std::endl;
       if ( max_comp_size < comp_cloud->size () )
       {
         rivet_cloud_tmp = comp_cloud;
-        max_comp_size < comp_cloud->size ();
+        max_comp_size = comp_cloud->size ();
       }
     }
   }
@@ -495,7 +496,7 @@ public:
       float x = temp_point.x;
       float y = temp_point.y;
       float z = temp_point.z;
-      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x >= ( rivet_height - 0.004 ) && x <= ( rivet_height + 0.0025 ) )
+      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x >= ( rivet_height - 0.002 ) && x <= ( rivet_height + 0.003 ) )
       {
         PointT new_point;
         new_point.x = x;
@@ -523,7 +524,7 @@ public:
       {
         std::vector < int > pointIdx;
         std::vector < float > pointRadius;
-        if ( kdtree.radiusSearch ( searchPoint, rivet_radius, pointIdx, pointRadius ) > 0 )
+        if ( kdtree.radiusSearch ( searchPoint, 0.0005, pointIdx, pointRadius ) > 0 )
         {
         	for ( size_t j = 0; j < pointIdx.size (); ++j )
         	{
