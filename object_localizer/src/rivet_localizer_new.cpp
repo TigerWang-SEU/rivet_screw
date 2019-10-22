@@ -45,15 +45,13 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/common/common_headers.h>
 
+#include "head/PCL_name.h"
 #include "head/reference_frame.h"
 #include "head/transform.h"
 #include "head/union_find.h"
 #include "head/post_process.h"
 #include "head/planner.h"
 #include "head/rviz_show.h"
-
-typedef pcl::PointXYZRGB PointT;
-typedef pcl::PointCloud< PointT > PointCloudT;
 
 std::string SceneFileName;
 int filter_mean_k = 40;
@@ -275,14 +273,14 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   scale_and_color_point_cloud ( cloud_in, cloud_in_transformed );
   pcl::transformPointCloud ( *cloud_in_transformed, *cloud_in_transformed, transform_total );
 
-  // step 8, filter out points belongs to the rivet and save them in cloud_rivet
+  // step 8, filter out points belongs to the rivet and save them in rivet_cloud_tmp
   PointT minPoint, maxPoint;
   getMinMax3D ( *rivet_support_plane_cloud_transformed, minPoint, maxPoint );
   std::cout << "minPoint = " << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << std::endl;
   std::cout << "maxPoint = " << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << std::endl;
   r = 255, g = 0, b = 255;
   rgb = ( static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b) );
-  PointCloudT::Ptr cloud_rivet ( new PointCloudT );
+  PointCloudT::Ptr rivet_cloud_tmp ( new PointCloudT );
   for ( PointT temp_point: cloud_in_transformed->points )
   {
     float x = temp_point.x;
@@ -296,12 +294,11 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
       new_point.y = y;
       new_point.z = z;
       new_point.rgb = *reinterpret_cast<float*> ( &rgb );
-      cloud_rivet->points.push_back ( new_point );
-      // rivet_cloud->points.push_back ( new_point );
+      rivet_cloud_tmp->points.push_back ( new_point );
     }
   }
 
-  if ( cloud_rivet->size () == 0 )
+  if ( rivet_cloud_tmp->size () == 0 )
   {
     PCL_ERROR ( "no rivet point cloud ...\n" );
     rivet_point_new_final ( 0 ) = NAN;
@@ -310,15 +307,29 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
 
   filter_mean_k = 20;
   filter_stddev = 0.1;
-  filterOutliner ( cloud_rivet );
-  rivet_cloud = cloud_rivet;
+  filterOutliner ( rivet_cloud_tmp );
+  std::vector < PointCloudT::Ptr > cloud_vector;
+  partition_pc ( rivet_cloud_tmp, cloud_vector, 0.0003 );
+  if ( cloud_vector.size () > 1 )
+  {
+    int max_comp_size = 0;
+    for ( auto const& comp_cloud: cloud_vector )
+    {
+      if ( max_comp_size < comp_cloud->size () )
+      {
+        rivet_cloud_tmp = comp_cloud;
+        max_comp_size < comp_cloud->size ();
+      }
+    }
+  }
+  rivet_cloud = rivet_cloud_tmp;
 
   // step 9, calculate the new central point
   double x_sum = 0;
   double y_sum = 0;
   double z_sum = 0;
   double y_min = DBL_MAX, y_max = -DBL_MAX, z_min = DBL_MAX, z_max = -DBL_MAX;
-  for ( PointT temp_point: cloud_rivet->points )
+  for ( PointT temp_point: rivet_cloud_tmp->points )
   {
     x_sum += temp_point.x;
     y_sum += temp_point.y;
@@ -349,9 +360,9 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
     rivet_point_new_final ( 0 ) = NAN;
     return;
   }
-  double x_avg = x_sum / cloud_rivet->size ();
-  double y_avg = y_sum / cloud_rivet->size ();
-  double z_avg = z_sum / cloud_rivet->size ();
+  double x_avg = x_sum / rivet_cloud_tmp->size ();
+  double y_avg = y_sum / rivet_cloud_tmp->size ();
+  double z_avg = z_sum / rivet_cloud_tmp->size ();
   Eigen::Vector4f rivet_center_point;
   rivet_center_point << x_avg + out_distance, y_avg, z_avg, 1.0;
 
