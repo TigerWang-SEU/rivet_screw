@@ -350,7 +350,7 @@ bool start_point_rivet ( std_srvs::Empty::Request& req, std_srvs::Empty::Respons
 
 int main ( int argc, char** argv )
 {
-  ros::init ( argc, argv, "point_rivet_c" );
+  ros::init ( argc, argv, "point_rivet" );
   ros::NodeHandle nh_;
 
   start_new_nut_ = nh_.serviceClient < std_srvs::Empty > ( "start_new_nut" );

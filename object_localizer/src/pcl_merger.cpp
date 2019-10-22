@@ -38,9 +38,13 @@ void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 class PointCloudMerger
 {
 public:
-  void transform_point_cloud ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_out, ros::Time& sample_time)
+  void transform_point_cloud ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_out)
   {
     tf::StampedTransform transform;
+    ros::Time sample_time;
+    pcl_conversions::fromPCL ( cloud->header.stamp, sample_time );
+    std::string camera_frame = cloud->header.frame_id;
+
     bool is_lookuped = false;
     while ( is_lookuped == false )
     {
@@ -109,7 +113,7 @@ public:
 
     // transforming the input cloud
     PointCloudT::Ptr scene_cloud_world	( new PointCloudT );
-    transform_point_cloud ( scene_cloud_, scene_cloud_world, sample_time );
+    transform_point_cloud ( scene_cloud_, scene_cloud_world );
     std::cout << "scene_cloud_world has [" << scene_cloud_world->size() << "] data points" << std::endl;
 
     // merging the input point cloud

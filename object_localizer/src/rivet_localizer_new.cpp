@@ -122,7 +122,7 @@ void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
   grid.setInputCloud ( cloud );
   grid.setLeafSize ( 0.0001f, 0.0001f, 0.0001f );
   grid.filter ( *cloud_sampled );
-	std::printf( "Downsampled cloud size is %d, %d\n", cloud_sampled->width, cloud_sampled->height );
+  std::printf ( "Downsampled cloud size is %lu\n", cloud_sampled->size () );
 }
 
 // filtering an input point cloud

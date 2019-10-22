@@ -31,13 +31,14 @@
 #include <vector>
 #include <deque>
 
-#include "head/reference_frame.h"
-
 namespace bg = boost::geometry;
 typedef bg::model::point<double, 2, bg::cs::cartesian> point_t_b;
 typedef bg::model::box<point_t_b> box_t_b;
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud< PointT > PointCloudT;
+
+std::string reference_frame = "world";
+std::string camera_frame = "camera_depth_optical_frame";
 
 void downSampling ( PointCloudT::Ptr cloud, PointCloudT::Ptr cloud_sampled )
 {
@@ -204,10 +205,8 @@ public:
       return;
     }
 
-    pcl::PointCloud<PointT>::Ptr cropped_cloud ( new PointCloudT );
     if ( bbox_list->BBox_list_int.size() > 0 )
     {
-      int point_counter = 0;
       tf::StampedTransform transform;
       try
       {
@@ -261,8 +260,7 @@ public:
               }
 
               temp_point.z = point_n.getZ ();
-              cropped_cloud->points.push_back ( temp_point );
-              point_counter++;
+
               box_cloud->points.push_back ( temp_point );
               box_point_counter++;
             }
@@ -284,15 +282,6 @@ public:
         print_box_t_b_list();
         // publish the box_t_b_list topic;
         publish_box_t_b_list();
-        // publish the point cloud of bounding boxes;
-        cropped_cloud->width = point_counter;
-        cropped_cloud->height = 1;
-        PointCloudT::Ptr cropped_cloud_sampled	( new PointCloudT );
-        downSampling ( cropped_cloud, cropped_cloud_sampled );
-        std::cout << "cropped_cloud_sampled has " << cropped_cloud_sampled->size()  << std::endl;
-        cropped_cloud_sampled->header.frame_id = reference_frame;
-        pcl_conversions::toPCL ( ros::Time::now(), cropped_cloud_sampled->header.stamp );
-        cloud_pub_.publish ( cropped_cloud_sampled );
       }
       catch ( tf::TransformException ex )
       {
@@ -327,10 +316,6 @@ public:
     cloud_sub_ = nh_.subscribe ( cloud_in_name, 30, &RoughLocalizer::cloud_cb, this );
     ROS_INFO_STREAM ( "Listening for point cloud on topic: " << cloud_in_name );
 
-    std::string cloud_out_name = "/rough_localizer/points";
-    cloud_pub_ = nh_.advertise < pcl::PointCloud < PointT > > ( cloud_out_name, 30 );
-    ROS_INFO_STREAM ( "Publishing point cloud on topic: " << cloud_out_name );
-
     std::string bbox_in_name = "/object_localizer/bbox_list";
     bbox_sub_ = nh_.subscribe ( bbox_in_name, 30, &RoughLocalizer::bbox_cb, this );
     ROS_INFO_STREAM ( "Listening for bounding box list on topic: " << bbox_in_name );
@@ -349,7 +334,6 @@ private:
   bool is_publish_;
   ros::ServiceServer start_rough_localizer_, stop_rough_localizer_;
   ros::Subscriber cloud_sub_;
-  ros::Publisher cloud_pub_;
   ros::Subscriber bbox_sub_;
   ros::Publisher bbox_pub_;
   ros::Time sample_time;
