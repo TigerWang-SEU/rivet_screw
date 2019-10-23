@@ -1,0 +1,45 @@
+<!-- <?xml version="1.0"?> -->
+<launch>
+
+  <include file="$(find syn_ur10_bringup)/launch/syn_ur10_bringup.launch"/>
+
+  <!-- use tf dummy node to fix the table on the floor -->
+  <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
+  </node>
+
+  <node name="web_video_server" pkg="web_video_server" type="web_video_server" respawn="true" output="screen">
+  </node>
+
+  <node name="tf2_web_republisher" pkg="tf2_web_republisher" type="tf2_web_republisher" respawn="true" output="screen">
+  </node>
+
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+
+  <!-- <node name="object_detector" pkg="object_localizer" type="object_detector.py" respawn="true" output="screen">
+  </node> -->
+  <node name="image_transport" pkg="tpu_connection" type="image_transport_new.py" respawn="true" output="screen">
+  </node>
+
+  <node name="festo_valve_server" pkg="festo-valve" type="festo_valve_server" respawn="true" output="screen">
+    <param name="ip_address" type="str" value="192.168.2.183"/>
+  </node>
+
+  <node name="screwing_server_b" pkg="focus_6000" type="screwing_server_b.py" respawn="true" output="screen">
+  </node>
+
+  <include file="$(find motion_control)/launch/start_motion_control.launch"/>
+
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <arg name="config" default="false" />
+  <arg unless="$(arg config)" name="command_args" value="" />
+  <arg     if="$(arg config)" name="command_args" value="-d $(find syn_ur10_bringup)/launch/syn_ur10.rviz" />
+
+  <node name="$(anon rviz)" launch-prefix="$(arg launch_prefix)" pkg="rviz" type="rviz" respawn="false"
+	args="$(arg command_args)" output="screen">
+    <rosparam command="load" file="$(find syn_ur10_bringup)/config/kinematics.yaml"/>
+  </node>
+
+</launch>
