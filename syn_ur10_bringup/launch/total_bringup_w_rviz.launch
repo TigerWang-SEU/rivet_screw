@@ -29,10 +29,6 @@
 
   <include file="$(find motion_control)/launch/start_motion_control.launch"/>
 
-  <arg name="launch_prefix" value="" />
-  <arg name="command_args" value="-d $(find syn_ur10_bringup)/launch/syn_ur10.rviz" />
-  <node name="$(anon rviz)" launch-prefix="$(arg launch_prefix)" pkg="rviz" type="rviz" respawn="false" args="$(arg command_args)" output="screen">
-    <rosparam command="load" file="$(find syn_ur10_bringup)/config/kinematics.yaml"/>
-  </node>
+  <include file="$(find syn_ur10_bringup)/launch/total_bringup_rviz.launch"/>
 
 </launch>
