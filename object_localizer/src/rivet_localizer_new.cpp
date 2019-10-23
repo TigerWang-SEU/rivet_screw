@@ -496,7 +496,7 @@ public:
       float x = temp_point.x;
       float y = temp_point.y;
       float z = temp_point.z;
-      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x >= ( rivet_height - 0.002 ) && x <= ( rivet_height + 0.003 ) )
+      if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x >= ( rivet_height - 0.002 ) && x <= ( rivet_height + 0.0045 ) )
       {
         PointT new_point;
         new_point.x = x;
