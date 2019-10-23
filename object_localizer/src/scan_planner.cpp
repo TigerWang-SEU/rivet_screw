@@ -192,7 +192,6 @@ public:
   ScanPlanner ()
   {
     start_scan_planner_ = nh_.advertiseService ( "start_scan_planner", &ScanPlanner::start_scan_planner, this );
-    ros::Duration ( 0.5 ) .sleep ();
 
     std::string segment_list_in_name = "/rough_localizer/bbox_list";
     segment_list_sub_ = nh_.subscribe ( segment_list_in_name, 10, &ScanPlanner::segment_list_cb, this );

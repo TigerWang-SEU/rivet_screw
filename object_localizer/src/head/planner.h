@@ -1,3 +1,6 @@
+#ifndef PLANNER_H
+#define PLANNER_H
+
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -7,36 +10,17 @@
 
 #include <ros/ros.h>
 #include <ros/package.h>
-#include <std_srvs/Empty.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf/transform_listener.h>
 
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
 #include "object_localizer_msg/BBox_int.h"
 #include "object_localizer_msg/BBox_float.h"
 #include "object_localizer_msg/BBox_list.h"
 #include "object_localizer_msg/Segment_list.h"
 
-#include <pcl/io/ply_io.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/ModelCoefficients.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/common/transforms.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/filters/statistical_outlier_removal.h>
-
 #include "PCL_name.h"
 #include "rviz_show.h"
-
-#ifndef PLANNER_H
-#define PLANNER_H
 
 std::string boundary_file_name = ros::package::getPath ( "motion_control" ) + "/config/boundary.cfg";
 float tableheight = 0.855;
