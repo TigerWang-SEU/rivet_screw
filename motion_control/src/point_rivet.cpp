@@ -306,7 +306,7 @@ void do_point_rivet ()
           // start screwing the rivet and move into the rivet
           start_screwing_.call ( msg );
           move_trajectory ( target_pose1, target_pose2, move_group );
-          ros::Duration ( 4.0 ) .sleep ();
+          ros::Duration ( 2.4 ) .sleep ();
           stop_screwing_.call ( msg );
           target_pose1 = target_pose2;
 

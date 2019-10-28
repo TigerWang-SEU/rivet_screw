@@ -186,10 +186,20 @@ public:
       }
     	do_scan_fs.close();
     }
+    else
+    {
+      ofstream do_scan_fs;
+      std::string cfgFileName = ros::package::getPath ( "motion_control" ) + "/config/scan_plan.cfg";
+      do_scan_fs.open ( cfgFileName );
+      // write an empty file.
+      std::cout << "write an empty file..." << std::endl;
+      do_scan_fs << std::endl;
+      do_scan_fs.close();
+    }
     return true;
   }
 
-  ScanPlanner ()
+  ScanPlanner () : segment_list ( new object_localizer_msg::Segment_list () )
   {
     start_scan_planner_ = nh_.advertiseService ( "start_scan_planner", &ScanPlanner::start_scan_planner, this );
 

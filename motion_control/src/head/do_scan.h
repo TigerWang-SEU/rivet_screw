@@ -50,10 +50,13 @@ void scan_plan_reader ( std::vector< ScanPlan >& scan_plan_vector )
   int color_r, color_g, color_b;
   while ( std::getline ( input, line ) )
   {
-    std::istringstream iss ( line );
-    iss >> rotation_deg >> x_s >> y_s >> z_s >> x_e >> y_e >> z_e >> x_final >> y_final >> z_final >> color_r >> color_g >> color_b;
-    ScanPlan scan_plan ( rotation_deg, x_s, y_s, z_s, x_e, y_e, z_e, x_final, y_final, z_final, color_r, color_g, color_b );
-    scan_plan_vector.push_back ( scan_plan );
+    if ( line.length() > 0 )
+    {
+      std::istringstream iss ( line );
+      iss >> rotation_deg >> x_s >> y_s >> z_s >> x_e >> y_e >> z_e >> x_final >> y_final >> z_final >> color_r >> color_g >> color_b;
+      ScanPlan scan_plan ( rotation_deg, x_s, y_s, z_s, x_e, y_e, z_e, x_final, y_final, z_final, color_r, color_g, color_b );
+      scan_plan_vector.push_back ( scan_plan );
+    }
   }
   std::sort ( scan_plan_vector.begin(), scan_plan_vector.end(), scanPlanComp );
   input.close ();
