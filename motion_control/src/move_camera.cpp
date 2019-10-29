@@ -38,7 +38,7 @@ void move_camera ()
       {
         start_image_transport.call ( msg );
         // set pose scan_end in radians
-        joint_group_positions [ 3 ] = 0.54;
+        joint_group_positions [ 3 ] = joint_group_positions [ 3 ] + M_PI_2;
       }
       else if ( motion_stage_idx  == 1 )
       {
@@ -56,6 +56,7 @@ void move_camera ()
           move_group.setMaxVelocityScalingFactor ( motion_scale );
           move_group.setMaxAccelerationScalingFactor ( motion_scale );
           move_group.move ();
+          ros::Duration ( 0.5 ).sleep();
         }
         if ( motion_stage_idx == 1 )
         {
