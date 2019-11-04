@@ -377,6 +377,25 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
   rivet_point_in_final = transform_total_inverse * rivet_point_in;
 }
 
+std::set < std::string > rivet_string_set;
+
+void clear_rivet_string_set ()
+{
+  rivet_string_set.clear ();
+}
+
+bool check_repeat_rivet ( float rivet_x, float rivet_y, float rivet_z )
+{
+  int int_part_x = ( int ) ( rivet_x * 100.0 );
+  int int_part_y = ( int ) ( rivet_y * 100.0 );
+  int int_part_z = ( int ) ( rivet_z * 100.0 );
+  std::string in_str = std::to_string ( int_part_x ) + ":" + std::to_string ( int_part_y ) + ":" + std::to_string ( int_part_z );
+  std::cout << in_str << std::endl;
+  bool is_find = ( rivet_string_set.find ( in_str ) != rivet_string_set.end () );
+  rivet_string_set.insert ( in_str );
+  return is_find;
+}
+
 class RivetLocalizer
 {
 public:
@@ -599,6 +618,7 @@ public:
     // *scene_cloud_total += *plane_cloud_vis;
     *scene_cloud_total += *cloud_rivet_vis;
 
+    clear_rivet_string_set ();
     for ( Eigen::Vector4f rivet_point : rivet_vector )
     {
       std::cout << std::endl;
@@ -640,6 +660,12 @@ public:
       }
 
       std::cout << "*** [" << rivet_counter << "] : " << rivet_point_new_final.head< 3 >().transpose() << std::endl;
+
+      if ( check_repeat_rivet ( rivet_point_new_final ( 0 ), rivet_point_new_final ( 1 ), rivet_point_new_final ( 2 ) ) == true )
+      {
+        continue;
+      }
+
       show_frame ( "rivet_" + std::to_string ( rivet_counter ) + "_start", rivet_point_new_final ( 0 ), rivet_point_new_final ( 1 ), rivet_point_new_final ( 2 ), roll, pitch, yaw );
       show_frame ( "rivet_" + std::to_string ( rivet_counter ) + "_end", rivet_point_in_final ( 0 ), rivet_point_in_final ( 1 ), rivet_point_in_final ( 2 ), roll, pitch, yaw );
       point_rivet_fs << rivet_counter << " " << rivet_point_new_final ( 0 ) << " " << rivet_point_new_final ( 1 ) << " " << rivet_point_new_final ( 2 ) << " " << roll << " " << pitch << " " << yaw << std::endl;
