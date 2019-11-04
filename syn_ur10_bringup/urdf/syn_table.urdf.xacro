@@ -130,7 +130,7 @@
     </collision>
   </link> -->
 
-  <joint name="table_floor_joint" type="floating">
+  <joint name="table_floor_joint" type="fixed">
     <parent link="floor"/>
     <child link="table"/>
     <origin xyz="0 0 0" rpy="0 0 0" />
