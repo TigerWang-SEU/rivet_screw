@@ -63,14 +63,21 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
   float end_point [ 3 ] { x_e, y_e, z_e };
   float final_point [ 3 ] { x_final, y_final, z_final };
 
-  std::cout << "rotation_deg = " << rotation_deg << std::endl;
-
   ROS_INFO_STREAM ( "Start for scanning" );
+
+  std::vector < double > joint_group_positions;
+  motion_control.get_current_robot_state ( joint_group_positions );
+  double elbow_angle = joint_group_positions [ 2 ];
+  std::cout << "current elbow angle = " << elbow_angle << std::endl;
+  if ( std::abs ( elbow_angle + 0.5764 ) == 0.1 )
+  {
+    motion_control.set_joint_angle ( 2, elbow_angle - ( 40.0 / 180 * M_PI ) );
+  }
+
   geometry_msgs::Pose scan_start_pose;
   motion_control.get_current_end_effector_pose ( scan_start_pose );
   normalize_quaternion ( scan_start_pose.orientation );
   bool success = motion_control.move2target ( scan_start_pose, 0.1 );
-
   std::cout << "Set current pose......" << std::endl;
 
   if ( success )
