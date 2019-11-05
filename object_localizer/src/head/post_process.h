@@ -91,7 +91,7 @@ void target_post_process ()
 
   pcl::KdTreeFLANN < pcl::PointXYZ > kdtree;
   kdtree.setInputCloud ( target_cloud );
-  float rivet_radius = 0.03;
+  float rivet_radius = 0.04;
   UF target_cloud_uf ( target_cloud->points.size () );
   for ( size_t i = 0; i < target_cloud->points.size (); ++i )
   {
