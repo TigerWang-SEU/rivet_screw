@@ -29,7 +29,7 @@ void move_camera ()
   current_state->copyJointGroupPositions ( joint_model_group, joint_group_positions );
   std::cout << "current wrist 1: " << joint_group_positions [ 3 ] << std::endl;
   // if the start robot pose is scan_start pose, start move the camera
-  if ( std::abs ( joint_group_positions [ 3 ] + 1.8434 ) <= 0.01 && std::abs ( joint_group_positions [ 5 ] - 0 ) <= 0.01 )
+  if ( std::abs ( joint_group_positions [ 2 ] + 2.187 ) <= 0.01 && std::abs ( joint_group_positions [ 3 ] + 1.8434 ) <= 0.01 && std::abs ( joint_group_positions [ 5 ] - 0 ) <= 0.01 )
   {
     int motion_stage_idx = 0;
     while ( motion_stage_idx != 1 )
@@ -39,6 +39,47 @@ void move_camera ()
         start_image_transport.call ( msg );
         // set pose scan_end in radians
         joint_group_positions [ 3 ] = joint_group_positions [ 3 ] + M_PI_2;
+      }
+      else if ( motion_stage_idx  == 1 )
+      {
+        // set pose scan_start in radians
+        joint_group_positions [ 3 ] = -1.8434;
+      }
+      move_group.setJointValueTarget ( joint_group_positions );
+      moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+      bool success = ( move_group.plan ( my_plan ) == moveit::planning_interface::MoveItErrorCode::SUCCESS );
+      if ( success )
+      {
+        std::cout << "move wrist 1 to: " << joint_group_positions [ 3 ] << std::endl;
+        if ( motion_stage_idx == 0 )
+        {
+          move_group.setMaxVelocityScalingFactor ( motion_scale );
+          move_group.setMaxAccelerationScalingFactor ( motion_scale );
+          move_group.move ();
+          ros::Duration ( 0.5 ).sleep();
+        }
+        if ( motion_stage_idx == 1 )
+        {
+          move_group.setMaxVelocityScalingFactor ( 0.1 );
+          move_group.setMaxAccelerationScalingFactor ( 0.1 );
+          stop_image_transport.call ( msg );
+          ros::Duration ( 0.5 ).sleep();
+          move_group.move ();
+        }
+      }
+      motion_stage_idx ++;
+    }
+  }
+  else if ( std::abs ( joint_group_positions [ 2 ] + 0.5764 ) <= 0.01 && std::abs ( joint_group_positions [ 3 ] + 1.8434 ) <= 0.01 && std::abs ( joint_group_positions [ 5 ] - 0 ) <= 0.01 )
+  {
+    int motion_stage_idx = 0;
+    while ( motion_stage_idx != 1 )
+    {
+      if ( motion_stage_idx  == 0 )
+      {
+        start_image_transport.call ( msg );
+        // set pose scan_end in radians
+        joint_group_positions [ 3 ] = joint_group_positions [ 3 ] - M_PI_2;
       }
       else if ( motion_stage_idx  == 1 )
       {
