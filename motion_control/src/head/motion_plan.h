@@ -122,16 +122,9 @@ public:
 
   void get_current_end_effector_pose ( geometry_msgs::Pose& target_pose )
   {
-    tf::StampedTransform transform;
-    listener.lookupTransform ( reference_frame, END_EFFECTOR_FRAME, ros::Time ( 0 ), transform );
-    tf::Vector3 point = transform.getOrigin ();
-    target_pose.position.x = point.getX ();
-    target_pose.position.y = point.getY ();
-    target_pose.position.z = point.getZ ();
-    target_pose.orientation.x = transform.getRotation ().getAxis ().getX ();
-    target_pose.orientation.y = transform.getRotation ().getAxis ().getY ();
-    target_pose.orientation.z = transform.getRotation ().getAxis ().getZ ();
-    target_pose.orientation.w = transform.getRotation ().getW ();
+    std::cout << END_EFFECTOR_FRAME << " to " << reference_frame << std::endl;
+    target_pose = move_group->getCurrentPose().pose;
+    std::cout << "\tcurrent pose is " << target_pose.position.x << ", " << target_pose.position.y << ", " << target_pose.position.z << ", " << target_pose.orientation.x << ", " << target_pose.orientation.y << ", " << target_pose.orientation.z << ", " << target_pose.orientation.w << std::endl;
   }
 
 };
