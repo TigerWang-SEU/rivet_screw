@@ -35,6 +35,20 @@ void set_rivet_tool_forward ( MotionControl& motion_control )
   motion_control.set_joint_angle ( 4, wrist_2_angle );
 }
 
+
+void normalize_quaternion ( geometry_msgs::Quaternion& quaternion_in )
+{
+  float x = quaternion_in.x;
+  float y = quaternion_in.y;
+  float z = quaternion_in.z;
+  float w = quaternion_in.w;
+  float size = std::pow ( ( std::pow ( x, 2 ) + std::pow ( y, 2 ) + std::pow ( z, 2 ) + std::pow ( w, 2 ) ), 0.5 );
+  quaternion_in.x  = x / size;
+  quaternion_in.y  = y / size;
+  quaternion_in.z  = z / size;
+  quaternion_in.w  = w / size;
+}
+
 void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, float y_e, float z_e, float x_final, float y_final, float z_final )
 {
   // create motion_control object and the start_profile_merger_ and stop_profile_merger_ service clients.
@@ -49,10 +63,15 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
   float end_point [ 3 ] { x_e, y_e, z_e };
   float final_point [ 3 ] { x_final, y_final, z_final };
 
+  std::cout << "rotation_deg = " << rotation_deg << std::endl;
+
   ROS_INFO_STREAM ( "Start for scanning" );
   geometry_msgs::Pose scan_start_pose;
   motion_control.get_current_end_effector_pose ( scan_start_pose );
+  normalize_quaternion ( scan_start_pose.orientation );
   bool success = motion_control.move2target ( scan_start_pose, 0.1 );
+
+  std::cout << "Set current pose......" << std::endl;
 
   if ( success )
   {
@@ -65,6 +84,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     pitcht = 0;
     yawt = 0;
     target_pose1.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
+    normalize_quaternion ( target_pose1.orientation );
     std::vector<geometry_msgs::Pose> waypoints_0;
     waypoints_0.push_back ( scan_start_pose );
     waypoints_0.push_back ( target_pose1 );
@@ -80,6 +100,8 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
       return;
     }
 
+    std::cout << "Move to start pose......" << std::endl;
+
     // start the scanning part
     geometry_msgs::Pose target_pose2;
     target_pose2.position.x = end_point [ 0 ];
@@ -89,6 +111,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     pitcht = 0;
     yawt = 0;
     target_pose2.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
+    normalize_quaternion ( target_pose2.orientation );
     // do one way of scanning
     std::vector<geometry_msgs::Pose> waypoints_1;
     waypoints_1.push_back ( target_pose1 );
@@ -112,6 +135,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     pitcht = 0;
     yawt = 0;
     final_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw ( rollt, pitcht, yawt );
+    normalize_quaternion ( final_pose.orientation );
     std::vector<geometry_msgs::Pose> waypoints_2;
     waypoints_2.push_back ( target_pose1 );
     waypoints_2.push_back ( final_pose );
@@ -119,6 +143,7 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     if ( fraction > 0.98 )
     {
       motion_control.execute_trajectory ( my_plan );
+      std::cout << "finish scanning......" << std::endl;
       set_rivet_tool_forward ( motion_control );
     }
   }
