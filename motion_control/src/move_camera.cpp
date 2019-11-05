@@ -79,7 +79,7 @@ void move_camera ()
       {
         start_image_transport.call ( msg );
         // set pose scan_end in radians
-        joint_group_positions [ 3 ] = joint_group_positions [ 3 ] - M_PI_4;
+        joint_group_positions [ 3 ] = joint_group_positions [ 3 ] - M_PI_2;
       }
       else if ( motion_stage_idx  == 1 )
       {
