@@ -287,7 +287,7 @@ void get_rivet_center_orientation ( PointCloudT::Ptr cloud_in, PointCloudT::Ptr 
     float x_compare = std::abs ( x - rivet_height_2 );
     float y = temp_point.y;
     float z = temp_point.z;
-    if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0008 )
+    if ( y >= minPoint.y && y <= maxPoint.y && z >= minPoint.z && z <= maxPoint.z && x_compare <= 0.0015 )
     {
       PointT new_point;
       new_point.x = x;
