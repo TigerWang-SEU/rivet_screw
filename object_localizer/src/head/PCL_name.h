@@ -57,16 +57,13 @@ void partition_pc ( PointCloudT::Ptr cloud_in, std::vector < PointCloudT::Ptr >&
   for ( size_t i = 0; i < cloud_in->points.size (); ++i )
   {
     PointT searchPoint = cloud_in->points [ i ];
-    if ( cloud_in_uf.find ( i ) == i )
+    std::vector < int > p_idx;
+    std::vector < float > p_rad;
+    if ( kdtree.radiusSearch ( searchPoint, distance, p_idx, p_rad ) > 0 )
     {
-      std::vector < int > p_idx;
-      std::vector < float > p_rad;
-      if ( kdtree.radiusSearch ( searchPoint, distance, p_idx, p_rad ) > 0 )
+      for ( size_t j = 0; j < p_idx.size (); ++j )
       {
-        for ( size_t j = 0; j < p_idx.size (); ++j )
-        {
-          cloud_in_uf.merge ( i, p_idx [ j ] );
-        }
+        cloud_in_uf.merge ( i, p_idx [ j ] );
       }
     }
   }

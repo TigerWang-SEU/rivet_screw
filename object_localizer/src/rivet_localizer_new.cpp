@@ -539,16 +539,13 @@ public:
     for ( size_t i = 0; i < cloud_rivet->points.size (); ++i )
     {
       PointT searchPoint = cloud_rivet->points [ i ];
-      if ( cloud_rivet_uf.find ( i ) == i )
+      std::vector < int > pointIdx;
+      std::vector < float > pointRadius;
+      if ( kdtree.radiusSearch ( searchPoint, 0.0005, pointIdx, pointRadius ) > 0 )
       {
-        std::vector < int > pointIdx;
-        std::vector < float > pointRadius;
-        if ( kdtree.radiusSearch ( searchPoint, 0.0005, pointIdx, pointRadius ) > 0 )
+        for ( size_t j = 0; j < pointIdx.size (); ++j )
         {
-        	for ( size_t j = 0; j < pointIdx.size (); ++j )
-        	{
-        		cloud_rivet_uf.merge ( i, pointIdx [ j ] );
-        	}
+          cloud_rivet_uf.merge ( i, pointIdx [ j ] );
         }
       }
     }

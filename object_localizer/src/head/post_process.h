@@ -91,21 +91,18 @@ void target_post_process ()
 
   pcl::KdTreeFLANN < pcl::PointXYZ > kdtree;
   kdtree.setInputCloud ( target_cloud );
-  float rivet_radius = 0.04;
+  float rivet_radius = 0.040;
   UF target_cloud_uf ( target_cloud->points.size () );
   for ( size_t i = 0; i < target_cloud->points.size (); ++i )
   {
     pcl::PointXYZ searchPoint = target_cloud->points [ i ];
-    if ( target_cloud_uf.find ( i ) == i )
+    std::vector < int > pointIdx;
+    std::vector < float > pointRadius;
+    if ( kdtree.radiusSearch ( searchPoint, rivet_radius, pointIdx, pointRadius ) > 0 )
     {
-      std::vector < int > pointIdx;
-      std::vector < float > pointRadius;
-      if ( kdtree.radiusSearch ( searchPoint, rivet_radius, pointIdx, pointRadius ) > 0 )
+      for ( size_t j = 0; j < pointIdx.size (); ++j )
       {
-        for ( size_t j = 0; j < pointIdx.size (); ++j )
-        {
-          target_cloud_uf.merge ( i, pointIdx [ j ] );
-        }
+        target_cloud_uf.merge ( i, pointIdx [ j ] );
       }
     }
   }
