@@ -69,9 +69,10 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
   motion_control.get_current_robot_state ( joint_group_positions );
   double elbow_angle = joint_group_positions [ 2 ];
   std::cout << "current elbow angle = " << elbow_angle << std::endl;
-  if ( std::abs ( elbow_angle + 0.5764 ) == 0.1 )
+  if ( std::abs ( elbow_angle + 0.5764 ) <= 0.1 )
   {
-    motion_control.set_joint_angle ( 2, elbow_angle - ( 40.0 / 180 * M_PI ) );
+    std::cout << "Reduce the elbow angel......" << std::endl;
+    motion_control.set_joint_angle ( 2, elbow_angle - ( 40.0 / 180.0 * M_PI ) );
   }
 
   geometry_msgs::Pose scan_start_pose;
@@ -106,7 +107,6 @@ void do_scan ( float rotation_deg, float x_s, float y_s, float z_s, float x_e, f
     {
       return;
     }
-
     std::cout << "Move to start pose......" << std::endl;
 
     // start the scanning part
