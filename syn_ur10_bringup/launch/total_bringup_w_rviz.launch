@@ -4,8 +4,8 @@
   <include file="$(find syn_ur10_bringup)/launch/syn_ur10_bringup.launch"/>
 
   <!-- use tf dummy node to fix the table on the floor -->
-  <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
-  </node>
+  <!-- <node name="tf_dummy" pkg="model_loader" type="tf_dummy" respawn="true" output="screen">
+  </node> -->
 
   <node name="web_video_server" pkg="web_video_server" type="web_video_server" respawn="true" output="screen">
   </node>
